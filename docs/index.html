@@ -2050,6 +2050,9 @@ function make(db,env){
       var r=db.rows("명단").filter(function(x){return S(x["학번"])===hb&&S(x["이름"]).replace(/\s/g,"")===nm;})[0];
       if(!r)fail("명단에 없는 학생입니다. 관리자(사서) 선생님의 확인이 필요합니다. 담임 선생님이나 도서관에 알려 주세요.");
       if(S(r["이메일"])&&lower(r["이메일"])!==email)fail("이 학번은 다른 메일("+maskEmail(r["이메일"])+")로 등록돼 있습니다. 그 메일을 적거나 담임 선생님께 알려 주세요.");
+      var other=db.rows("명단").filter(function(x){return lower(x["이메일"])===email&&S(x["학번"])!==hb;})[0];
+      if(other)fail("그 메일은 이미 다른 학생("+S(other["학번"])+")이 쓰고 있습니다. 본인 메일로 하거나 선생님께 알려 주세요.");
+      if(db.rows("교사").some(function(x){return lower(x["이메일"])===email;}))fail("그 메일은 선생님 계정으로 등록돼 있습니다.");
       if(!S(r["동의"])){if(p.agree!==true)return {need:"consent"};pend=(S(r["이메일"])?"C:":"")+hb;}
       else if(!S(r["이메일"]))pend=hb;
       /* 선생님이 계정 관리에서 메일까지 등록해 준 학생은 인증번호를 건너뛴다(설정 교사등록무인증) */
@@ -2103,6 +2106,8 @@ function make(db,env){
       var r=db.rows("명단").filter(function(x){return S(x["학번"])===hb;})[0];
       if(!r)fail("명단에서 학번을 찾지 못했습니다. 담임 선생님께 알려 주세요.");
       if(S(r["이메일"])&&lower(r["이메일"])!==email)fail("이 학번은 방금 다른 메일로 등록됐습니다. 담임 선생님께 알려 주세요.");
+      if(db.rows("명단").some(function(x){return lower(x["이메일"])===email&&S(x["학번"])!==hb;}))fail("그 메일은 이미 다른 학생이 쓰고 있습니다. 선생님께 알려 주세요.");
+      if(db.rows("교사").some(function(x){return lower(x["이메일"])===email;}))fail("그 메일은 선생님 계정으로 등록돼 있습니다.");
       db.set("명단","학번",hb,{"이메일":email,"동의":stamp(now)});
     }else if(!db.rows("교사").some(function(r){return lower(r["이메일"])===email;})&&!db.rows("명단").some(function(r){return lower(r["이메일"])===email;})){
       fail("등록 정보를 찾지 못했습니다. 처음부터 다시 해 주세요.");
