@@ -28,7 +28,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20260920-223650";
+var CODE_VERSION="20260920-234728";
 function doGet(e){
   try{
     var props=PropertiesService.getScriptProperties();

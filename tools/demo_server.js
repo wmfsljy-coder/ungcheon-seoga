@@ -2,7 +2,9 @@
    로직은 core.gs 를 그대로 돌리므로, 여기서 되는 것은 시트에서도 같게 돈다. */
 window.DemoServer=(function(){
   var KEY="ungcheon-seoga-demo-v5",WHO="ungcheon-seoga-demo-who";
-  var ACCOUNTS=[["s3201@school.kr","학생 (김서준 · 3-2)"],["new@school.kr","처음 온 학생 (3203 정유나로 등록해 보세요)"],["s3101@school.kr","동의 전 학생 (박하늘)"],["s2101@school.kr","학생 (강다온 · 2-1)"],["lib@school.kr","담당 교사"],["lee@school.kr","3학년 담당 (이정민)"],["sci@school.kr","교사 (최과학)"],["s3202@school.kr","도서부 학생 (이도윤)"],["@mail","메일 로그인 체험 (3204 서하람으로 등록)"]];
+  var ACCOUNTS=[["@pin","PIN 로그인 체험 (학번·이름으로 들어가 보세요)"],
+    ["s3201@school.kr","학생 (김서준 · 3-2)"],["s3101@school.kr","동의 전 학생 (박하늘)"],["s2101@school.kr","학생 (강다온 · 2-1)"],
+    ["lib@school.kr","담당 교사"],["lee@school.kr","3학년 담당 (이정민)"],["sci@school.kr","교사 (최과학)"],["s3202@school.kr","도서부 학생 (이도윤)"]];
   function h32(s){var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return ("0000000"+(h>>>0).toString(16)).slice(-8);}
   var env={
     now:function(){return new Date();},
@@ -113,7 +115,7 @@ window.DemoServer=(function(){
     switchTo:function(e){try{localStorage.setItem(WHO,e);}catch(x){}location.reload();},
     api:function(name,json){
       /* 시연: '메일 로그인 체험'을 고르면 메일 방식, 나머지 계정은 계정 바꾸기로 바로 들어오는 구글 방식 */
-      try{var mode=env.email()==="@mail"?"메일":"구글";db.rows("설정").forEach(function(r){if(r["항목"]==="로그인방식")r["값"]=mode;});
+      try{var mode=env.email()==="@pin"?"핀":"구글";db.rows("설정").forEach(function(r){if(r["항목"]==="로그인방식")r["값"]=mode;});
         var pp=JSON.parse(json||"{}"),want=pp._state&&name!=="state";delete pp._state;
         var out=Core.make(db,env).api(name,pp);
         if(want){out={r:out==null?{ok:true}:out,state:Core.make(db,env).api("state",{_t:pp._t,as:pp._as})};}return JSON.stringify(out==null?{ok:true}:out);}

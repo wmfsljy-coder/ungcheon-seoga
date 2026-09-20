@@ -6,8 +6,8 @@ var Core=(function(){
 
 var HEAD={
   "설정":["항목","값","설명"],
-  "명단":["학번","이름","반","이메일","동의","도서부","등록방법","등록일","최근접속","비고"],
-  "교사":["이메일","이름","담당","마지막확인"],
+  "명단":["학번","이름","반","동의","도서부","등록방법","등록일","최근접속","비고","핀","핀설정","실패","잠금","이메일"],
+  "교사":["이름","담당","마지막확인","핀","핀설정","실패","잠금","이메일"],
   "도서":["id","제목","지은이","영역","추천","추천사","소장","청구기호","권수","대출가능","반납예정","확인","수동","출처","월","숨김","표지","확인권수","ISBN","소개","핵심어","추천교사"],
   "글":["id","시각","주","차수","종류","학번","이름","반","도서id","책제목","지은이","머리글","본문","계기","쪽수","상태","메모","인쇄","수상","확인","청구기호","표지","명예"],
   "투표":["시각","주","종류","투표자","글id"],
@@ -24,11 +24,11 @@ var HEAD={
   "장서목록":["제목","지은이","출판사","발행년","청구기호","권수","분야","중분류","ISBN","자료실"],
   "수령대상":["수령","시작","끝","학번","이름","반","별","상품권","배부","처리자","처리시각"],
   "교사신청":["id","시각","이름","이메일","상태"],
-  "기기":["토큰","이메일","만든날","마지막","만료","해제","기기"],
+  "기기":["토큰","계정","만든날","마지막","만료","해제","기기","이메일"],
   "지급":["키","월","학번","이름","반","도장","처리","시각","처리자","매수","별"]
 };
 var CONF0=[["프로그램명","웅천 서가"],["부제","한 권 읽고, 한 줄 남기기"],["차수","1"],
-  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["상품권당별","2"],["월최대매수","2"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","메일"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["교사추천상한","5"],["기기기억일","120"],
+  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["상품권당별","2"],["월최대매수","2"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["교사추천상한","5"],["기기기억일","120"],["핀자릿수","6"],
   ["학교코드","S100000673"],["교육청코드","S10"],["학교명","웅천고등학교"],
   ["이달의권수","40"],["추천방식","권장"],["추천묶음","2026-09~2026-10"],["퀴즈문항수","5"],["퀴즈책수","3"],["퀴즈품질기준","6"],["보유기간","3학년은 졸업식 날까지, 1·2학년은 학년말(2월)까지"],["개인정보담당","도서관 담당 교사"]];
 /* 설정 시트 '설명' 칸에 들어가는 뜻풀이 */
@@ -57,11 +57,11 @@ var CONF_DESC={
   "첫안내판":"(자동 기록) 손대지 마세요",
   "백업":"(자동 기록) 달마다 만든 시트 사본(드라이브 ‘웅천 서가 백업’ 폴더)",
   "백업월":"(자동 기록) 손대지 마세요",
-  "정리일":"(자동 기록) 지난 인증번호·풀린 기기·오래된 숨김 도서를 정리한 날",
+  "정리일":"(자동 기록) 풀린 기기·오래된 숨김 도서를 정리한 날",
   "장서변화":"(자동 기록) 지난번 받아 온 장서와 견준 결과",
   "장서종":"(자동 기록) 장서목록 시트의 책 종 수",
   "장서목록일":"(자동 기록) 장서목록 시트를 마지막으로 받은 날(매달 한 번 새로 받음)",
-  "교사등록무인증":"N(기본) = 선생님이 등록해 준 학생도 첫 로그인 때 메일 인증번호를 한 번 거칩니다(안전). Y = 인증번호 없이 바로 들어옵니다(편하지만 학번·이름·메일을 아는 사람이 대신 들어올 수 있습니다)",
+  "교사등록무인증":"(쓰지 않음) 옛 메일 인증 방식에서 쓰던 값입니다",
   "금칙어":"글 점검에서 거친 말로 볼 낱말(쉼표로 구분). 비워 두면 기본 목록만",
   "공지사항":"여기 적은 글이 학생 화면 공지사항 맨 위에 나옵니다. 한 줄에 공지 하나(칸 안에서 줄을 바꾸려면 Ctrl+Enter). 지우면 사라짐",
   "상품권배부":"(수령기간 시트로 옮겼습니다 — 날짜는 수령기간 시트에서 고치세요) 예전 설명: 상품권 나눠 주는 기간(날짜). 예) 2026-10-05~2026-10-08 → 그 앞달(9월) 상품권. 여러 달은 쉼표로 이어 적기. 7일 전부터 학생 공지사항·도장판에 안내가 뜨고, 기간이 끝나면 사라짐. 비워 두면 매월 1~10일 안내",
@@ -69,7 +69,8 @@ var CONF_DESC={
   "추천분야":"교사가 추천 도서를 넣을 때 고르는 책 분야(쉼표로 구분, 교보문고·YES24 큰 분류 참고)",
   "교과목록":"(더 이상 쓰지 않음 — 추천분야를 쓰세요)",
   "교사추천상한":"교사 한 명이 한 달(추천 기간)에 넣을 수 있는 추천 도서 수",
-  "로그인방식":"메일 = 처음 한 번 메일 인증번호, 같은 PC·브라우저는 다음부터 자동 로그인(배포 액세스: 모든 사용자) / 구글 = 학교 구글 계정으로 바로(배포 액세스: 도메인 내 모든 사용자)",
+  "핀자릿수":"로그인 PIN 자릿수(기본 6). 바꾸면 새로 정하는 사람부터 적용",
+  "로그인방식":"핀(기본) = 학생은 학번·이름, 교사는 이름으로 들어와 PIN 여섯 자리를 정합니다 / 구글 = 학교 구글 계정으로 바로(학교 계정이 있을 때만)",
   "기기기억일":"메일 로그인 뒤 같은 PC에서 자동 로그인을 유지하는 날 수",
   "상품권메일":"Y = 매월 1일 아침 담당·담임 선생님께 지난달 상품권 대상 명단 메일",
   "하루제출상한":"학생 한 명이 하루에 낼 수 있는 글 수",
@@ -1028,6 +1029,8 @@ function make(db,env){
         db.setConf("첫안내판","1");
       }catch(e){}
     }
+    /* 메일 인증은 폐기(2026-09-20): 학번·이름 + PIN 여섯 자리로 */
+    if(S(conf()["로그인방식"])==="메일")db.setConf("로그인방식","핀");
     /* 교사 등록 학생도 첫 인증은 거치게(2026-09-20 회장님 지시). 관리자가 나중에 Y 로 바꾸면 그대로 둔다 */
     if(S(conf()["무인증판"])!=="1"){db.setConf("교사등록무인증","N");db.setConf("무인증판","1");}
     /* 별 규칙(2026-09-20)부터 한 달 도장 상한은 없음: 옛 기본값 20 → 0 을 한 번만 */
@@ -1053,12 +1056,10 @@ function make(db,env){
       }catch(e){}
     }
     try{sortRoster();}catch(e){}
-    /* 쓸모가 다한 줄은 지운다(하루 한 번): 지난 인증번호, 풀린 기기, 여섯 달 지난 숨긴 책 */
+    /* 쓸모가 다한 줄은 지운다(하루 한 번): 풀린 기기, 여섯 달 지난 숨긴 책 */
     if(db.replace&&S(conf()["정리일"])!==today(env.now())){
       try{
         var now0=env.now().getTime(),td=today(env.now());
-        var au=db.rows("인증").filter(function(r){return Number(r["만료"])>now0;});
-        if(au.length!==db.rows("인증").length)db.replace("인증",au);
         var dv=db.rows("기기").filter(function(r){return S(r["해제"])!=="Y"&&S(r["만료"])>=td;});
         if(dv.length!==db.rows("기기").length)db.replace("기기",dv);
         var monNow=monthKey(env.now());
@@ -1441,7 +1442,7 @@ function make(db,env){
 
   /* ── 누구인가: 구글 계정 이메일로만 판단한다 ── */
   var TEACHER_CLS="선생님";
-  function mailMode(){return S(conf()["로그인방식"])!=="구글";}
+  function pinMode(){return S(conf()["로그인방식"])!=="구글";}
   function lower(x){return S(x).toLowerCase();}
   /* 이 PC(브라우저)에 기억된 로그인. 토큰은 해시로만 저장 */
   function deviceOf(t){
@@ -1450,15 +1451,36 @@ function make(db,env){
     var r=db.rows("기기").filter(function(x){return S(x["토큰"])===h&&S(x["해제"])!=="Y"&&S(x["만료"])>=td;})[0];
     if(!r)return null;
     if(S(r["마지막"])!==td)try{db.set("기기","토큰",h,{"마지막":td});}catch(e){}
-    return {email:lower(r["이메일"]),hash:h};
+    return {acc:S(r["계정"]),hash:h};
+  }
+  /* 로그인 표(토큰) 한 장. 계정은 "s:학번" 또는 "t:이름" */
+  function issueToken(acc,p){
+    var now=env.now(),t=env.uid()+env.uid()+env.uid()+env.uid(),td=today(now);
+    var keep=p&&p.remember===false?1:(Number(conf()["기기기억일"])||120);
+    db.add("기기",{"토큰":env.hmac("dev|"+t),"계정":S(acc),"만든날":stamp(now),"마지막":td,"만료":addDays(td,keep),"해제":"","기기":S(p&&p.ua).slice(0,80)});
+    return {token:t,remember:!(p&&p.remember===false)};
+  }
+  function revokeAcc(acc){
+    var up={};db.rows("기기").forEach(function(r){if(S(r["계정"])===S(acc)&&S(r["해제"])!=="Y")up[S(r["토큰"])]={"해제":"Y"};});
+    if(Object.keys(up).length)db.setMany("기기","토큰",up);
   }
   function who(p){
     var email;
-    if(mailMode()){
+    if(pinMode()){
       var dv=deviceOf(p&&p._t);
       if(!dv)return {role:"nologin"};
-      email=dv.email;
-    }else{
+      var acc=S(dv.acc);
+      if(acc.slice(0,2)==="t:"){
+        var tr=db.rows("교사").filter(function(x){return S(x["이름"])===acc.slice(2);})[0];
+        if(!tr)return {role:"nologin"};
+        var sf0=staffOf(tr);sf0.id=S(tr["이름"]);sf0.name=S(tr["이름"]);sf0.email=S(tr["이메일"]);sf0.seen=S(tr["마지막확인"]);sf0.rowEmail=S(tr["이메일"]);
+        return sf0;
+      }
+      var sr=db.rows("명단").filter(function(x){return S(x["학번"])===acc.slice(2);})[0];
+      if(!sr)return {role:"nologin"};
+      return {role:"student",id:S(sr["학번"]),email:"",name:S(sr["이름"]),cls:S(sr["반"]),agreed:!!S(sr["동의"]),club:S(sr["도서부"])==="Y"};
+    }
+    {
       email=S(env.email()).toLowerCase();
       if(!email)fail("NOEMAIL");
       var dom=S(conf()["허용도메인"]).toLowerCase();
@@ -1492,101 +1514,113 @@ function make(db,env){
   function writer(a){student(a);}
   function canWrite(a){return a.role==="student";}   /* 학년 제한 없음: 명단에 있는 학생은 모두 참여 */
 
-  /* ── 메일 인증 로그인 ──
-     처음: 이메일(처음이면 학번·이름·동의) → 6자리 인증번호 메일 → 번호 입력 → 이 PC에 로그인 기억(기기기억일).
-     같은 PC·브라우저는 다음부터 자동. 한 이메일에 1시간 5번까지 보내고, 번호는 10분·5번까지 */
+  /* 옛 메일 주소 가리기(교사 상품권 알림 메일에 씁니다) */
   function maskEmail(e){var m=/^([^@]{1,2})[^@]*(@.*)$/.exec(S(e));return m?m[1]+"***"+m[2]:S(e);}
   /* 학생: 학번·이름·메일(명단과 맞아야 함) / 교사: 이름·메일(교사 시트에 이름이 있으면 바로, 없으면 관리자 승인 요청) */
-  function authStart(p){
-    var email=lower(p.email).replace(/\s/g,""),who=p.role==="teacher"?"teacher":"student",nm=S(p.name).replace(/\s/g,""),pend="";
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))fail("구글 이메일 주소를 확인해 주세요.");
-    if(!nm)fail("이름을 적어 주세요.");
-    if(who==="student"){
-      var hb=S(p.hakbun).replace(/\s/g,"");if(!hb)fail("학번을 적어 주세요.");
-      var r=db.rows("명단").filter(function(x){return S(x["학번"])===hb&&S(x["이름"]).replace(/\s/g,"")===nm;})[0];
-      if(!r)fail("명단에 없는 학생입니다. 관리자(사서) 선생님의 확인이 필요합니다. 담임 선생님이나 도서관에 알려 주세요.");
-      if(S(r["이메일"])&&lower(r["이메일"])!==email)fail("이 학번은 다른 메일("+maskEmail(r["이메일"])+")로 등록돼 있습니다. 그 메일을 적거나 담임 선생님께 알려 주세요.");
-      var other=db.rows("명단").filter(function(x){return lower(x["이메일"])===email&&S(x["학번"])!==hb;})[0];
-      if(other)fail("그 메일은 이미 다른 학생("+S(other["학번"])+")이 쓰고 있습니다. 본인 메일로 하거나 선생님께 알려 주세요.");
-      if(db.rows("교사").some(function(x){return lower(x["이메일"])===email;}))fail("그 메일은 선생님 계정으로 등록돼 있습니다.");
-      if(!S(r["동의"])){if(p.agree!==true)return {need:"consent"};pend=(S(r["이메일"])?"C:":"")+hb;}
-      else if(!S(r["이메일"]))pend=hb;
-      /* 선생님이 계정 관리에서 메일까지 등록해 준 학생은 인증번호를 건너뛴다(설정 교사등록무인증) */
-      if(S(r["이메일"])&&lower(r["이메일"])===email&&S(r["동의"])&&S(r["등록방법"])==="선생님"&&S(conf()["교사등록무인증"])!=="N"){
-        var tk=issueToken(email,p);
-        return {skipped:true,token:tk.token,remember:tk.remember,email:email};
+  /* ── 로그인: 학번(학생)·이름(교사) + PIN 여섯 자리 ──
+     PIN 은 시트에 해시로만 둡니다(원문은 어디에도 없습니다). 다섯 번 틀리면 10분, 열 번 틀리면 하루 잠깁니다.
+     자동 로그인을 고르면 이 기기에 로그인 표(토큰)를 남겨 다음부터 바로 들어옵니다. */
+  function pinLen(){var n=Number(conf()["핀자릿수"])||6;return Math.min(8,Math.max(4,n));}
+  function accKey(role,id){return (role==="teacher"?"t:":"s:")+S(id);}
+  function pinHash(key,pin){return env.hmac("pin|"+key+"|"+S(pin));}
+  function nameKey(x){return S(x).replace(/\s/g,"");}
+  function pinOk(pin,len){
+    if(!new RegExp("^[0-9]{"+len+"}$").test(S(pin)))return "숫자 "+len+"자리로 정해 주세요.";
+    if(/^(\d)\1+$/.test(pin))return "같은 숫자만 쓸 수는 없어요.";
+    var up=true,dn=true;
+    for(var i=1;i<pin.length;i++){
+      if(Number(pin[i])!==Number(pin[i-1])+1)up=false;
+      if(Number(pin[i])!==Number(pin[i-1])-1)dn=false;
+    }
+    if(up||dn)return "1234... 처럼 이어지는 숫자는 쓸 수 없어요.";
+    return "";
+  }
+  /* 잠금: 실패 5회 → 10분, 10회 → 하루. 선생님이 계정 관리에서 풀 수 있습니다 */
+  function lockLeft(row){
+    var until=S(row["잠금"]);if(!until)return 0;
+    var left=Math.ceil((new Date(until.replace(" ","T")+"+09:00").getTime()-env.now().getTime())/60000);
+    return left>0?left:0;
+  }
+  function pinFail(sheet,keyCol,keyVal,row){
+    var n=(Number(row["실패"])||0)+1,patch={"실패":String(n)};
+    if(n>=10)patch["잠금"]=stamp(new Date(env.now().getTime()+24*3600000));
+    else if(n>=5)patch["잠금"]=stamp(new Date(env.now().getTime()+10*60000));
+    db.set(sheet,keyCol,keyVal,patch);
+    if(n>=10)fail("열 번 틀려서 하루 동안 잠깁니다. 선생님께 말하면 바로 풀어 주실 수 있어요.");
+    if(n>=5)fail("다섯 번 틀려서 10분 동안 잠깁니다. 잠시 뒤 다시 해 주세요.");
+    fail("PIN 이 맞지 않아요. ("+n+"/5)");
+  }
+  function loginOk(sheet,keyCol,keyVal,role,id,p){
+    db.set(sheet,keyCol,keyVal,{"실패":"0","잠금":"","최근접속":stamp(env.now())});
+    return issueToken(accKey(role,id),p);
+  }
+  /* 학생: 학번+이름 → (처음이면) 동의 → PIN 정하기 → 들어가기 / (다음부터) 학번+PIN */
+  function login(p){
+    var role=p.role==="teacher"?"teacher":"student",len=pinLen();
+    if(role==="student"){
+      var hb=S(p.hakbun).replace(/\s/g,""),nm=nameKey(p.name);
+      if(!hb||!nm)fail("학번과 이름을 적어 주세요.");
+      var r=db.rows("명단").filter(function(x){return S(x["학번"])===hb&&nameKey(x["이름"])===nm;})[0];
+      if(!r)fail("명단에서 찾지 못했습니다. 학번과 이름을 다시 보시고, 그래도 안 되면 담임 선생님이나 도서관에 말해 주세요.");
+      if(!S(r["핀"])){
+        if(!S(r["동의"])&&p.agree!==true)return {need:"consent",name:S(r["이름"])};
+        if(!S(p.newPin))return {need:"setpin",name:S(r["이름"]),len:len,first:true};
+        var bad=pinOk(S(p.newPin),len);if(bad)fail(bad);
+        if(S(p.newPin)===hb)fail("학번과 같은 번호는 쓸 수 없어요.");
+        db.set("명단","학번",hb,{"핀":pinHash(accKey("student",hb),S(p.newPin)),"핀설정":stamp(env.now()),
+          "동의":S(r["동의"])||stamp(env.now()),"등록방법":S(r["등록방법"])||"본인","등록일":S(r["등록일"])||stamp(env.now()),"실패":"0","잠금":""});
+        var t0=loginOk("명단","학번",hb,"student",hb,p);
+        return {token:t0.token,remember:t0.remember,name:S(r["이름"]),newPin:true};
       }
+      var lk=lockLeft(r);if(lk)fail("지금은 잠겨 있어요. "+lk+"분 뒤에 다시 해 주세요. 급하면 선생님께 말해 주세요.");
+      if(!S(p.pin))return {need:"pin",name:S(r["이름"]),len:len};
+      if(pinHash(accKey("student",hb),S(p.pin))!==S(r["핀"]))pinFail("명단","학번",hb,r);
+      var t1=loginOk("명단","학번",hb,"student",hb,p);
+      return {token:t1.token,remember:t1.remember,name:S(r["이름"])};
+    }
+    var tn=nameKey(p.name);
+    if(!tn)fail("이름을 적어 주세요.");
+    var same=db.rows("교사").filter(function(x){return nameKey(x["이름"])===tn;});
+    if(same.length>1)fail("같은 이름의 선생님이 두 분입니다. 관리자(사서) 선생님께 말해 주세요.");
+    var t=same[0];
+    if(!t){
+      var req=db.rows("교사신청").filter(function(x){return nameKey(x["이름"])===tn&&S(x["상태"])==="대기";})[0];
+      if(!req)db.add("교사신청",{"id":"t"+env.uid(),"시각":stamp(env.now()),"이름":S(p.name).trim(),"이메일":"","상태":"대기"});
+      return {need:"approval",name:S(p.name).trim()};
+    }
+    var nmRow=S(t["이름"]);
+    if(!S(t["핀"])){
+      if(!S(p.newPin))return {need:"setpin",name:nmRow,len:len,first:true};
+      var bad2=pinOk(S(p.newPin),len);if(bad2)fail(bad2);
+      db.set("교사","이름",nmRow,{"핀":pinHash(accKey("teacher",nmRow),S(p.newPin)),"핀설정":stamp(env.now()),"실패":"0","잠금":""});
+      var t2=loginOk("교사","이름",nmRow,"teacher",nmRow,p);
+      return {token:t2.token,remember:t2.remember,name:nmRow,newPin:true};
+    }
+    var lk2=lockLeft(t);if(lk2)fail("지금은 잠겨 있어요. "+lk2+"분 뒤에 다시 해 주세요.");
+    if(!S(p.pin))return {need:"pin",name:nmRow,len:len};
+    if(pinHash(accKey("teacher",nmRow),S(p.pin))!==S(t["핀"]))pinFail("교사","이름",nmRow,t);
+    var t3=loginOk("교사","이름",nmRow,"teacher",nmRow,p);
+    return {token:t3.token,remember:t3.remember,name:nmRow};
+  }
+  /* 내 PIN 바꾸기(로그인한 사람) */
+  function pinChange(a,p){
+    var len=pinLen(),bad=pinOk(S(p.newPin),len);if(bad)fail(bad);
+    if(a.role==="student"){
+      var r=db.rows("명단").filter(function(x){return S(x["학번"])===a.id;})[0];if(!r)fail("명단에서 찾지 못했습니다.");
+      if(S(r["핀"])&&pinHash(accKey("student",a.id),S(p.pin))!==S(r["핀"]))fail("지금 쓰는 PIN 이 맞지 않아요.");
+      if(S(p.newPin)===S(a.id))fail("학번과 같은 번호는 쓸 수 없어요.");
+      db.set("명단","학번",a.id,{"핀":pinHash(accKey("student",a.id),S(p.newPin)),"핀설정":stamp(env.now()),"실패":"0","잠금":""});
     }else{
-      var byMail=db.rows("교사").filter(function(x){return lower(x["이메일"])===email;})[0];
-      if(!byMail){
-        var byName=db.rows("교사").filter(function(x){return S(x["이름"]).replace(/\s/g,"")===nm&&!S(x["이메일"]);})[0];
-        if(byName)pend="T:"+S(byName["이름"]);
-        else{
-          var req=db.rows("교사신청").filter(function(x){return lower(x["이메일"])===email&&S(x["상태"])==="대기";})[0];
-          if(!req)db.add("교사신청",{"id":"t"+env.uid(),"시각":stamp(env.now()),"이름":S(p.name).trim(),"이메일":email,"상태":"대기"});
-          return {need:"approval",email:email};
-        }
-      }
+      var t=db.rows("교사").filter(function(x){return S(x["이름"])===a.name;})[0];if(!t)fail("교사 명단에서 찾지 못했습니다.");
+      if(S(t["핀"])&&pinHash(accKey("teacher",a.name),S(p.pin))!==S(t["핀"]))fail("지금 쓰는 PIN 이 맞지 않아요.");
+      db.set("교사","이름",a.name,{"핀":pinHash(accKey("teacher",a.name),S(p.newPin)),"핀설정":stamp(env.now()),"실패":"0","잠금":""});
     }
-    var row=db.rows("인증").filter(function(x){return S(x["이메일"])===email;})[0],now=env.now().getTime();
-    var sent=row?S(row["보낸시각"]).split(",").map(Number).filter(function(t){return t&&now-t<3600000;}):[];
-    if(sent.length>=5)fail("인증번호를 너무 여러 번 요청했습니다. 1시간 뒤 다시 해 주세요.");
-    if(env.mailQuota&&env.mailQuota()<=0)fail("오늘 보낼 수 있는 인증번호를 다 썼습니다. 담임 선생님이나 도서관에 말하면 선생님이 바로 등록해 줍니다.");
-    if(sent.length&&now-sent[sent.length-1]<30000)fail("방금 보냈어요. 30초 뒤에 다시 요청할 수 있어요.");
-    var code=String(100000+Math.floor(Math.random()*900000));
-    var rec={"이메일":email,"코드":env.hmac("code|"+email+"|"+code),"만료":String(now+600000),"시도":"0","학번":pend,"보낸시각":sent.concat([now]).join(",")};
-    if(row)db.set("인증","이메일",email,rec);else db.add("인증",rec);
-    var c=conf();
-    env.mail(email,"["+S(c["프로그램명"])+"] 인증번호 "+code,
-      "인증번호: "+code+"\n\n10분 안에 화면에 입력해 주세요.\n같은 컴퓨터·브라우저에서는 다음부터 자동으로 로그인됩니다.\n\n직접 요청하지 않았다면 이 메일은 무시하세요.\n— "+S(c["학교명"])+" 도서관");
-    var out={sent:true,to:maskEmail(email),email:email};
-    if(env.demo)out.demoCode=code;
-    return out;
-  }
-  function authVerify(p){
-    var email=lower(p.email).replace(/\s/g,""),code=S(p.code).replace(/\D/g,""),now=env.now();
-    var row=db.rows("인증").filter(function(x){return S(x["이메일"])===email;})[0];
-    if(!row||!S(row["코드"]))fail("인증번호를 먼저 받아 주세요.");
-    if(now.getTime()>Number(row["만료"]))fail("인증번호 시간(10분)이 지났습니다. 다시 받아 주세요.");
-    var tries=Number(row["시도"])||0;
-    if(tries>=5)fail("5번 틀려서 이 번호는 더 쓸 수 없습니다. 다시 받아 주세요.");
-    if(env.hmac("code|"+email+"|"+code)!==S(row["코드"])){db.set("인증","이메일",email,{"시도":String(tries+1)});fail("인증번호가 맞지 않습니다. ("+(tries+1)+"/5)");}
-    var hb=S(row["학번"]);
-    if(/^T:/.test(hb)){
-      var tn=hb.slice(2),tr=db.rows("교사").filter(function(x){return S(x["이름"])===tn&&!S(x["이메일"]);})[0];
-      if(!tr)fail("교사 명단에서 이름을 찾지 못했습니다. 관리자 선생님께 알려 주세요.");
-      db.set("교사","이름",tn,{"이메일":email});
-    }else if(/^C:/.test(hb)){
-      db.set("명단","학번",hb.slice(2),{"동의":stamp(now)});
-    }else if(hb){
-      var r=db.rows("명단").filter(function(x){return S(x["학번"])===hb;})[0];
-      if(!r)fail("명단에서 학번을 찾지 못했습니다. 담임 선생님께 알려 주세요.");
-      if(S(r["이메일"])&&lower(r["이메일"])!==email)fail("이 학번은 방금 다른 메일로 등록됐습니다. 담임 선생님께 알려 주세요.");
-      if(db.rows("명단").some(function(x){return lower(x["이메일"])===email&&S(x["학번"])!==hb;}))fail("그 메일은 이미 다른 학생이 쓰고 있습니다. 선생님께 알려 주세요.");
-      if(db.rows("교사").some(function(x){return lower(x["이메일"])===email;}))fail("그 메일은 선생님 계정으로 등록돼 있습니다.");
-      db.set("명단","학번",hb,{"이메일":email,"동의":stamp(now)});
-    }else if(!db.rows("교사").some(function(r){return lower(r["이메일"])===email;})&&!db.rows("명단").some(function(r){return lower(r["이메일"])===email;})){
-      fail("등록 정보를 찾지 못했습니다. 처음부터 다시 해 주세요.");
-    }
-    db.set("인증","이메일",email,{"코드":"","시도":"0","학번":""});
-    return issueToken(email,p);
-  }
-  /* 로그인 표(기기) 한 줄과 토큰 */
-  function issueToken(email,p){
-    var now=env.now(),t=env.uid()+env.uid()+env.uid()+env.uid(),td=today(now),keep=p&&p.remember===false?1:(Number(conf()["기기기억일"])||120);
-    db.add("기기",{"토큰":env.hmac("dev|"+t),"이메일":email,"만든날":stamp(now),"마지막":td,"만료":addDays(td,keep),"해제":"","기기":S(p&&p.ua).slice(0,80)});
-    var hit=db.rows("명단").filter(function(x){return lower(x["이메일"])===email;})[0];
-    if(hit)db.set("명단","학번",S(hit["학번"]),{"최근접속":stamp(now)});
-    return {token:t,remember:!(p&&p.remember===false)};
+    return {ok:true};
   }
   function logout(p){
     var dv=deviceOf(p&&p._t);
     if(dv)db.set("기기","토큰",dv.hash,{"해제":"Y"});
     return {ok:true};
-  }
-  function revokeEmail(email){
-    var up={};db.rows("기기").forEach(function(r){if(lower(r["이메일"])===lower(email)&&S(r["해제"])!=="Y")up[S(r["토큰"])]={"해제":"Y"};});
-    if(Object.keys(up).length)db.setMany("기기","토큰",up);
   }
   /* 처음 들어온 학생이 학번·이름으로 자기 줄을 찾아 계정을 묶는다 */
   function register(a,p){
@@ -2265,31 +2299,26 @@ function make(db,env){
     rosterFind:function(a,p){staff(a);
       if(a.kind==="subject")fail("학년 담당 또는 관리자만 볼 수 있습니다.");
       var q=S(p.q).replace(/\s/g,"");if(!q)fail("학번이나 이름을 넣어 주세요.");
-      var dev={};db.rows("기기").forEach(function(d){var m=lower(d["이메일"]);dev[m]=(dev[m]||0)+1;});
+      var dev={},td0=today(env.now());
+      db.rows("기기").forEach(function(d){if(S(d["해제"])!=="Y"&&S(d["만료"])>=td0)dev[S(d["계정"])]=(dev[S(d["계정"])]||0)+1;});
       return {list:db.rows("명단").filter(function(x){
           return seeCls(a,S(x["반"]))&&(S(x["학번"])===q||S(x["이름"]).replace(/\s/g,"").indexOf(q)>=0);})
         .slice(0,12).map(function(x){
-          var m=lower(x["이메일"]);
-          return {hakbun:S(x["학번"]),name:S(x["이름"]),cls:S(x["반"]),mail:m?maskEmail(m):"",agreed:!!S(x["동의"]),
-            club:S(x["도서부"])==="Y",devices:m?(dev[m]||0):0,how:S(x["등록방법"]),memo:S(x["비고"]),
+          var ak=accKey("student",S(x["학번"]));
+          return {hakbun:S(x["학번"]),name:S(x["이름"]),cls:S(x["반"]),pin:!!S(x["핀"]),lock:lockLeft(x),miss:Number(x["실패"])||0,
+            agreed:!!S(x["동의"]),last:S(x["최근접속"]).slice(0,16),
+            club:S(x["도서부"])==="Y",devices:dev[ak]||0,how:S(x["등록방법"]),memo:S(x["비고"]),
             posts:db.rows("글").filter(function(r2){return S(r2["학번"])===S(x["학번"])&&S(r2["상태"])!=="down";}).length};})};},
-    /* 선생님이 학생 계정을 대신 등록(인증번호 없이). 명단에 없으면 줄을 새로 만든다 */
+    /* 선생님이 학생을 명단에 넣어 준다. 학생은 학번·이름으로 들어와 PIN 을 정한다 */
     rosterAdd:function(a,p){staff(a);
       if(a.kind==="subject")fail("학년 담당 또는 관리자만 할 수 있습니다.");
-      var hb=S(p.hakbun).replace(/\s/g,""),nm=S(p.name).trim(),email=lower(p.email).replace(/\s/g,""),memo=S(p.memo).slice(0,120);
+      var hb=S(p.hakbun).replace(/\s/g,""),nm=S(p.name).trim(),memo=S(p.memo).slice(0,120);
       if(!/^\d{4}$/.test(hb))fail("학번은 네 자리로 적어 주세요(예: 1101).");
       if(!nm)fail("이름을 적어 주세요.");
-      if(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))fail("구글 이메일 주소를 확인해 주세요.");
       var cls=hb.slice(0,1)+"-"+String(Number(hb.slice(1,2)));
       if(!seeCls(a,cls))fail("우리 학년 학번이 아닙니다.");
-      if(email){
-        var dupS=db.rows("명단").filter(function(x){return lower(x["이메일"])===email&&S(x["학번"])!==hb;})[0];
-        if(dupS)fail("그 메일은 이미 "+S(dupS["학번"])+" "+S(dupS["이름"])+" 학생에게 등록돼 있습니다.");
-        if(db.rows("교사").some(function(x){return lower(x["이메일"])===email;}))fail("그 메일은 선생님 계정으로 등록돼 있습니다.");
-      }
       var now=env.now(),r0=db.rows("명단").filter(function(x){return S(x["학번"])===hb;})[0];
-      var patch={"이름":nm,"반":cls,"이메일":email,"등록방법":email?"선생님":"","등록일":stamp(now),"비고":memo||(r0?S(r0["비고"]):"")};
-      if(email)patch["동의"]=r0&&S(r0["동의"])?S(r0["동의"]):stamp(now)+" (선생님 등록)";
+      var patch={"이름":nm,"반":cls,"등록방법":"선생님","등록일":S(r0&&r0["등록일"])||stamp(now),"비고":memo||(r0?S(r0["비고"]):"")};
       if(r0){db.set("명단","학번",hb,patch);}
       else{patch["학번"]=hb;patch["도서부"]="";db.add("명단",patch);sortRoster();}
       return {ok:true,hakbun:hb,name:nm,made:!r0};},
@@ -2298,23 +2327,17 @@ function make(db,env){
       if(a.kind==="subject")fail("학년 담당 또는 관리자만 할 수 있습니다.");
       var lines=S(p.text).split(/\n+/).map(S).filter(Boolean).slice(0,300);
       if(!lines.length)fail("붙여 넣을 줄이 없습니다.");
-      var now=env.now(),ok=0,made=0,bad=[],seenM={};
-      db.rows("명단").forEach(function(x){if(S(x["이메일"]))seenM[lower(x["이메일"])]=S(x["학번"]);});
-      db.rows("교사").forEach(function(x){if(S(x["이메일"]))seenM[lower(x["이메일"])]="교사";});
+      var now=env.now(),ok=0,made=0,bad=[];
       var add=[],upd={};
       lines.forEach(function(line,i){
         var f=line.split(/[,	]/).map(S);
-        var hb=S(f[0]).replace(/\s/g,""),nm=S(f[1]),em=lower(f[2]||"").replace(/\s/g,""),memo=S(f[3]||"");
+        var hb=S(f[0]).replace(/\s/g,""),nm=S(f[1]),memo=S(f[2]||"");
         if(!/^\d{4}$/.test(hb)||!nm){bad.push((i+1)+"줄: 학번(네 자리)·이름을 확인하세요");return;}
         var cls=hb.slice(0,1)+"-"+String(Number(hb.slice(1,2)));
         if(!seeCls(a,cls)){bad.push((i+1)+"줄 "+hb+": 우리 학년이 아닙니다");return;}
-        if(em&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){bad.push((i+1)+"줄 "+hb+": 메일 주소를 확인하세요");return;}
-        if(em&&seenM[em]&&seenM[em]!==hb){bad.push((i+1)+"줄 "+hb+": 그 메일은 "+seenM[em]+" 에게 이미 있습니다");return;}
-        if(em)seenM[em]=hb;
         var r0=db.rows("명단").filter(function(x){return S(x["학번"])===hb;})[0];
-        var patch={"이름":nm,"반":cls,"이메일":em,"등록방법":em?"선생님":"","등록일":stamp(now)};
+        var patch={"이름":nm,"반":cls,"등록방법":S(r0&&r0["등록방법"])||"선생님","등록일":S(r0&&r0["등록일"])||stamp(now)};
         if(memo)patch["비고"]=memo;
-        if(em)patch["동의"]=r0&&S(r0["동의"])?S(r0["동의"]):stamp(now)+" (선생님 등록)";
         if(r0){upd[hb]=patch;ok++;}
         else{patch["학번"]=hb;patch["도서부"]="";add.push(patch);ok++;made++;}
       });
@@ -2322,12 +2345,34 @@ function make(db,env){
       if(add.length)addRows("명단",add);
       if(add.length)sortRoster();
       return {ok:ok,made:made,bad:bad.slice(0,10),badN:bad.length};},
+    /* PIN 초기화: 다음 로그인 때 학생이 새 PIN 을 정합니다 */
+    pinReset:function(a,p){staff(a);
+      if(a.kind==="subject")fail("학년 담당 또는 관리자만 할 수 있습니다.");
+      if(S(p.teacher)){
+        admin(a);
+        var t=db.rows("교사").filter(function(x){return S(x["이름"])===S(p.teacher);})[0];if(!t)fail("교사 명단에서 찾지 못했습니다.");
+        db.set("교사","이름",S(p.teacher),{"핀":"","핀설정":"","실패":"0","잠금":""});
+        revokeAcc(accKey("teacher",S(p.teacher)));
+        return {ok:true,who:S(p.teacher)};
+      }
+      var s0=db.rows("명단").filter(function(x){return S(x["학번"])===S(p.hakbun);})[0];
+      if(!s0||!seeCls(a,S(s0["반"])))fail("우리 학년 명단에 없는 학번입니다.");
+      db.set("명단","학번",S(p.hakbun),{"핀":"","핀설정":"","실패":"0","잠금":""});
+      revokeAcc(accKey("student",S(p.hakbun)));
+      return {ok:true,who:S(p.hakbun)+" "+S(s0["이름"])};},
+    unlockAccount:function(a,p){staff(a);
+      if(a.kind==="subject")fail("학년 담당 또는 관리자만 할 수 있습니다.");
+      var s1=db.rows("명단").filter(function(x){return S(x["학번"])===S(p.hakbun);})[0];
+      if(!s1||!seeCls(a,S(s1["반"])))fail("우리 학년 명단에 없는 학번입니다.");
+      db.set("명단","학번",S(p.hakbun),{"실패":"0","잠금":""});
+      return {ok:true};},
+    pinChange:function(a,p){return pinChange(a,p);},
     resetAccount:function(a,p){staff(a);
       if(a.kind==="subject")fail("학년 담당 또는 관리자만 할 수 있습니다.");
       var s=db.rows("명단").filter(function(x){return S(x["학번"])===S(p.hakbun);})[0];
       /* 계정 풀기: 학년 담당은 그 학년, 관리자는 전체 */
       if(!s||!seeCls(a,S(s["반"])))fail("우리 학년 명단에 없는 학번입니다.");
-      if(S(s["이메일"]))revokeEmail(s["이메일"]);   /* 그 메일로 로그인해 둔 PC도 모두 풀기 */
+      revokeAcc(accKey("student",S(p.hakbun)));   /* 로그인해 둔 PC·폰도 모두 풀기 */
       var patch={"이메일":""};
       if(p.full)patch["동의"]="";                  /* 개인정보 동의까지 처음부터 다시 */
       db.set("명단","학번",S(p.hakbun),patch);
@@ -2466,15 +2511,14 @@ function make(db,env){
 
   function api(name,p){
     p=p||{};
-    if(name==="authStart")return authStart(p);
-    if(name==="authVerify")return authVerify(p);
+    if(name==="login")return login(p);
     if(name==="logout")return logout(p);
     var a=who(p);
     if(a.role==="nologin"){
       if(name==="state")return {need:"login",conf:pubConf(conf())};
       fail("LOGIN");
     }
-    if(a.role==="guest"&&mailMode()){
+    if(a.role==="guest"&&pinMode()){
       if(name==="state")return {need:"login",conf:pubConf(conf())};
       fail("LOGIN");
     }
@@ -2511,7 +2555,7 @@ function make(db,env){
     function chk(name,ok,detail){out.checks.push({name:name,ok:!!ok,detail:detail||""});}
     /* 설정 */
     chk("이달 형식",/^\d{4}-\d{2}$/.test(mon),mon);
-    chk("로그인 방식",["메일","구글"].indexOf(S(c["로그인방식"]))>=0,S(c["로그인방식"]));
+    chk("로그인 방식",["핀","구글"].indexOf(S(c["로그인방식"]))>=0,S(c["로그인방식"]));
     /* 명단 */
     var st=db.rows("명단"),seen={},dupHb=[],badHb=[],badCls=[],noName=[],mails={},dupMail=[];
     st.forEach(function(r){
@@ -2589,23 +2633,25 @@ function make(db,env){
     chk("학생 화면 열림",!sErr.length&&n>0,n+"/"+st.length+"명 확인"+(sErr.length?" · "+sErr.slice(0,5).join(" / "):""));
     try{var dk=deskFor(c);chk("도서부 배부 화면",!!dk,dk.none?"배부 기간 아님":dk.rows.length+"명 대상");}catch(e){chk("도서부 배부 화면",false,e.message);}
     /* ── 문 열기 전 준비(못 하면 경고만, 막지는 않음) ── */
-    var reg=st.filter(function(r){return S(r["이메일"]);}).length;
-    var tch=db.rows("교사"),tReg=tch.filter(function(r){return S(r["이메일"]);}).length;
-    var quota=env.mailQuota?env.mailQuota():-1;
+    var reg=st.filter(function(r){return S(r["핀"]);}).length;
+    var tch=db.rows("교사"),tReg=tch.filter(function(r){return S(r["핀"]);}).length;
+    var locked=st.filter(function(r){return lockLeft(r)>0;}).length;
     var need=st.length-reg;
     out.ready=[
-      {name:"학생 로그인 등록",v:reg+"/"+st.length+"명",note:need?"아직 "+need+"명이 첫 로그인 전. 메일 인증번호가 "+need+"통 필요합니다":"모두 등록"},
-      {name:"오늘 보낼 수 있는 메일",v:quota<0?"확인 불가":quota+"통",note:quota>=0&&quota<need?"하루 할당량이 모자랍니다 — 학년별로 나눠서 여세요":"여유 있음"},
-      {name:"교사 메일 등록",v:tReg+"/"+tch.length+"명",note:tch.length-tReg?"나머지 선생님은 이름으로 첫 로그인하면 연결됩니다":"모두 등록"},
+      {name:"학생 PIN 등록",v:reg+"/"+st.length+"명",note:need?"아직 "+need+"명이 첫 로그인 전(학번·이름으로 들어와 PIN 을 정합니다)":"모두 등록"},
+      {name:"교사 PIN 등록",v:tReg+"/"+tch.length+"명",note:tch.length-tReg?"나머지 선생님은 이름으로 들어와 PIN 을 정하면 됩니다":"모두 등록"},
+      {name:"잠긴 계정",v:locked+"명",note:locked?"계정 관리에서 잠금 풀기 또는 PIN 새로 정하게 하기":"없음"},
       {name:"상품권 공개",v:S(c["상품권공개"])==="Y"?"켜짐":"꺼짐(별만 쌓임)",note:S(c["상품권공개"])==="Y"?"학생 화면에 상품권 안내가 나옵니다":"규정이 정해지면 설정에서 Y 로"},
       {name:"첫 수령 기간",v:(db.rows("수령기간")[0]?S(db.rows("수령기간")[0]["시작"])+"~"+S(db.rows("수령기간")[0]["끝"]):"없음"),note:"수령기간 시트에서 조정"},
-      {name:"학생 공지사항",v:S(c["공지사항"])?"있음":"비어 있음",note:"설정 공지사항 칸에 첫 안내를 적어 두세요"},
-      {name:"이 주의 주제",v:(themeOf(wk)?themeOf(wk).title:"없음"),note:"도서 관리 맨 위에서 이번 주 주제를 적을 수 있습니다"},
+      {name:"학생 공지사항",v:S(c["공지사항"])?"있음":"비어 있음",note:"설정 공지사항 칸"},
+      {name:"이 주의 주제",v:(themeOf(wk)?themeOf(wk).title:"없음"),note:"도서 관리 맨 위"},
       {name:"추천 도서 표지",v:(function(){var t=0,cv=0;db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y"){t++;if(S(b["표지"])&&S(b["표지"])!=="-")cv++;}});return cv+"/"+t+"권";})(),note:"표지를 못 찾은 책은 영역 색으로 보입니다"},
       {name:"장서 목록",v:S(c["장서종"])+"종 · "+S(c["장서"])+"권",note:S(c["장서변화"])||S(c["장서목록일"])},
-      {name:"로그인 방식",v:S(c["로그인방식"])+(S(c["교사등록무인증"])==="Y"?" · 교사 등록 학생은 인증 없이":" · 모두 인증번호 한 번"),note:"설정 로그인방식 · 교사등록무인증"},
+      {name:"로그인 방식",v:S(c["로그인방식"]),note:"핀 = 학번(교사는 이름)+PIN 여섯 자리 · 메일은 쓰지 않습니다"},
+      {name:"백업",v:S(c["백업"])||"아직 없음",note:"그달 마지막 날 자동. 편집기에서 backupNow 로 지금 만들 수 있습니다"},
       {name:"글 쓴 학생",v:(function(){var m={};db.rows("글").forEach(function(r){if(S(r["학번"])&&S(r["상태"])!=="down")m[S(r["학번"])]=1;});return Object.keys(m).length+"명";})(),note:"문을 연 뒤 늘어나야 합니다"}
     ];
+
     out.timing.totalMs=Date.now()-t0;
     out.ok=out.checks.every(function(x){return x.ok;});
     return out;
