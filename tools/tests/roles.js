@@ -1,4 +1,4 @@
-const fs=require("fs");eval(fs.readFileSync("C:/Users/user/Desktop/클로드/웅천서가/core.gs","utf8")+";global.Core=Core;Core.CONF0.forEach(function(r){if(r[0]==='로그인방식')r[1]='구글';});");
+const fs=require("fs");eval(fs.readFileSync(__dirname+"/../../core.gs","utf8")+";global.Core=Core;Core.CONF0.forEach(function(r){if(r[0]==='로그인방식')r[1]='구글';});");
 let NOW=new Date("2026-10-06T01:00:00Z"),EMAIL="lib@x";
 const T={};Object.keys(Core.HEAD).forEach(t=>T[t]=[]);
 const ok=x=>({code:200,text:JSON.stringify({status:"OK",data:x})});
