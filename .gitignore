@@ -1,0 +1,15 @@
+# 비밀·기기별 파일
+tools/.testkey
+tools/last_deploy.txt
+.clasprc.json
+
+# 만들어지는 파일(소스에서 다시 만듭니다)
+demo.html
+붙여넣기.html
+
+# 잡동사니
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+~$*
