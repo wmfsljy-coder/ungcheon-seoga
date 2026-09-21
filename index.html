@@ -1533,19 +1533,26 @@ function deskLook(){
 }
 /* ── 교사·학년 담당: 분야를 골라 이번 달 추천 도서에 넣기(학교 도서관에 있는 책만) ── */
 function pSuggest(){
-  var subs=D.conf.subjects||[],M=D.myBooks||[],cap=D.conf.teacherCap||5,adm=D.me.role==="admin";
+  var subs=D.conf.subjects||[],M=D.myBooks||[];
   var o='<option value="">분야 고르기</option>'+subs.map(function(x){return '<option'+(ui.sgSubj===x?' selected':'')+'>'+esc(x)+'</option>';}).join("");
+  var nx=(ui.sgMon==="next");
   return '<h3 class="sec">추천 도서 넣기</h3>'+
-    '<p class="sub">학생들에게 권하고 싶은 책을 분야(인문·철학·과학 등)를 골라 넣으면 <b>이번 달 추천 도서</b>에 바로 올라갑니다. 서가에는 ‘<b>분야 · 선생님 이름</b> 추천’과 추천사가 붙습니다. 학교 도서관에 있는 책만 올라가며, 한 달에 '+cap+'권까지'+(adm?'(관리자는 제한 없음)':'')+' 넣을 수 있습니다. 다음 달에는 새로 뽑힌 책으로 바뀝니다.</p>'+
+    '<p class="sub">학생들에게 권하고 싶은 책을 분야(인문·철학·과학 등)를 골라 넣으면 추천 도서에 바로 올라갑니다. 서가에는 ‘<b>분야 · 선생님 이름</b> 추천’과 추천사가 붙습니다. 학교 도서관에 있는 책만 올라가며, <b>권수 제한은 없습니다</b>. 매달 자동으로 뽑는 40권과는 따로 쌓입니다.</p>'+
     '<div class="form" style="max-width:520px">'+
+    '<div class="field"><label>언제 추천할까요</label>'+
+      '<div class="row"><button class="btn'+(nx?' ghost':'')+' sm" data-sgmon="this">이번 달</button>'+
+      '<button class="btn'+(nx?'':' ghost')+' sm" data-sgmon="next">다음 달</button></div>'+
+      '<p class="hint" style="margin:6px 0 0">'+(nx?'다음 달 1일부터 학생 화면에 보입니다.':'바로 학생 화면에 보입니다.')+'</p></div>'+
     '<div class="field"><label for="sg-subj">분야</label><select id="sg-subj">'+o+'</select></div>'+
     '<div class="field"><label for="sg-t">책 제목</label><input type="text" id="sg-t" placeholder="도서관에 등록된 제목으로"></div>'+
     '<div class="field"><label for="sg-a">지은이</label><input type="text" id="sg-a"></div>'+
     '<div class="field"><label for="sg-q">추천사 한 줄 <span class="hint">(120자까지)</span></label><input type="text" id="sg-q" maxlength="120" placeholder="예) 진로가 막막할 때 읽으면 좋아요"></div>'+
     '<div class="row"><button class="btn" id="sg-send">추천 도서에 넣기</button><button class="btn ghost" data-tab="search">도서관에 있는지 먼저 찾아보기</button></div></div>'+
-    '<h3 class="sec gap">이번 달 내가 넣은 책 <span class="hint">('+M.length+(adm?'':' / '+cap)+')</span></h3>'+
-    (M.length?'<div class="scrollx"><table><tr><th>책</th><th>추천</th><th></th></tr>'+M.map(function(x){
+    '<p class="hint" style="margin-top:10px">📌 이 책으로 <b>라벨(한 줄 소개)</b>도 남겨 주시면 인쇄되어 교실·도서관 게시판에 붙습니다. 학생들에게 훨씬 잘 보입니다. — <b>선생님 라벨</b> 탭</p>'+
+    '<h3 class="sec gap">내가 넣은 책 <span class="hint">('+M.length+'권)</span></h3>'+
+    (M.length?'<div class="scrollx"><table><tr><th>책</th><th>추천</th><th>언제</th><th></th></tr>'+M.map(function(x){
       return '<tr><td>'+esc(x.t)+'<div class="hint">'+esc(x.a)+(x.call?' · '+esc(x.call):'')+'</div></td><td>'+esc(x.rec)+(x.q?'<div class="hint">'+esc(x.q)+'</div>':'')+'</td>'+
+        '<td>'+(x.next?'<span class="pill">다음 달</span>':'<span class="pill grey">이번 달</span>')+'</td>'+
         '<td><button class="btn ghost sm" data-mybk="'+esc(x.id)+'">빼기</button></td></tr>';}).join("")+'</table></div>'
       :'<div class="empty">아직 넣은 책이 없습니다.</div>');
 }
@@ -2315,7 +2322,7 @@ function noticeAdmin(){
 }
 function guideSubject(){
   return '<h4>선생님이 할 수 있는 일</h4>'+todo([
-    ["추천 도서","‘추천 도서’ 탭에서 분야(인문·철학·과학 등)를 고르고 책 제목·지은이·추천사 한 줄을 넣으면 이번 달 추천 도서에 바로 올라갑니다(학교 도서관에 있는 책만, 한 달 "+(D.conf.teacherCap||5)+"권까지). 서가에 ‘분야 · 선생님 이름 추천’으로 보입니다."],
+    ["추천 도서","‘추천 도서’ 탭에서 분야를 고르고 책 제목·지은이·추천사 한 줄을 넣으면 추천 도서에 바로 올라갑니다(학교 도서관에 있는 책만, <b>권수 제한 없음</b>). <b>이번 달·다음 달</b> 가운데 골라 넣을 수 있습니다. 같은 책으로 <b>라벨</b>도 남겨 주시면 게시판에 인쇄되어 학생들에게 더 잘 보입니다."],
     ["선생님 라벨","학생 라벨과 같은 모양으로 한 줄 추천을 남깁니다. 이름이 찍히고 투표·도장과는 무관합니다."],
     ["도서 검색","학교 도서관에 책이 있는지, 지금 빌릴 수 있는지 봅니다."]])+
     '<div class="box">학생 이름이 나오는 기록(새 글·상품권·독서 기록)은 학년 담당과 관리자 선생님만 봅니다.</div>';
@@ -2406,7 +2413,10 @@ document.addEventListener("click",function(e){
   if(id==="cat-run"){t.disabled=true;t.textContent="받는 중…(1분쯤)";call("catalogNow",{}).then(function(r){toast("장서목록 시트에 "+r.titles+"종 "+r.copies+"권을 정리했습니다.");t.disabled=false;t.textContent="장서목록 시트 새로 받기";})
     .catch(function(e){toast(e.message);t.disabled=false;t.textContent="장서목록 시트 새로 받기";});return;}
   if(id==="sg-send"){ui.sgSubj=val("sg-subj");saveUI();
-    act("teacherBook",{subj:val("sg-subj"),t:val("sg-t"),a:val("sg-a"),q:val("sg-q")}).then(function(r){toast("『"+r.title+"』을 이번 달 추천 도서에 넣었습니다.");}).catch(function(){});return;}
+    act("teacherBook",{subj:val("sg-subj"),t:val("sg-t"),a:val("sg-a"),q:val("sg-q"),mon:ui.sgMon||"this"}).then(function(r){
+      toast(r.thanks||("『"+r.title+"』을 넣었습니다."));
+      if(r.tip)setTimeout(function(){toast(r.tip);},3400);
+    }).catch(function(){});return;}
   if(id==="nt-add"){
     act("noticeAdd",{title:$("nt-t").value,body:$("nt-b").value,from:$("nt-f").value,to:$("nt-e").value,who:$("nt-w").value},"공지를 올렸습니다.").catch(function(){});return;}
   if(id==="news-open"){var nw=$("news");if(nw)nw.scrollIntoView({behavior:"smooth",block:"start"});return;}
@@ -2431,7 +2441,8 @@ document.addEventListener("click",function(e){
   if(d.desk){act("clubMark",{ids:[d.desk],on:d.on==="1"},d.on==="1"?"배부 완료로 표시했습니다.":"되돌렸습니다.").then(function(){if(ui.deskLook&&!ui.deskLook.error)deskLook();}).catch(function(){});return;}
   if(d.trok){act("teacherOk",{id:d.trok,dam:val("tr-"+d.trok)},"승인했습니다. 그 선생님께 메일로 알렸습니다.").catch(function(){});return;}
   if(d.trno){act("teacherNo",{id:d.trno},"거절했습니다.").catch(function(){});return;}
-  if(d.mybk){if(!window.confirm("이 책을 이번 달 추천 도서에서 뺄까요?"))return;act("teacherBookHide",{id:d.mybk},"뺐습니다.").catch(function(){});return;}
+  if(d.sgmon){ui.sgMon=d.sgmon;saveUI();renderPanel();return;}
+  if(d.mybk){if(!window.confirm("이 책을 추천 도서에서 뺄까요?"))return;act("teacherBookHide",{id:d.mybk},"뺐습니다.").catch(function(){});return;}
   if(d.nhide){act("noticeHide",{id:d.nhide,on:d.on==="1"},d.on==="1"?"공지를 내렸습니다.":"다시 올렸습니다.").catch(function(){});return;}
   if(d.hide){act("bookHide",{id:d.hide,on:true},"서가에서 뺐습니다. 다시 넣으려면 시트 ‘도서’ 탭의 숨김 칸을 지우세요.").catch(function(){});return;}
   if(id==="rot-run"){if(!window.confirm("이번 달 추천 도서를 지금 새로 뽑을까요? 지금 보이는 이달의 책들은 서가에서 빠집니다."))return;

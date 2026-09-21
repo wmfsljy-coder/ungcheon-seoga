@@ -28,7 +28,7 @@ var HEAD={
   "지급":["키","월","학번","이름","반","도장","처리","시각","처리자","매수","별"]
 };
 var CONF0=[["프로그램명","웅천 서가"],["부제","한 권 읽고, 한 줄 남기기"],["차수","1"],
-  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["상품권당별","2"],["월최대매수","2"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["교사추천상한","5"],["기기기억일","120"],["핀자릿수","6"],
+  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["상품권당별","2"],["월최대매수","2"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
   ["학교코드","S100000673"],["교육청코드","S10"],["학교명","웅천고등학교"],
   ["이달의권수","40"],["추천방식","권장"],["추천묶음","2026-09~2026-10"],["퀴즈문항수","5"],["퀴즈책수","3"],["퀴즈품질기준","6"],["보유기간","3학년은 졸업식 날까지, 1·2학년은 학년말(2월)까지"],["개인정보담당","도서관 담당 교사"]];
 /* 설정 시트 '설명' 칸에 들어가는 뜻풀이 */
@@ -68,7 +68,6 @@ var CONF_DESC={
   "상품권배부장소":"배부 장소·시간. 학생 공지사항에 그대로 나옴(예: 도서관 · 점심시간)",
   "추천분야":"교사가 추천 도서를 넣을 때 고르는 책 분야(쉼표로 구분, 교보문고·YES24 큰 분류 참고)",
   "교과목록":"(더 이상 쓰지 않음 — 추천분야를 쓰세요)",
-  "교사추천상한":"교사 한 명이 한 달(추천 기간)에 넣을 수 있는 추천 도서 수",
   "핀자릿수":"로그인 PIN 자릿수(기본 6). 바꾸면 새로 정하는 사람부터 적용",
   "로그인방식":"핀(기본) = 학생은 학번·이름, 교사는 이름으로 들어와 PIN 여섯 자리를 정합니다 / 구글 = 학교 구글 계정으로 바로(학교 계정이 있을 때만)",
   "기기기억일":"메일 로그인 뒤 같은 PC에서 자동 로그인을 유지하는 날 수",
@@ -752,7 +751,7 @@ function make(db,env){
   function pubConf(c){
     return {name:c["프로그램명"],sub:c["부제"],round:c["차수"],approve:approveMode(c),
       goal:Number(c["주간도장"])||5,weekCap:Number(c["주간도장"])||5,monthCap:Number(c["월간도장"])||0,
-      quote:todayQuote(),giftOn:S(c["상품권공개"])==="Y",giftNote:S(c["상품권안내"]),dayCap:Number(c["하루제출상한"])||2,voteN:Number(c["투표후보수"])||8,giftMin:Number(c["상품권기준"])||5,giftTypes:S(c["상품권세종류"])!=="N",limit:LIMIT,areas:S(c["추천방식"])==="장르"?GENRE_NAMES:TEEN_NAMES,lib:libConf(c),libChecked:S(c["도서확인"]),libResult:S(c["도서확인결과"]),loginMode:S(c["로그인방식"])==="구글"?"google":"mail",subjects:S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean),teacherCap:Number(c["교사추천상한"])||5,giftWins:giftWindows(c),recvSheet:(function(){try{return db.rows("수령기간").length>0;}catch(e){return false;}})(),giftPlace:S(c["상품권배부장소"]),selVer:S(c["선별판"]),upToDate:S(c["선별판"])==="3"&&S(c["퀴즈판"])==="4"&&S(c["문장판"])==="2",quizBooks:Number(c["퀴즈책수"])||3,monthN:Number(c["이달의권수"])||40,holdings:S(c["장서"]),month:S(c["이달"]),
+      quote:todayQuote(),giftOn:S(c["상품권공개"])==="Y",giftNote:S(c["상품권안내"]),dayCap:Number(c["하루제출상한"])||2,voteN:Number(c["투표후보수"])||8,giftMin:Number(c["상품권기준"])||5,giftTypes:S(c["상품권세종류"])!=="N",limit:LIMIT,areas:S(c["추천방식"])==="장르"?GENRE_NAMES:TEEN_NAMES,lib:libConf(c),libChecked:S(c["도서확인"]),libResult:S(c["도서확인결과"]),loginMode:S(c["로그인방식"])==="구글"?"google":"mail",subjects:S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean),giftWins:giftWindows(c),recvSheet:(function(){try{return db.rows("수령기간").length>0;}catch(e){return false;}})(),giftPlace:S(c["상품권배부장소"]),selVer:S(c["선별판"]),upToDate:S(c["선별판"])==="3"&&S(c["퀴즈판"])==="4"&&S(c["문장판"])==="2",quizBooks:Number(c["퀴즈책수"])||3,monthN:Number(c["이달의권수"])||40,holdings:S(c["장서"]),month:S(c["이달"]),
       period:S(c["이달"])?periodOf(S(c["이달"]),c["추천묶음"]):null,
       privacy:{keep:S(c["보유기간"]),owner:S(c["개인정보담당"])},quizBar:Number(c["퀴즈품질기준"])||6,quizTarget:Number(c["퀴즈문항수"])||5};
   }
@@ -1751,7 +1750,8 @@ function make(db,env){
      수령 기간(설정 상품권배부, 비우면 매달 첫 월~목)마다 그 기간 시작 전까지 모은 별로 상품권: 별 상품권당별(2)개에 1매, 한 번에 월최대매수(2)매까지.
      받으면 그 별은 사라지고, 기간이 끝날 때까지 안 받아도 사라진다. 기간이 시작된 뒤 생긴 별은 다음 수령으로 */
   function giftRule(c){c=c||conf();return {per:Number(c["별당도장"])||5,pair:Number(c["상품권당별"])||2,max:Number(c["월최대매수"])||2,won:Number(c["상품권금액"])||5000};}
-  function nextMonthKey(m){var x=/^(\d{4})-(\d{2})/.exec(m);var y=Number(x[1]),mm=Number(x[2])+1;if(mm>12){mm=1;y++;}return y+"-"+p2(mm);}
+  function monLabel(m){var x=/^(\d{4})-(\d{2})/.exec(S(m));return x?Number(x[2])+"월":S(m);}
+  function nextMonthKey(m){var x=/^(\d{4})-(\d{2})/.exec(S(m));if(!x)return "";var y=Number(x[1]),mm=Number(x[2])+1;if(mm>12){mm=1;y++;}return y+"-"+p2(mm);}
   function firstMonday(m){var x=/^(\d{4})-(\d{2})/.exec(m),d=new Date(Date.UTC(Number(x[1]),Number(x[2])-1,1));while(d.getUTCDay()!==1)d=new Date(d.getTime()+86400000);return ymd(d);}
   function recvWindows(c){
     c=c||conf();var w=giftWindows(c);
@@ -2193,8 +2193,10 @@ function make(db,env){
       res.teacherReqs=db.rows("교사신청").filter(function(r){return S(r["상태"])==="대기";}).map(function(r){return {id:S(r["id"]),at:S(r["시각"]).slice(0,16),name:S(r["이름"]),email:S(r["이메일"])};});}
     res.readlog=a.kind==="subject"?[]:readLog(a);
     var monT=S(c["이달"]);
-    res.myBooks=db.rows("도서").filter(function(r){return lower(r["추천교사"])===lower(a.email)&&S(r["월"])===monT&&S(r["숨김"])!=="Y";})
-      .map(function(r){return {id:S(r["id"]),t:S(r["제목"]),a:S(r["지은이"]),rec:S(r["추천"]),q:S(r["추천사"]),call:S(r["청구기호"])};});
+    var monN=monT?nextMonthKey(monT):"";   /* 이달이 아직 없으면 다음 달도 없다 */
+    res.myBooks=db.rows("도서").filter(function(r){return lower(r["추천교사"])===lower(a.email)&&(S(r["월"])===monT||S(r["월"])===monN)&&S(r["숨김"])!=="Y";})
+      .map(function(r){return {id:S(r["id"]),t:S(r["제목"]),a:S(r["지은이"]),rec:S(r["추천"]),q:S(r["추천사"]),call:S(r["청구기호"]),
+        mon:S(r["월"]),next:S(r["월"])===monN};});
     if(a.role!=="admin")return res;
 
     res.books=bookList();
@@ -2422,15 +2424,16 @@ function make(db,env){
       try{env.mail(email,"["+S(conf()["프로그램명"])+"] 선생님 등록이 승인되었습니다",S(r["이름"])+" 선생님, 등록이 승인되었습니다. 앱에서 ‘선생님’을 고르고 이름과 이 메일을 적어 로그인해 주세요.");}catch(e){}
       return {ok:true};},
     teacherNo:function(a,p){admin(a);db.set("교사신청","id",S(p.id),{"상태":"반려"});},
+    /* 선생님 추천 도서: 권수 제한 없이 계속 넣을 수 있다.
+       자동으로 뽑는 이달의 추천 도서(이달의권수, 40권)와는 따로 쌓인다.
+       이번 달 또는 다음 달을 고를 수 있고, 다음 달로 넣으면 1일에 학생 화면에 나타난다. */
     teacherBook:function(a,p){staff(a);
-      var c=conf(),mon=S(c["이달"]),subj=S(p.subj),t=S(p.t),au=S(p.a);
-      if(!mon)fail("이번 달 추천 도서가 아직 없습니다. 잠시 뒤 다시 해 주세요.");
+      var c=conf(),thisMon=S(c["이달"]),subj=S(p.subj),t=S(p.t),au=S(p.a);
+      if(!thisMon)fail("이번 달 추천 도서가 아직 없습니다. 잠시 뒤 다시 해 주세요.");
+      var next=S(p.mon)==="next",mon=next?nextMonthKey(thisMon):thisMon;
       if(!t)fail("책 제목을 적어 주세요.");
       var subs=S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean);
       if(subs.indexOf(subj)<0)fail("분야를 골라 주세요.");
-      var mine=db.rows("도서").filter(function(r){return lower(r["추천교사"])===lower(a.email)&&S(r["월"])===mon&&S(r["숨김"])!=="Y";});
-      var cap=Number(c["교사추천상한"])||5;
-      if(a.role!=="admin"&&mine.length>=cap)fail("이번 달에는 "+cap+"권까지 넣을 수 있습니다. 내가 넣은 책을 빼고 다시 넣어 주세요.");
       /* 학교 도서관에서 찾아 도서관 제목·지은이·분야를 그대로 쓴다 */
       var d=libData(httpAll([libSearchReq(libConf(c),t,1)])[0]);
       if(!d)fail("독서로에 연결되지 않아 학교 도서관에 있는지 확인하지 못했습니다. 잠시 뒤 다시 해 주세요.");
@@ -2439,12 +2442,16 @@ function make(db,env){
       if(!hit.length)fail("학교 도서관에서 이 책을 찾지 못했습니다. ‘도서 검색’에서 도서관에 등록된 제목과 지은이를 확인해 주세요.");
       var b0=hit[0],lc=S(b0.categoryInfo&&b0.categoryInfo.lcode),g=GENRES.filter(function(x){return x[0]===lc;})[0];
       var title=shownTitle(b0.title)||t;
-      if(db.rows("도서").some(function(r){return S(r["월"])===mon&&S(r["숨김"])!=="Y"&&norm(shownTitle(r["제목"]))===norm(title);}))fail("이미 이번 달 추천 도서에 있는 책입니다.");
+      if(db.rows("도서").some(function(r){return S(r["월"])===mon&&S(r["숨김"])!=="Y"&&norm(shownTitle(r["제목"]))===norm(title);}))
+        fail("이미 "+(next?"다음 달":"이번 달")+" 추천 도서에 있는 책입니다.");
       var id="n"+env.uid();
       db.add("도서",{"id":id,"제목":title,"지은이":shownAuthor(b0.author)||au||"—","영역":g?g[1]:"선생님 추천","추천":subj+" · "+a.name+" 선생님",
         "추천사":S(p.q).slice(0,120),"출처":"선생님","월":mon,"소장":"Y","청구기호":callNoOf(hit),"ISBN":S(b0.isbn).slice(0,13),"추천교사":a.email});
       try{refreshLibrary([id]);fillDetails(5);}catch(e){}
-      return {ok:true,title:title};},
+      return {ok:true,title:title,mon:mon,next:next,
+        thanks:"추천 도서 감사합니다! 『"+title+"』을 "+(next?"다음 달":"이번 달")+" 추천 도서에 넣었습니다."
+          +(next?" "+monLabel(mon)+" 1일부터 학생 화면에 보입니다.":""),
+        tip:"이 책으로 라벨(한 줄 소개)도 남겨 주시면 인쇄되어 게시판에 붙습니다. 학생들에게 훨씬 잘 보입니다."};},
     teacherBookHide:function(a,p){staff(a);
       var r=db.rows("도서").filter(function(x){return S(x["id"])===S(p.id);})[0];
       if(!r||(a.role!=="admin"&&lower(r["추천교사"])!==lower(a.email)))fail("내가 넣은 책만 뺄 수 있습니다.");
