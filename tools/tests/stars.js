@@ -35,7 +35,7 @@ must(a.week.stamps.length===5&&a.week.bonus===1,"① 한 주 도장 5개까지(�
 a=st("3101");
 must(a.stars.total===4&&a.stars.stamps===20&&a.stars.mStamps===20&&a.stars.mStars===4,"② 9월 도장 20개 = 별 4개");
 let c3=st("3103");must(c3.stars.total===1&&c3.stars.toNext===3,"3103: 9월 도장 7개 = 별 1 + 남은 2(다음 별까지 3)");
-must(c3.stars.daysLeft===0,"9월 30일: 이번 달 마지막 날 알림");
+must(c3.stars.toNext===3,"다음 별까지 남은 도장 "+c3.stars.toNext+"개");
 must(a.giftNotice&&!a.giftNotice.open&&a.giftNotice.mine.vouchers===2,"수령 기간 5일 전: 공지에 '곧 10월 수령 · 2매'");
 NOW=new Date("2026-10-05T03:00:00Z");
 a=st("3101");const b=st("3102"),cc=st("3103"),d=st("3104");
@@ -53,10 +53,10 @@ must(a.stars.shown===0,"⑦ 받은 뒤 별이 사라짐(지금 별 "+a.stars.sho
 posts("3101","2026-10-05",5);NOW=new Date("2026-10-07T03:00:00Z");
 a=st("3101");must(a.stars.shown===1&&a.stars.total===5,"기간 중 새 별 1개는 다음 수령으로(지금 별 "+a.stars.shown+")");
 let bb=st("3102");must(bb.stars.shown===3,"받기 전 3102 별 3개 보임");
-/* 수령 기간이 지나면 */
+/* 수령 기간이 지나도 별은 그대로 남는다(2026-09-22 규칙) */
 NOW=new Date("2026-10-09T03:00:00Z");
-bb=st("3102");must(bb.stars.shown===0,"⑥ 기간이 지나면 안 받은 별도 사라짐");
-must(bb.claims[0].expired&&bb.claims[0].vouchers===1,"내 서재 기록: '기간 지나 별 사라짐'");
+bb=st("3102");must(bb.stars.shown===3,"⑥ 기간이 지나도 안 받은 별은 그대로(지금 별 "+bb.stars.shown+")");
+must(!bb.claims.length,"내 서재 수령 기록에는 실제로 받은 것만 남는다");
 must(!bb.giftNotice||bb.giftNotice.from!=="2026-10-05","기간이 지나면 공지 사라짐");
 /* 교사 화면·메일 */
 NOW=new Date("2026-10-05T00:00:00Z");
@@ -76,10 +76,11 @@ NOW=new Date("2026-10-12T03:00:00Z");EMAIL="s2101@x";C().api("clubMark",{ids:["3
 must(T["수령대상"].some(r=>r["학번"]==="3104"&&r["배부"]==="배부 완료"&&/도서부/.test(r["처리자"])),"수령대상 시트에 배부 완료·처리자 기록");
 must(T["수령대상"].filter(r=>r["시작"]==="2026-10-12").every(r=>Number(r["상품권"])>=1),"수령대상 시트에는 1매 이상인 학생만");
 
-/* 도장판 월별 초기화: 9월에 남은 도장 2개는 10월로 넘어가지 않음 */
+/* 도장은 달이 바뀌어도 이어진다(2026-09-22 규칙): 9월에 남은 2개 위에 10월 도장이 쌓인다 */
 NOW=new Date("2026-10-02T03:00:00Z");
-c3=st("3103");must(c3.stars.mon==="2026-10"&&c3.stars.mStamps===0&&c3.stars.toNext===5,"10월: 도장판 새로 시작(남은 도장 안 넘어감, 다음 별까지 5)");
-days("3103",["2026-10-01","2026-10-02"]);c3=st("3103");must(c3.stars.mStamps===2&&c3.stars.toNext===3,"10월 도장 2개 → 다음 별까지 3");
+c3=st("3103");must(c3.stars.mon==="2026-10"&&c3.stars.mStamps===0&&c3.stars.toNext===3,"10월로 넘어가도 남은 도장 2개가 살아 있다(다음 별까지 "+c3.stars.toNext+")");
+days("3103",["2026-10-01","2026-10-02"]);c3=st("3103");
+must(c3.stars.mStamps===2&&c3.stars.toNext===1&&c3.stars.stamps===9,"9월 7개 + 10월 2개 = 도장 9개, 다음 별까지 1");
 must(c3.months[0].mon==="2026-10"&&c3.months[1].mon==="2026-09"&&c3.months[1].stamps===7&&c3.months[1].stars===1,"내 서재 달별 표: 9월 도장 7·별 1, 10월 도장 2");
 /* 도서부 학번 조회(수령 기간 안에서만) */
 NOW=new Date("2026-10-13T03:00:00Z");EMAIL="s2101@x";

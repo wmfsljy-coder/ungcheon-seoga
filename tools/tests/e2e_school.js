@@ -96,7 +96,8 @@ const before=call("s"+p2["학번"]+"@x","state").progress.total;call("g2@x","tak
 must(call("s"+p2["학번"]+"@x","state").progress.total===before-1,"글 내리면 그 도장도 빠짐");
 const sub=call("sub@x","state");must((sub.posts||[]).length===0&&(sub.readlog||[]).length===0,"교사는 학생 기록을 안 봄");
 must(!call("sub@x","teacherBook",{subj:"과학",t:"새로운 과학책",a:"추천 지은이",q:"좋아요"}).ERR,"교사 추천 도서 넣기");
-must(call("s1101@x","state").books.some(b=>b.t==="새로운 과학책"&&/과학 · 과학쌤/.test(b.rec)),"학생 서가에 교과·선생님 이름으로 보임");
+{const bk=call("s1101@x","state").books.filter(b=>b.t==="새로운 과학책")[0];
+ must(bk&&/과학쌤 선생님/.test(bk.rec)&&bk.s==="과학","학생 서가에 ‘과학쌤 선생님 추천’ 과 분야가 보임("+(bk&&bk.rec)+" · "+(bk&&bk.s)+")");}
 /* 관리자: 인쇄·모두 확인 */
 const ad=call("lib@x","state");must(ad.printable.length>0,"인쇄할 라벨 "+ad.printable.length+"장");
 call("lib@x","markPrinted",{ids:ad.printable.slice(0,12).map(x=>x.id)});must(T["글"].filter(r=>r["인쇄"]==="Y").length===12,"인쇄 표시 12장");

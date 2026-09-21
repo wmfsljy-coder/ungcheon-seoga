@@ -1015,7 +1015,7 @@ function make(db,env){
     /* 첫 공지사항과 이 주의 주제 초안(비어 있을 때 한 번만. 관리자가 고치면 그대로) */
     if(S(conf()["첫안내판"])!=="1"){
       try{
-        if(!S(conf()["공지사항"]))db.setConf("공지사항","웅천 서가 문을 엽니다: 책 한 권 읽고 한 줄만 남기면 도장이 찍혀요. 도장 5개면 별 1개.\n별 1개에는 라벨·독후감·북퀴즈가 하나씩 꼭 필요해요. 북퀴즈는 월요일마다 새로 나옵니다.\n문화상품권: 별 2개 = 5,000원 1매, 도서관에서 수령 기간에 받아요. 기간이 지나면 별이 사라집니다.\n로그인이 안 되면: 담임 선생님이나 도서관에 말해 주세요.");
+        if(!S(conf()["공지사항"]))db.setConf("공지사항","웅천 서가 문을 엽니다: 책 한 권 읽고 한 줄만 남기면 도장이 찍혀요. 도장 5개면 별 1개.\n별 1개에는 라벨·독후감·북퀴즈가 하나씩 꼭 필요해요. 북퀴즈는 월요일마다 새로 나옵니다.\n문화상품권: 별 2개 = 5,000원 1매, 수령 기간에 도서관에서 받아요(그때만 받을 수 있어요). 도장과 별은 계속 쌓입니다.\n로그인이 안 되면: 담임 선생님이나 도서관에 말해 주세요.");
         if(!db.rows("주제").length){
           var TH=[["함께 읽는 첫 주","아무 책이나 좋아요. 한 줄 남기고 도장부터 받아 보기",""],
                   ["과학의 눈으로 보기","실험·우주·몸·기후가 나오는 책 한 권","과학"],
@@ -1679,9 +1679,7 @@ function make(db,env){
   var KINDS=["label","review","quiz"];
   function kindOf(k){return k==="theme"?"review":k;}
   function runOf(hb){
-    var r=(stampMap()[hb]||{}).run||{n:0,has:{},need:KINDS.slice(),mon:""};
-    var mon=monthKey(env.now());
-    return r.mon===mon?r:{n:0,has:{},need:KINDS.slice(),mon:mon};
+    return (stampMap()[hb]||{}).run||{n:0,has:{},need:KINDS.slice(),mon:""};
   }
   function stampMap(){
     if(STAMPS)return STAMPS;
@@ -1722,12 +1720,12 @@ function make(db,env){
       var w={},mo={},st=[],bo=[],run=newRun("");
       A[hb].sort(function(x,y){return x.at<y.at?-1:1;}).forEach(function(x){
         var y={k:x.k,t:x.t,at:x.at,wk:weekOfYmd(x.at),mon:S(x.at).slice(0,7)},kk=kindOf(y.k);
-        if(run.mon!==y.mon)run=newRun(y.mon);                    /* 도장판은 달마다 새로 */
+        run.mon=y.mon;                                            /* 도장판은 달이 바뀌어도 이어진다 */
         var need=0;KINDS.forEach(function(t){if(t!==kk&&!run.has[t])need++;});
         var noRoom=(run.n+1+need)>per;                           /* 이 도장을 찍으면 빠진 종류를 채울 칸이 없다 */
         if((w[y.wk]||0)<caps.week&&(mo[y.mon]||0)<caps.month&&!noRoom){
           w[y.wk]=(w[y.wk]||0)+1;mo[y.mon]=(mo[y.mon]||0)+1;run.n++;run.has[kk]=true;st.push(y);
-          if(run.n>=per)run=newRun(y.mon);
+          if(run.n>=per)run=newRun(y.mon);   /* 별 하나를 채우면 새 판 */
         }
         else{y.bonus=true;y.why=noRoom?"kinds":"cap";bo.push(y);}
       });
@@ -1762,38 +1760,51 @@ function make(db,env){
   }
   function winLabel(w){return Number(w.from.slice(5,7))+"월 수령";}
   var STARS=null;
+  /* 별이 된 때(시각)들. 도장은 달이 바뀌어도 이어져 쌓이고, 다섯 개가 찰 때마다 별 하나 */
   function starTimes(hb){
     if(!STARS){STARS={};var per=giftRule().per,sm=stampMap();Object.keys(sm).forEach(function(k){
-      var st=sm[k].stamps.slice().sort(function(x,y){return x.at<y.at?-1:1;}),t=[],byM={};
-      st.forEach(function(x){(byM[x.mon]=byM[x.mon]||[]).push(x);});
-      Object.keys(byM).sort().forEach(function(m){var l=byM[m];for(var i=per-1;i<l.length;i+=per)t.push(l[i].at);});
+      var st=sm[k].stamps.slice().sort(function(x,y){return x.at<y.at?-1:1;}),t=[];
+      for(var i=per-1;i<st.length;i+=per)t.push(st[i].at);
       STARS[k]=t;});}
     return STARS[hb]||[];
   }
+  /* 지금까지 상품권으로 바꾼 별 수(지급 시트에 남은 기록) */
+  function starsUsed(hb){
+    var n=0;
+    db.rows("지급").forEach(function(r){
+      if(S(r["처리"])!=="지급")return;
+      if(S(r["학번"])!==S(hb))return;
+      n+=Number(r["별"])||0;
+    });
+    return n;
+  }
   var PAIDW=null;
   function paidInfo(from,hb){
-    if(!PAIDW){PAIDW={};db.rows("지급").forEach(function(r){PAIDW[S(r["키"])]={paid:S(r["처리"])==="지급",n:Number(r["매수"])||0,who:S(r["처리자"]),at:S(r["시각"])};});}
-    return PAIDW[from+"|"+hb]||{paid:false,n:0,who:"",at:""};
+    if(!PAIDW){PAIDW={};db.rows("지급").forEach(function(r){PAIDW[S(r["키"])]={paid:S(r["처리"])==="지급",n:Number(r["매수"])||0,stars:Number(r["별"])||0,who:S(r["처리자"]),at:S(r["시각"])};});}
+    return PAIDW[from+"|"+hb]||{paid:false,n:0,stars:0,who:"",at:""};
   }
+  /* 그 수령 기간에 받을 수 있는 매수. 이미 받았으면 그때 기록을 그대로 보여 준다 */
   function claimOf(hb,wins,i){
-    var R=giftRule(),w=wins[i],start=i>0?wins[i-1].from:"",stars=starTimes(hb).filter(function(t){return t>=start&&t<w.from;}).length;
-    var p=paidInfo(w.from,hb);
-    return {from:w.from,to:w.to,label:winLabel(w),stars:stars,vouchers:Math.min(R.max,Math.floor(stars/R.pair)),paid:p.paid,paidN:p.n,who:p.who,at:p.at};
+    var R=giftRule(),w=wins[i],p=paidInfo(w.from,hb);
+    if(p.paid)return {from:w.from,to:w.to,label:winLabel(w),stars:p.stars||p.n*R.pair,vouchers:p.n,paid:true,paidN:p.n,who:p.who,at:p.at};
+    var have=starsNow(hb);
+    return {from:w.from,to:w.to,label:winLabel(w),stars:have,vouchers:Math.min(R.max,Math.floor(have/R.pair)),paid:false,paidN:0,who:"",at:""};
   }
+  /* 지금 가진 별 = 쌓인 별 − 상품권으로 바꾼 별 */
+  function starsNow(hb){return Math.max(0,starTimes(hb).length-starsUsed(hb));}
   function winIndex(wins,from){for(var i=0;i<wins.length;i++)if(wins[i].from===from)return i;return -1;}
-  /* 지금 보여 줄 별 = 마지막으로 시작한 수령 기간 이후 별 + (그 기간 중이고 아직 안 받았으면) 받을 별 */
+  /* 도장과 별은 쭉 쌓인다. 별은 상품권으로 바꿀 때만 빠진다 */
   function starState(hb,c){
     c=c||conf();var wins=recvWindows(c),t=today(env.now()),all=starTimes(hb),R=giftRule(c),li=-1;
     wins.forEach(function(w,i){if(w.from<=t)li=i;});
-    var since=li>=0?wins[li].from:"",fresh=all.filter(function(x){return x>=since;}).length,cur=null,up=null;
+    var cur=null,up=null;
     if(li>=0&&t<=wins[li].to){cur=claimOf(hb,wins,li);cur.open=true;}
     var ni=li+1;
-    if(ni<wins.length&&t>=addDays(wins[ni].from,-7)){up=claimOf(hb,wins,ni);up.open=false;up.stars=fresh;up.vouchers=Math.min(R.max,Math.floor(fresh/R.pair));}
-    var hold=cur&&!cur.paid?cur.stars:0,sm=stampMap()[hb]||{stamps:[]},mon=monthKey(env.now());
+    if(ni<wins.length&&t>=addDays(wins[ni].from,-7)){up=claimOf(hb,wins,ni);up.open=false;}
+    var sm=stampMap()[hb]||{stamps:[]},mon=monthKey(env.now()),have=starsNow(hb),run=runOf(hb);
     var mStamps=sm.stamps.filter(function(x){return x.mon===mon;}).length,mStars=all.filter(function(x){return x.slice(0,7)===mon;}).length;
-    var endDay=Number(ymd(new Date(Date.UTC(Number(mon.slice(0,4)),Number(mon.slice(5)),0))).slice(8)),left=endDay-Number(t.slice(8));
-    return {shown:fresh+hold,fresh:fresh,total:all.length,stamps:sm.stamps.length,mon:mon,mStamps:mStamps,mStars:mStars,toNext:R.per-(mStamps%R.per),
-      daysLeft:left,cur:cur,up:up,rule:R,run:runOf(hb)};
+    return {shown:have,fresh:have,total:all.length,used:starsUsed(hb),stamps:sm.stamps.length,mon:mon,mStamps:mStamps,mStars:mStars,
+      toNext:R.per-run.n,daysLeft:-1,cur:cur,up:up,rule:R,run:run};
   }
   /* 지난 수령 기록(별 2개 이상이었던 기간) */
   function monthStats(hb){
@@ -1803,9 +1814,11 @@ function make(db,env){
     stars.forEach(function(t){var m=t.slice(0,7);(by[m]=by[m]||{mon:m,stamps:0,stars:0,bonus:0}).stars++;});
     return Object.keys(by).sort().reverse().map(function(m){return by[m];});
   }
+  /* 지난 수령 기록(받은 것만. 못 받은 기간이 있어도 별은 그대로 남는다) */
   function claimHist(hb,c){
     var wins=recvWindows(c),t=today(env.now()),out=[];
-    wins.forEach(function(w,i){if(w.from>t)return;var x=claimOf(hb,wins,i);if(x.stars>0){x.expired=t>w.to&&!x.paid;out.push(x);}});
+    wins.forEach(function(w,i){if(w.from>t)return;var p=paidInfo(w.from,hb);
+      if(p.paid)out.push({from:w.from,to:w.to,label:winLabel(w),stars:p.stars||p.n*(giftRule(c).pair),vouchers:p.n,paid:true,paidN:p.n,who:p.who,at:p.at,expired:false});});
     return out.reverse();
   }
   /* 지급 기록(처리자까지). on=false 면 되돌리기. from = 수령 기간 시작일 */
@@ -1816,9 +1829,9 @@ function make(db,env){
     db.rows("지급").forEach(function(r){have[S(r["키"])]=true;});
     ids.forEach(function(hb){
       hb=S(hb);var key=from+"|"+hb,cl=claimOf(hb,wins,i);
-      if(have[key])db.set("지급","키",key,{"처리":on?"지급":"","시각":now,"처리자":by,"매수":on?cl.vouchers:0,"별":cl.stars});
+      if(have[key])db.set("지급","키",key,{"처리":on?"지급":"","시각":now,"처리자":by,"매수":on?cl.vouchers:0,"별":on?cl.vouchers*giftRule().pair:0});
       else if(on){var s0=stu[hb];have[key]=true;
-        add.push({"키":key,"월":from,"학번":hb,"이름":s0?S(s0["이름"]):"","반":s0?S(s0["반"]):"","도장":(stampMap()[hb]||{stamps:[]}).stamps.length,"처리":"지급","시각":now,"처리자":by,"매수":cl.vouchers,"별":cl.stars});}
+        add.push({"키":key,"월":from,"학번":hb,"이름":s0?S(s0["이름"]):"","반":s0?S(s0["반"]):"","도장":(stampMap()[hb]||{stamps:[]}).stamps.length,"처리":"지급","시각":now,"처리자":by,"매수":cl.vouchers,"별":cl.vouchers*giftRule().pair});}
     });
     if(add.length){if(db.addMany)db.addMany("지급",add);else add.forEach(function(o){db.add("지급",o);});}
     PAIDW=null;
@@ -2194,7 +2207,7 @@ function make(db,env){
     res.readlog=a.kind==="subject"?[]:readLog(a);
     var monT=S(c["이달"]);
     var monN=monT?nextMonthKey(monT):"";   /* 이달이 아직 없으면 다음 달도 없다 */
-    res.myBooks=db.rows("도서").filter(function(r){return lower(r["추천교사"])===lower(a.email)&&(S(r["월"])===monT||S(r["월"])===monN)&&S(r["숨김"])!=="Y";})
+    res.myBooks=db.rows("도서").filter(function(r){return S(r["추천교사"])===(S(a.name)||lower(a.email))&&(S(r["월"])===monT||S(r["월"])===monN)&&S(r["숨김"])!=="Y";})
       .map(function(r){return {id:S(r["id"]),t:S(r["제목"]),a:S(r["지은이"]),rec:S(r["추천"]),q:S(r["추천사"]),call:S(r["청구기호"]),
         mon:S(r["월"]),next:S(r["월"])===monN};});
     if(a.role!=="admin")return res;
@@ -2434,6 +2447,7 @@ function make(db,env){
       if(!t)fail("책 제목을 적어 주세요.");
       var subs=S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean);
       if(subs.indexOf(subj)<0)fail("분야를 골라 주세요.");
+      var meKey=S(a.name)||lower(a.email);
       /* 학교 도서관에서 찾아 도서관 제목·지은이·분야를 그대로 쓴다 */
       var d=libData(httpAll([libSearchReq(libConf(c),t,1)])[0]);
       if(!d)fail("독서로에 연결되지 않아 학교 도서관에 있는지 확인하지 못했습니다. 잠시 뒤 다시 해 주세요.");
@@ -2445,8 +2459,8 @@ function make(db,env){
       if(db.rows("도서").some(function(r){return S(r["월"])===mon&&S(r["숨김"])!=="Y"&&norm(shownTitle(r["제목"]))===norm(title);}))
         fail("이미 "+(next?"다음 달":"이번 달")+" 추천 도서에 있는 책입니다.");
       var id="n"+env.uid();
-      db.add("도서",{"id":id,"제목":title,"지은이":shownAuthor(b0.author)||au||"—","영역":g?g[1]:"선생님 추천","추천":subj+" · "+a.name+" 선생님",
-        "추천사":S(p.q).slice(0,120),"출처":"선생님","월":mon,"소장":"Y","청구기호":callNoOf(hit),"ISBN":S(b0.isbn).slice(0,13),"추천교사":a.email});
+      db.add("도서",{"id":id,"제목":title,"지은이":shownAuthor(b0.author)||au||"—","영역":subj||(g?g[1]:"선생님 추천"),"추천":a.name+" 선생님",
+        "추천사":S(p.q).slice(0,120),"출처":"선생님","월":mon,"소장":"Y","청구기호":callNoOf(hit),"ISBN":S(b0.isbn).slice(0,13),"추천교사":meKey});
       try{refreshLibrary([id]);fillDetails(5);}catch(e){}
       return {ok:true,title:title,mon:mon,next:next,
         thanks:"추천 도서 감사합니다! 『"+title+"』을 "+(next?"다음 달":"이번 달")+" 추천 도서에 넣었습니다."
@@ -2454,7 +2468,7 @@ function make(db,env){
         tip:"이 책으로 라벨(한 줄 소개)도 남겨 주시면 인쇄되어 게시판에 붙습니다. 학생들에게 훨씬 잘 보입니다."};},
     teacherBookHide:function(a,p){staff(a);
       var r=db.rows("도서").filter(function(x){return S(x["id"])===S(p.id);})[0];
-      if(!r||(a.role!=="admin"&&lower(r["추천교사"])!==lower(a.email)))fail("내가 넣은 책만 뺄 수 있습니다.");
+      if(!r||(a.role!=="admin"&&S(r["추천교사"])!==(S(a.name)||lower(a.email))))fail("내가 넣은 책만 뺄 수 있습니다.");
       db.set("도서","id",S(p.id),{"숨김":"Y"});},
     bookAdd:function(a,p){admin(a);if(!S(p.t))fail("책 제목을 입력해 주세요.");
       var id="n"+env.uid();
