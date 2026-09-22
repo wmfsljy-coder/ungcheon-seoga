@@ -2087,6 +2087,38 @@ function make(db,env){
     });
     return Object.keys(per).sort().map(function(k){return per[k];});
   }
+  /* 가입 현황: 반마다 몇 명이 PIN 을 정해 들어왔는지, 아직 안 들어온 학생은 누구인지.
+     학년 담당은 그 학년만, 관리자는 전교(+선생님 가입까지) 본다 */
+  function joinStats(a){
+    var td0=today(env.now());
+    var dev={};db.rows("기기").forEach(function(d){if(S(d["해제"])!=="Y"&&S(d["만료"])>=td0)dev[S(d["계정"])]=1;});
+    var wrote={};db.rows("글").forEach(function(r){if(S(r["상태"])!=="down"&&S(r["학번"]))wrote[S(r["학번"])]=1;});
+    var per={},wait=[],sum={total:0,pin:0,dev:0,wrote:0,lock:0};
+    db.rows("명단").forEach(function(r){
+      var cls=S(r["반"]);if(!cls||!seeCls(a,cls))return;
+      var o=per[cls]||(per[cls]={cls:cls,total:0,pin:0,dev:0,wrote:0,lock:0});
+      var hb=S(r["학번"]),has=!!S(r["핀"]);
+      o.total++;sum.total++;
+      if(has){o.pin++;sum.pin++;}
+      else wait.push({hakbun:hb,name:S(r["이름"]),cls:cls,memo:S(r["비고"])});
+      if(dev[accKey("student",hb)]){o.dev++;sum.dev++;}
+      if(wrote[hb]){o.wrote++;sum.wrote++;}
+      if(lockLeft(r)){o.lock++;sum.lock++;}
+    });
+    wait.sort(function(x,y){return x.hakbun<y.hakbun?-1:1;});
+    var out={scope:a.role==="admin"?"전교":S(a.grade)+"학년",sum:sum,waitN:wait.length,wait:wait.slice(0,400),
+      rows:Object.keys(per).sort().map(function(k){return per[k];})};
+    if(a.role==="admin"){
+      var tw=[],tn=0,tp=0;
+      db.rows("교사").forEach(function(t){
+        if(!S(t["이름"]))return;
+        tn++;if(S(t["핀"])){tp++;return;}
+        tw.push({name:S(t["이름"]),job:staffOf(t).label});
+      });
+      out.teachers={total:tn,pin:tp,wait:tw.slice(0,80)};
+    }
+    return out;
+  }
   /* 수령 기간 첫날 아침 메일: 관리자는 전체, 학년 담당은 그 학년 대상 명단. from 을 안 주면 오늘 시작하는 기간 */
   function giftMail(from){
     var c=conf();if(S(c["상품권메일"])==="N")return [];
@@ -2526,6 +2558,7 @@ function make(db,env){
     if(a.role==="admin"){res.allNotices=noticesFor("staff",true);res.ideas=allIdeas();
       res.teacherReqs=db.rows("교사신청").filter(function(r){return S(r["상태"])==="대기";}).map(function(r){return {id:S(r["id"]),at:S(r["시각"]).slice(0,16),name:S(r["이름"]),email:S(r["이메일"])};});}
     res.readlog=a.kind==="subject"?[]:readLog(a);
+    res.join=a.kind==="subject"?null:joinStats(a);
     var monT=S(c["이달"]);
     var monN=monT?nextMonthKey(monT):"";   /* 이달이 아직 없으면 다음 달도 없다 */
     res.myBooks=db.rows("도서").filter(function(r){return S(r["추천교사"])===(S(a.name)||lower(a.email))&&(S(r["월"])===monT||S(r["월"])===monN)&&S(r["숨김"])!=="Y";})

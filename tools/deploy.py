@@ -11,6 +11,15 @@ def run(cmd,check=True):
     if check and p.returncode!=0:
         print(out);sys.exit("실패: "+cmd)
     return out
+def getj(u,tries=4,timeout=300):
+    """구글이 가끔 302 뒤에 404 를 주므로 몇 번 다시 부른다"""
+    last=None
+    for i in range(tries):
+        try:
+            return json.loads(urllib.request.urlopen(urllib.request.Request(u,headers={"User-Agent":"Mozilla/5.0"}),timeout=timeout).read().decode("utf-8"))
+        except Exception as e:
+            last=e;time.sleep(5)
+    raise last
 desc=(sys.argv[1] if len(sys.argv)>1 else "업데이트")[:90]
 ver=datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
@@ -59,7 +68,7 @@ key=(root/"tools"/".testkey");live=False
 if key.exists():
     t3=time.time()
     try:
-        m=json.loads(urllib.request.urlopen(urllib.request.Request(url+"?migrate="+key.read_text(encoding="utf-8").strip(),headers={"User-Agent":"Mozilla/5.0"}),timeout=300).read().decode("utf-8"))
+        m=getj(url+"?migrate="+key.read_text(encoding="utf-8").strip())
         live=m.get("codeVer")==ver
         print("시트 갈이:",("끝 (%.0f초)"%(time.time()-t3)) if live else m)
     except Exception as ex:
@@ -70,7 +79,7 @@ if not live and "--nowait" not in sys.argv:
     t2=time.time()
     for i in range(30):
         try:
-            st=json.loads(urllib.request.urlopen(urllib.request.Request(url+"?status=1",headers={"User-Agent":"Mozilla/5.0"}),timeout=60).read().decode("utf-8"))
+            st=getj(url+"?status=1",tries=1,timeout=60)
             if st.get("codeVer")==ver:
                 print("새 판 확인: 시트 갈이 끝 (%.0f초)"%(time.time()-t2));break
         except Exception:
