@@ -1452,7 +1452,7 @@ function guideHTML(){
       '<li><b>독후감</b>('+L.review.join("~")+'자): 읽고 남은 생각. 웹 게시판에 올라가요.</li>'+
       '<li><b>퀴즈</b>: 이번 주 북퀴즈를 <b>절반 이상</b> 맞히면 받아요. <b>틀려도 괜찮아요 — 문제를 성의껏 내면(품질 '+(c.quizBar||6)+'점 이상) 그 자리에서 도장 1개</b>를 받습니다.</li>'+
       '<li><b>이 주의 주제</b>: 그 주 주제에 맞는 책으로 <b>독후감</b>을 쓰면 도장 <b>2개</b>(라벨은 1개 그대로). 주제는 서가 맨 위에 나와요.</li>'+
-      '<li><b>도장 배수 이벤트</b>: 학교에서 정한 기간에는 도장이 <b>2배</b>로 찍혀요(그 주 도장 상한도 10개로 늘어요). 서가 맨 위에 ×2 띠가 보이면 그 기간이에요.</li>'+
+      '<li><b>이벤트</b>: 기간을 정해 열려요. <b>도장 2배</b>, <b>추첨권</b>(글 한 편이 표 한 장), <b>반 대항</b>(우리 반 참여율), <b>미션</b>(목표를 채우면 도장 더) 네 가지가 있어요. 서가 맨 위 띠에서 지금 열린 이벤트를 봐요.</li>'+
       '<li><b>별 1개 = 도장 5개인데, 그 안에 세 가지가 다 있어야 해요.</b> 라벨만 다섯 편 쓰면 도장은 3개만 찍히고 두 자리는 독후감·퀴즈 자리로 남아요(그 두 편은 책갈피).</li></ul>')+
     sec("2. 글쓰기 약속",'<ul>'+
       '<li>하루에 '+c.dayCap+'편까지. 같은 책으로 같은 종류의 글은 한 번만.</li>'+
@@ -1680,13 +1680,20 @@ function pWall(){
 /* 명예의 전당: 달마다 뽑힌 우수 독후감(학급만) */
 /* 이 주의 주제: 도장을 더 주지는 않고, 이번 주에 함께 읽어 볼 갈래를 알려 준다 */
 function addDaysStr(d,n){var t=new Date(d+"T00:00:00");t.setDate(t.getDate()+n);return t.toISOString().slice(0,10);}
-/* 도장 배수 이벤트 띠 */
+/* 이벤트 띠: 배수·추첨·대항·미션 */
 function eventBar(){
-  var E=D.event;if(!E)return "";
-  return '<div class="evbar"><span class="x">×'+E.mul+'</span><b>'+esc(E.name)+'</b>'+
-    '<span class="ed">'+rangeLabel(E.from,E.to)+'</span>'+
-    '<span class="et">'+(E.kind?({label:"라벨",review:"독후감",quiz:"퀴즈"}[E.kind.split(",")[0]]||E.kind)+'만 ':'')+'도장이 <b>'+E.mul+'배</b>로 찍혀요'+
-      (E.memo?' · '+esc(E.memo):'')+'</span></div>';
+  var L=(D.events||[]);if(!L.length)return "";
+  return L.map(function(E){
+    var tag=E.way==="배수"?'×'+E.mul:E.way==="추첨"?'뽑기':E.way==="대항"?'대항':'미션';
+    var body="";
+    if(E.way==="배수")body=(E.kind?({label:"라벨",review:"독후감",quiz:"퀴즈"}[E.kind.split(",")[0]]||E.kind)+'만 ':'')+'도장이 <b>'+E.mul+'배</b>로 찍혀요';
+    else if(E.way==="추첨")body='이 기간에 글을 내면 <b>추첨권</b>이 쌓여요. 지금 내 표 <b>'+(E.tickets||0)+'장</b> · '+E.val+'명에게 문화상품권 '+E.prize+'매';
+    else if(E.way==="대항")body='우리 반 <b>'+(E.rank?E.rank+'등':'—')+'</b> / '+(E.of||0)+'반 · 참여율 '+(E.pct||0)+'% · '+E.val+'개 반까지 상 받아요';
+    else body='<b>'+(E.done||0)+' / '+E.need+'</b> 채우면 도장 <b>'+E.prize+'개</b>'+(E.ok?' · <b>다 했어요!</b>':'');
+    return '<div class="evbar"><span class="x">'+tag+'</span><b>'+esc(E.name)+'</b>'+
+      '<span class="ed">'+rangeLabel(E.from,E.to)+'</span>'+
+      '<span class="et">'+body+(E.memo?' · '+esc(E.memo):'')+'</span></div>';
+  }).join("");
 }
 function themeBar(){
   var T=D.theme;if(!T||!T.title)return "";
@@ -2143,30 +2150,48 @@ function pGift(){
 
 /* ── 담당: 도서 ── */
 /* 이 주의 주제(관리자): 이번 주와 다음 두 주를 미리 적어 둘 수 있다 */
-/* 도장 배수 이벤트(관리자): 기간·대상·종류를 정해 도장을 2~5배로 */
+/* 이벤트(관리자): 배수·추첨·대항·미션을 시트 한 줄로 */
+var EV_WAY={"배수":["도장 배수","값 = 배수(2~5). 기간 안 활동의 도장을 그만큼. 그 주 상한도 같이 늘어납니다."],
+  "추첨":["추첨권","값 = 뽑을 인원, 보상 = 1인당 상품권 매수. 활동 한 건이 추첨권 한 장(많이 할수록 당첨 확률↑). 지출이 고정됩니다."],
+  "대항":["반 대항","값 = 상 받을 반 수. 기간 안 반별 참여율 순위를 학생·교사 화면에 보여 줍니다(상품권 지출 없음)."],
+  "미션":["미션","값 = 목표 건수, 보상 = 도장 수. 기간 안에 목표를 채우면 도장을 그만큼 더 찍습니다."]};
 function eventAdmin(){
   if(!D.me||D.me.role!=="admin")return "";
   var L=D.events||[];
-  var rows=L.length?'<div class="scrollx" style="margin-bottom:12px"><table><tr><th>이벤트</th><th>기간</th><th>배수</th><th>대상</th><th></th></tr>'+
+  function detail(e){
+    if(e.way==="배수")return '×'+e.val+(e.kind?' · '+({label:"라벨",review:"독후감",quiz:"퀴즈"}[e.kind.split(",")[0]]||e.kind)+'만':'');
+    if(e.way==="추첨")return e.val+'명 · 상품권 '+e.prize+'매'+(e.joined?' · 참여 '+e.joined+'명':'');
+    if(e.way==="대항")return '상위 '+e.val+'개 반';
+    return '목표 '+e.val+'건 → 도장 '+e.prize+'개';
+  }
+  var rows=L.length?'<div class="scrollx" style="margin-bottom:12px"><table><tr><th>이벤트</th><th>방식</th><th>기간</th><th>내용</th><th>대상</th><th></th></tr>'+
     L.map(function(e){
-      return '<tr><td><b>'+esc(e.name)+'</b>'+(e.memo?'<div class="hint">'+esc(e.memo)+'</div>':'')+'</td>'+
-        '<td>'+rangeLabel(e.from,e.to)+(e.live?' <span class="pill">진행 중</span>':e.done?' <span class="pill grey">끝남</span>':' <span class="pill grey">예정</span>')+'</td>'+
-        '<td>×'+e.mul+(e.kind?'<div class="hint">'+esc(({label:"라벨",review:"독후감",quiz:"퀴즈"}[e.kind.split(",")[0]]||e.kind))+'만</div>':'')+'</td>'+
-        '<td>'+esc(e.target||"전교생")+'</td>'+
-        '<td><button class="btn ghost sm" data-evhide="'+esc(e.name)+'" data-from="'+esc(e.from)+'">내리기</button></td></tr>';}).join("")+'</table></div>':'';
-  return '<h3 class="sec">도장 배수 이벤트</h3>'+
-    '<p class="sub">정한 기간 동안 <b>도장이 몇 배로</b> 찍힙니다(예: ×2 면 라벨 한 편에 도장 2개). 그 주의 도장 상한도 같은 배수로 늘어나, 한 주 5개가 <b>10개</b>가 됩니다. 별도 그만큼 빨리 쌓이니 <b>상품권 지출이 늘어납니다</b> — 기간을 짧게, 대상을 좁게 잡으세요.</p>'+
+      var st=e.live?'<span class="pill">진행 중</span>':e.done?'<span class="pill grey">끝남</span>':'<span class="pill grey">예정</span>';
+      var extra="";
+      if(e.way==="추첨"&&e.won)extra='<div class="hint">당첨: '+esc(e.won)+'</div>';
+      if(e.way==="대항"&&e.rank&&e.rank.length)extra='<div class="hint">'+e.rank.slice(0,3).map(function(x,i2){return (i2+1)+'등 '+clsName(x.cls)+' '+x.pct+'%';}).join(' · ')+'</div>';
+      return '<tr><td><b>'+esc(e.name)+'</b>'+(e.memo?'<div class="hint">'+esc(e.memo)+'</div>':'')+extra+'</td>'+
+        '<td>'+esc(e.way)+'</td><td>'+rangeLabel(e.from,e.to)+' '+st+'</td><td>'+esc(detail(e))+'</td><td>'+esc(e.target||"전교생")+'</td>'+
+        '<td>'+(e.way==="추첨"?'<button class="btn ghost sm" data-evdraw="'+esc(e.name)+'" data-from="'+esc(e.from)+'"'+(e.won?' data-again="1"':'')+'>'+(e.won?"다시 뽑기":"추첨하기")+'</button> ':'')+
+        '<button class="btn ghost sm" data-evhide="'+esc(e.name)+'" data-from="'+esc(e.from)+'">내리기</button></td></tr>';}).join("")+'</table></div>':'';
+  var wayOpts=Object.keys(EV_WAY).map(function(k){return '<option value="'+k+'"'+((ui.evWay||"배수")===k?' selected':'')+'>'+EV_WAY[k][0]+'</option>';}).join("");
+  var wayNow=ui.evWay||"배수";
+  var valLab={"배수":"배수(2~5)","추첨":"뽑을 인원","대항":"상 받을 반 수","미션":"목표 건수"}[wayNow];
+  return '<h3 class="sec">이벤트</h3>'+
+    '<p class="sub">기간·대상을 정해 여는 행사입니다. 시트 <b>이벤트</b> 탭에서 직접 고쳐도 됩니다(이름·방식·시작·끝·값·보상·대상·종류·메모·숨김).<br>'+esc(EV_WAY[wayNow][1])+'</p>'+
     rows+
-    '<div class="form" style="max-width:660px"><div class="row" style="align-items:flex-end">'+
-      '<div class="field" style="flex:1;margin:0"><label for="ev-n">이벤트 이름</label><input type="text" id="ev-n" maxlength="40" placeholder="예) 가을 독서 주간"></div>'+
-      '<div class="field" style="flex:0 0 120px;margin:0"><label for="ev-m">배수</label><select id="ev-m"><option value="2">×2</option><option value="3">×3</option></select></div></div>'+
+    '<div class="form" style="max-width:680px"><div class="row" style="align-items:flex-end">'+
+      '<div class="field" style="flex:0 0 150px;margin:0"><label for="ev-w">방식</label><select id="ev-w">'+wayOpts+'</select></div>'+
+      '<div class="field" style="flex:1;margin:0"><label for="ev-n">이벤트 이름</label><input type="text" id="ev-n" maxlength="40" placeholder="예) 가을 독서 주간"></div></div>'+
     '<div class="row" style="align-items:flex-end">'+
       '<div class="field" style="flex:1;margin:0"><label for="ev-f">시작</label><input type="date" id="ev-f"></div>'+
-      '<div class="field" style="flex:1;margin:0"><label for="ev-t">끝</label><input type="date" id="ev-t"></div></div>'+
+      '<div class="field" style="flex:1;margin:0"><label for="ev-t">끝</label><input type="date" id="ev-t"></div>'+
+      '<div class="field" style="flex:0 0 130px;margin:0"><label for="ev-v">'+valLab+'</label><input type="number" id="ev-v" min="1" max="200" value="'+(wayNow==="배수"?2:wayNow==="추첨"?10:3)+'"></div>'+
+      (wayNow==="추첨"||wayNow==="미션"?'<div class="field" style="flex:0 0 130px;margin:0"><label for="ev-p">'+(wayNow==="추첨"?"1인당 상품권":"보상 도장")+'</label><input type="number" id="ev-p" min="1" max="5" value="'+(wayNow==="추첨"?1:2)+'"></div>':'')+'</div>'+
     '<div class="row" style="align-items:flex-end">'+
       '<div class="field" style="flex:1;margin:0"><label for="ev-g">대상</label><input type="text" id="ev-g" placeholder="비우면 전교생 · 예) 1학년 또는 3-2 또는 1,2학년"></div>'+
-      '<div class="field" style="flex:0 0 150px;margin:0"><label for="ev-k">종류</label><select id="ev-k"><option value="">모두</option><option value="label">라벨만</option><option value="review">독후감만</option><option value="quiz">퀴즈만</option></select></div></div>'+
-    '<div class="row" style="align-items:flex-end"><div class="field" style="flex:1;margin:0"><label for="ev-memo">한 줄 안내(학생 화면에 보임)</label><input type="text" id="ev-memo" maxlength="120" placeholder="예) 시험 끝나고 한 주, 도장 두 배!"></div>'+
+      '<div class="field" style="flex:0 0 150px;margin:0"><label for="ev-k">활동 종류</label><select id="ev-k"><option value="">모두</option><option value="label">라벨만</option><option value="review">독후감만</option><option value="quiz">퀴즈만</option></select></div></div>'+
+    '<div class="row" style="align-items:flex-end"><div class="field" style="flex:1;margin:0"><label for="ev-memo">한 줄 안내(학생 화면에 보임)</label><input type="text" id="ev-memo" maxlength="120" placeholder="예) 시험 끝나고 한 주!"></div>'+
       '<button class="btn" id="ev-go">이벤트 열기</button></div></div>';
 }
 function themeAdmin(){
@@ -2388,6 +2413,7 @@ function pGuide(){
 
 /* ── 이벤트 ── */
 document.addEventListener("change",function(e){
+  if(e.target.id==="ev-w"){ui.evWay=e.target.value;saveUI();renderPanel();return;}
   var d=e.target.dataset||{};
   if(e.target.id==="g-ok"){var gb=$("g-go2")||$("g-agree")||$("g-agree2");if(gb)gb.disabled=!e.target.checked;return;}
   if(e.target.id==="libonly"){ui.libOnly=e.target.checked;saveUI();renderPanel();return;}
@@ -2550,8 +2576,9 @@ document.addEventListener("click",function(e){
     act("ideaAdd",{text:tx},"보냈어요. 선생님이 읽고 답해 주실 거예요.").then(function(){var e=document.getElementById("idea-t");if(e)e.value="";}).catch(function(e){toast(e.message);});return;}
   if(d.idea){act("ideaReply",{id:d.idea,text:val("ir-"+d.idea)},"답변을 보냈습니다.").catch(function(e){toast(e.message);});return;}
   if(d.ideadel){act("ideaReply",{id:d.ideadel,del:1},"지웠습니다.").catch(function(e){toast(e.message);});return;}
-  if(id==="ev-go"){act("eventSet",{name:val("ev-n"),from:val("ev-f"),to:val("ev-t"),mul:val("ev-m"),target:val("ev-g"),kind:val("ev-k"),memo:val("ev-memo")},"이벤트를 열었습니다.")
+  if(id==="ev-go"){act("eventSet",{name:val("ev-n"),way:val("ev-w"),from:val("ev-f"),to:val("ev-t"),val:val("ev-v"),prize:val("ev-p"),target:val("ev-g"),kind:val("ev-k"),memo:val("ev-memo")},"이벤트를 열었습니다.")
       .then(function(){["ev-n","ev-f","ev-t","ev-g","ev-memo"].forEach(function(k){var e=document.getElementById(k);if(e)e.value="";});}).catch(function(e){toast(e.message);});return;}
+  if(d.evdraw){act("eventDraw",{name:d.evdraw,from:d.from,again:!!d.again},"추첨했습니다.").catch(function(e){toast(e.message);});return;}
   if(d.evhide){act("eventHide",{name:d.evhide,from:d.from},"이벤트를 내렸습니다.").catch(function(e){toast(e.message);});return;}
   if(d.theme){var i=d.i;act("themeSet",{week:d.theme,title:val("th-t"+i),body:val("th-b"+i),area:val("th-a"+i)},val("th-t"+i)?"이 주의 주제를 올렸습니다.":"그 주 주제를 비웠습니다.").catch(function(e){toast(e.message);});return;}
   if(d.honor){act("honor",{id:d.honor,mon:d.mon,off:!!d.off},d.off?"명예의 전당에서 내렸습니다.":"명예의 전당에 올렸습니다.").catch(function(){});return;}

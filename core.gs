@@ -19,7 +19,7 @@ var HEAD={
   "인증":["이메일","코드","만료","시도","학번","보낸시각"],
   "수령기간":["시작","끝","메모"],
   "주제":["주","주제","설명","영역","숨김"],
-  "이벤트":["이름","시작","끝","배수","대상","종류","메모","숨김"],
+  "이벤트":["이름","방식","시작","끝","값","보상","대상","종류","메모","숨김","당첨","기록"],
   "건의":["id","시각","학번","이름","반","내용","답변","답변자","답변시각","상태"],
   "권장도서":["제목","지은이","영역","출처","권수","청구기호","ISBN","출판사","발행년","뺌"],
   "장서목록":["제목","지은이","출판사","발행년","청구기호","권수","분야","중분류","ISBN","자료실"],
@@ -1678,7 +1678,7 @@ function make(db,env){
   var STAMPS=null;
   /* 도장 종류: 라벨·독후감·퀴즈. '이 주의 주제' 도장은 독후감으로 친다 */
   var KINDS=["label","review","quiz"];
-  function kindOf(k){return k==="theme"?"review":k;}
+  function kindOf(k){return k==="theme"?"review":k==="mission"?"label":k;}   /* 미션 보상 도장은 라벨로 친다 */
   function runOf(hb){
     return (stampMap()[hb]||{}).run||{n:0,has:{},need:KINDS.slice(),mon:""};
   }
@@ -1704,6 +1704,17 @@ function make(db,env){
         var onShelf=!!(bMon[key]&&(bMon[key][pk]||bMon[key][S(at).slice(0,7)]));
         if(onTheme||onShelf)put(S(r["학번"]),{k:"theme",t:S(r["책제목"])+" · "+(onShelf?"추천 도서":"이 주의 주제"),at:at+"1"});
       }});
+    /* 미션 이벤트: 목표를 채운 순간에 보상 도장 */
+    try{
+      var clsMap={};db.rows("명단").forEach(function(r){clsMap[S(r["학번"])]=S(r["반"]);});
+      evOf("미션").forEach(function(e){
+        Object.keys(clsMap).forEach(function(hb){
+          var cls=clsMap[hb];if(!evHits(e,cls,""))return;
+          var at=evMissionAt(e,hb,cls);if(!at)return;
+          for(var i=0;i<Math.max(1,e.prize);i++)put(hb,{k:"mission",t:"미션 · "+e.name,at:at+"~m"+i});
+        });
+      });
+    }catch(e0){}
     var wkNow=weekKey(env.now(),0),qBar=Number(conf()["퀴즈품질기준"])||6;
     db.rows("퀴즈").forEach(function(q){
       var hb=S(q["학번"]);if(!hb||S(q["출처"])==="자동")return;
@@ -1717,7 +1728,7 @@ function make(db,env){
       if(n?sc*2>=n:sc>=1)put(S(r["학번"]),{k:"quiz",t:"북퀴즈 "+S(r["주"]).slice(5).replace("-","/")+" 주",at:S(r["시각"])});});
     var caps=stampCaps(),per=giftRule().per,out={};
     var clsOf={};db.rows("명단").forEach(function(r){clsOf[S(r["학번"])]=S(r["반"]);});
-    var hasEv=eventRows().length>0;
+    var hasEv=evOf("배수").length>0;
     function newRun(mon){return {mon:mon,n:0,has:{}};}
     Object.keys(A).forEach(function(hb){
       var w={},mo={},st=[],bo=[],run=newRun(""),cls=clsOf[hb]||"",capW={};
@@ -1981,57 +1992,122 @@ function make(db,env){
       .map(function(r){return {id:S(r["id"]),at:S(r["시각"]).slice(0,16),hakbun:S(r["학번"]),name:S(r["이름"]),cls:S(r["반"]),
         text:S(r["내용"]),reply:S(r["답변"]),who:S(r["답변자"]),replyAt:S(r["답변시각"]).slice(0,16)};});
   }
-  /* ── 도장 배수 이벤트 ──
-     '이벤트' 시트: 이름 · 시작 · 끝 · 배수(2) · 대상(비우면 전체, "1학년" "3-2" "1,2학년" 처럼) · 종류(비우면 전부, label/review/quiz)
-     기간 안에 한 활동은 도장을 배수만큼 받습니다. 그 주의 도장 상한(주간도장)도 같은 배수만큼 늘어납니다. */
-  function eventRows(){
-    return db.rows("이벤트").filter(function(r){return S(r["숨김"]).toUpperCase()!=="Y"&&S(r["시작"])&&S(r["끝"])&&(Number(r["배수"])||1)>1;});
+  /* ── 이벤트 ──
+     '이벤트' 시트 한 줄이 이벤트 하나입니다. 방식에 따라 값·보상의 뜻이 다릅니다.
+       배수 : 값=도장 배수(2~5)            · 기간 안 활동의 도장을 값배로. 그 주 상한도 값배
+       추첨 : 값=뽑을 인원 · 보상=상품권 매수 · 기간 안 활동 한 건이 추첨권 한 장
+       대항 : 값=시상할 반 수               · 기간 안 반별 참여율 순위
+       미션 : 값=목표 건수 · 보상=도장 수    · 기간 안에 목표를 채우면 도장을 그만큼 더
+     대상: 비우면 전교생, "1학년"·"3-2"·"1,2학년". 종류: 비우면 전부, label·review·quiz */
+  var EV_KINDS=["배수","추첨","대항","미션"];
+  function evAll(){
+    return db.rows("이벤트").filter(function(r){return S(r["숨김"]).toUpperCase()!=="Y"&&S(r["이름"])&&S(r["시작"])&&S(r["끝"]);})
+      .map(function(r){
+        var way=S(r["방식"])||"배수";
+        return {row:r,name:S(r["이름"]),way:way,from:S(r["시작"]),to:S(r["끝"]),
+          val:Number(r["값"]||r["배수"])||(way==="배수"?2:way==="추첨"?10:way==="대항"?3:3),
+          prize:Number(r["보상"])||(way==="추첨"?1:way==="미션"?2:0),
+          target:S(r["대상"]),kind:S(r["종류"]),memo:S(r["메모"]),won:S(r["당첨"]),log:S(r["기록"])};
+      });
   }
-  function evHits(r,cls,kind){
-    var tg=S(r["대상"]).replace(/\s/g,"");
+  function evHits(e,cls,kind){
+    var tg=S(e.target).replace(/\s/g,"");
     if(tg){
       var ok=tg.split(/[,·]/).filter(Boolean).some(function(t){
         t=t.replace("학년","");
-        if(/^\d$/.test(t))return S(cls).indexOf(t+"-")===0;      /* 학년 */
-        return S(cls)===t;                                        /* 반(3-2) */
+        if(/^\d$/.test(t))return S(cls).indexOf(t+"-")===0;
+        return S(cls)===t;
       });
       if(!ok)return false;
     }
-    var kd=S(r["종류"]).replace(/\s/g,"");
-    if(kd){
+    var kd=S(e.kind).replace(/\s/g,"");
+    if(kd&&kind){
       var k2=kind==="theme"?"review":kind;
       if(kd.split(/[,·]/).filter(Boolean).indexOf(k2)<0)return false;
     }
     return true;
   }
-  /* 그때·그 학생·그 종류에 걸리는 가장 큰 배수 */
+  function evLive(e,d){d=d||today(env.now());return d>=e.from&&d<=e.to;}
+  function evOf(way){return evAll().filter(function(e){return e.way===way;});}
+  /* 도장 배수 */
   function evMul(at,cls,kind){
     var d=S(at).slice(0,10),m=1;
-    eventRows().forEach(function(r){
-      if(d<S(r["시작"])||d>S(r["끝"]))return;
-      if(!evHits(r,cls,kind))return;
-      m=Math.max(m,Number(r["배수"])||1);
-    });
+    evOf("배수").forEach(function(e){if(d<e.from||d>e.to)return;if(!evHits(e,cls,kind))return;m=Math.max(m,Math.min(5,Math.max(2,e.val)));});
     return m;
   }
-  /* 그 주(월요일 날짜)에 이 학생에게 걸리는 가장 큰 배수 — 주간 도장 상한을 늘릴 때 쓴다 */
   function evWeekMul(wk,cls){
     var to=addDays(wk,6),m=1;
-    eventRows().forEach(function(r){
-      if(S(r["끝"])<wk||S(r["시작"])>to)return;
-      if(!evHits(r,cls,""))return;
-      m=Math.max(m,Number(r["배수"])||1);
-    });
+    evOf("배수").forEach(function(e){if(e.to<wk||e.from>to)return;if(!evHits(e,cls,""))return;m=Math.max(m,Math.min(5,Math.max(2,e.val)));});
     return m;
   }
-  /* 지금 열려 있는 이벤트(학생 화면 알림용) */
-  function evNow(cls){
-    var d=today(env.now()),out=null;
-    eventRows().forEach(function(r){
-      if(d<S(r["시작"])||d>S(r["끝"]))return;
-      if(!evHits(r,cls,""))return;
-      var o={name:S(r["이름"])||"도장 이벤트",from:S(r["시작"]),to:S(r["끝"]),mul:Number(r["배수"])||2,kind:S(r["종류"]),memo:S(r["메모"])};
-      if(!out||o.mul>out.mul)out=o;
+  /* 기간 안에 이 학생이 한 활동 수(종류 제한이 있으면 그 종류만) */
+  function evDeeds(e,hb,cls){
+    var n=0;
+    db.rows("글").forEach(function(r){
+      if(S(r["학번"])!==hb||!posted(r))return;
+      var d=S(r["시각"]).slice(0,10);if(d<e.from||d>e.to)return;
+      if(!evHits(e,cls,S(r["종류"])==="review"?"review":"label"))return;
+      n++;
+    });
+    if(!S(e.kind)||S(e.kind).indexOf("quiz")>=0){
+      db.rows("퀴즈응답").forEach(function(r){
+        if(S(r["학번"])!==hb)return;var d=S(r["시각"]).slice(0,10);if(d<e.from||d>e.to)return;
+        var num=Number(r["문항수"])||0,sc=Number(r["점수"])||0;
+        if(num?sc*2>=num:sc>=1)n++;
+      });
+    }
+    return n;
+  }
+  /* 미션: 목표를 채운 순간(그 학생의 그 이벤트) — 채웠으면 보상 도장을 그때 찍는다 */
+  function evMissionAt(e,hb,cls){
+    var days=[];
+    db.rows("글").forEach(function(r){
+      if(S(r["학번"])!==hb||!posted(r))return;
+      var at=S(r["시각"]);if(at.slice(0,10)<e.from||at.slice(0,10)>e.to)return;
+      if(!evHits(e,cls,S(r["종류"])==="review"?"review":"label"))return;
+      days.push(at);
+    });
+    if(!S(e.kind)||S(e.kind).indexOf("quiz")>=0){
+      db.rows("퀴즈응답").forEach(function(r){
+        if(S(r["학번"])!==hb)return;var at=S(r["시각"]);if(at.slice(0,10)<e.from||at.slice(0,10)>e.to)return;
+        var num=Number(r["문항수"])||0,sc=Number(r["점수"])||0;
+        if(num?sc*2>=num:sc>=1)days.push(at);
+      });
+    }
+    days.sort();
+    return days.length>=Math.max(1,e.val)?days[Math.max(1,e.val)-1]:"";
+  }
+  /* 반 대항: 기간 안에 한 편이라도 낸 사람 비율 */
+  function evClassRank(e){
+    var per={},d0=e.from,d1=e.to;
+    db.rows("명단").forEach(function(r){
+      var cls=S(r["반"]);if(!cls)return;
+      if(!evHits(e,cls,""))return;
+      per[cls]=per[cls]||{cls:cls,total:0,joined:0,posts:0,seen:{}};
+      per[cls].total++;
+    });
+    db.rows("글").forEach(function(r){
+      if(!posted(r))return;var d=S(r["시각"]).slice(0,10);if(d<d0||d>d1)return;
+      var cls=S(r["반"]),hb=S(r["학번"]);if(!per[cls]||!hb)return;
+      per[cls].posts++;
+      if(!per[cls].seen[hb]){per[cls].seen[hb]=1;per[cls].joined++;}
+    });
+    return Object.keys(per).map(function(k){var x=per[k];
+      return {cls:x.cls,total:x.total,joined:x.joined,posts:x.posts,pct:x.total?Math.round(x.joined/x.total*100):0};})
+      .sort(function(a2,b2){return b2.pct-a2.pct||b2.posts-a2.posts||(a2.cls<b2.cls?-1:1);});
+  }
+  /* 학생 화면에 보여 줄 이벤트(진행 중인 것) */
+  function evForStudent(hb,cls){
+    var out=[],d=today(env.now());
+    evAll().forEach(function(e){
+      if(!evLive(e,d)||!evHits(e,cls,""))return;
+      var o={name:e.name,way:e.way,from:e.from,to:e.to,val:e.val,prize:e.prize,kind:e.kind,memo:e.memo};
+      if(e.way==="추첨")o.tickets=evDeeds(e,hb,cls);
+      if(e.way==="미션"){o.done=evDeeds(e,hb,cls);o.need=Math.max(1,e.val);o.ok=!!evMissionAt(e,hb,cls);}
+      if(e.way==="대항"){var rk=evClassRank(e),me=-1;rk.forEach(function(x,i){if(x.cls===cls)me=i;});
+        o.rank=me>=0?me+1:0;o.of=rk.length;o.pct=me>=0?rk[me].pct:0;o.top=rk.slice(0,Math.max(1,e.val)).map(function(x){return x.cls;});}
+      if(e.way==="배수")o.mul=Math.min(5,Math.max(2,e.val));
+      out.push(o);
     });
     return out;
   }
@@ -2113,7 +2189,7 @@ function make(db,env){
       board:board,mine:mine,voteOpen:voteOpen(now),voteMon:votePeriod(now),voteL:vb("label"),voteR:vb("review"),
       quiz:{items:quiz,done:done?Number(done["점수"]):null,books:weekBooksOf(wk),bookInfo:(function(){var bl={};bookList().forEach(function(b){bl[tkey(b.t)]=b;});
         return weekBooksOf(wk).map(function(t){var b=bl[tkey(t)]||{};return {t:t,total:b.total||0,avail:b.avail,call:b.call||""};});})()},myQuiz:myQuiz,
-      hall:hallOfFame(likes),theme:themeOf(wk),event:evNow(a.cls),ideas:myIdeas(a.id),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftDesk:a.club?deskFor(c):null};
+      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a.id),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftDesk:a.club?deskFor(c):null};
   }
 
   function bookList(){
@@ -2280,10 +2356,13 @@ function make(db,env){
     res.books=bookList();
     res.printable=all.filter(function(r){return posted(r)&&S(r["종류"])==="label";}).map(function(r){return full(r);});
     res.themes=themeList(now,3);
-    res.events=db.rows("이벤트").filter(function(r){return S(r["숨김"]).toUpperCase()!=="Y";})
-      .map(function(r){var d=today(now);return {name:S(r["이름"]),from:S(r["시작"]),to:S(r["끝"]),mul:Number(r["배수"])||2,
-        target:S(r["대상"]),kind:S(r["종류"]),memo:S(r["메모"]),live:d>=S(r["시작"])&&d<=S(r["끝"]),done:d>S(r["끝"])};})
-      .sort(function(x,y){return x.from<y.from?1:-1;});
+    var td2=today(now);
+    res.events=evAll().map(function(e){
+      var o={name:e.name,way:e.way,from:e.from,to:e.to,val:e.val,prize:e.prize,target:e.target,kind:e.kind,memo:e.memo,
+        won:e.won,live:evLive(e,td2),done:td2>e.to};
+      if(e.way==="대항")o.rank=evClassRank(e).slice(0,8);
+      if(e.way==="추첨"){var tot=0;db.rows("명단").forEach(function(r){if(evHits(e,S(r["반"]),""))tot+=evDeeds(e,S(r["학번"]),S(r["반"]))?1:0;});o.joined=tot;}
+      return o;}).sort(function(x,y){return x.from<y.from?1:-1;});
     var m0=monthKey(now);res.monthly=monthlyPicks([m0,prevMonth(m0),prevMonth(prevMonth(m0))]);
     res.appUrl=env.appUrl?S(env.appUrl()):"";
     var winners={};all.forEach(function(r){if(S(r["수상"])==="Y")winners[S(r["학번"])]=true;});
@@ -2475,20 +2554,46 @@ function make(db,env){
       db.set("글","id",S(p.id),{"명예":p.off?"":(S(p.mon)||S(r["시각"]).slice(0,7))});},
     /* 도장 배수 이벤트(관리자) */
     eventSet:function(a,p){admin(a);
-      var nm=S(p.name).slice(0,40),f=S(p.from),t=S(p.to),mul=Number(p.mul)||2;
+      var nm=S(p.name).slice(0,40),f=S(p.from),t=S(p.to),way=S(p.way)||"배수";
       if(!nm)fail("이벤트 이름을 적어 주세요.");
+      if(EV_KINDS.indexOf(way)<0)fail("방식은 배수·추첨·대항·미션 가운데 하나입니다.");
       if(!/^\d{4}-\d{2}-\d{2}$/.test(f)||!/^\d{4}-\d{2}-\d{2}$/.test(t))fail("시작·끝 날짜를 골라 주세요.");
       if(t<f)fail("끝 날짜가 시작보다 빠릅니다.");
-      if(mul<2||mul>5)fail("배수는 2에서 5까지로 정해 주세요.");
+      var val=Number(p.val)||0,prize=Number(p.prize)||0;
+      if(way==="배수"){if(val<2||val>5)fail("배수는 2에서 5까지로 정해 주세요.");}
+      else if(way==="추첨"){if(val<1||val>200)fail("뽑을 인원은 1~200명으로 정해 주세요.");if(prize<1)prize=1;}
+      else if(way==="대항"){if(val<1||val>10)val=3;}
+      else if(way==="미션"){if(val<1||val>20)fail("목표 건수는 1~20 으로 정해 주세요.");if(prize<1)prize=2;if(prize>5)fail("보상 도장은 5개까지입니다.");}
       var kd=S(p.kind).replace(/\s/g,"");
       if(kd&&kd.split(",").some(function(x){return ["label","review","quiz"].indexOf(x)<0;}))fail("종류는 label·review·quiz 만 됩니다.");
-      db.add("이벤트",{"이름":nm,"시작":f,"끝":t,"배수":String(mul),"대상":S(p.target).slice(0,60),"종류":kd,"메모":S(p.memo).slice(0,120),"숨김":""});
-      return {ok:true};},
+      db.add("이벤트",{"이름":nm,"방식":way,"시작":f,"끝":t,"값":String(val),"보상":String(prize),
+        "대상":S(p.target).slice(0,60),"종류":kd,"메모":S(p.memo).slice(0,120),"숨김":"","당첨":"","기록":""});
+      return {ok:true,way:way};},
     eventHide:function(a,p){admin(a);
       var r=db.rows("이벤트").filter(function(x){return S(x["이름"])===S(p.name)&&S(x["시작"])===S(p.from);})[0];
       if(!r)fail("그 이벤트를 찾지 못했습니다.");
       db.set("이벤트","이름",S(p.name),{"숨김":"Y"});
       return {ok:true};},
+    /* 추첨: 기간 안에 활동한 학생 가운데 무작위로 뽑아 시트에 남긴다(한 번 뽑으면 그대로) */
+    eventDraw:function(a,p){admin(a);
+      var e=evAll().filter(function(x){return x.name===S(p.name)&&x.from===S(p.from);})[0];
+      if(!e)fail("그 이벤트를 찾지 못했습니다.");
+      if(e.way!=="추첨")fail("추첨 이벤트가 아닙니다.");
+      if(S(e.won)&&!p.again)fail("이미 뽑았습니다. 다시 뽑으려면 ‘다시 뽑기’ 를 눌러 주세요.");
+      var pool=[];
+      db.rows("명단").forEach(function(r){
+        var hb=S(r["학번"]),cls=S(r["반"]);if(!evHits(e,cls,""))return;
+        var n=evDeeds(e,hb,cls);if(!n)return;
+        for(var i=0;i<n;i++)pool.push({hakbun:hb,name:S(r["이름"]),cls:cls});   /* 많이 한 학생은 표가 여러 장 */
+      });
+      if(!pool.length)fail("기간 안에 활동한 학생이 없습니다.");
+      var picked=[],seen={},shuffled=shuffle(pool,env.uid());
+      for(var i=0;i<shuffled.length&&picked.length<Math.max(1,e.val);i++){
+        var x=shuffled[i];if(seen[x.hakbun])continue;seen[x.hakbun]=1;picked.push(x);
+      }
+      var txt=picked.map(function(x){return x.hakbun+" "+x.name;}).join(", ");
+      db.set("이벤트","이름",e.name,{"당첨":txt,"기록":stamp(env.now())+" · "+picked.length+"명 · 표 "+pool.length+"장 · "+a.name});
+      return {ok:true,picked:picked,tickets:pool.length};},
     /* 이 주의 주제(관리자): 주 = 그 주 월요일 날짜. 주제를 비우면 그 주는 없음 */
     themeSet:function(a,p){admin(a);
       var wk=S(p.week);if(!/^\d{4}-\d{2}-\d{2}$/.test(wk))fail("주(월요일 날짜)를 확인해 주세요.");
