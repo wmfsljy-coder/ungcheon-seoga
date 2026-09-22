@@ -113,7 +113,7 @@ NOW=new Date("2026-11-03T03:00:00Z");
 const G=call("lib@x","state").gifts.rows["2026-11-02"]||[],elig=G.filter(x=>x.vouchers>0);
 must(elig.length>=30,"11월 수령 상품권 대상 "+elig.length+"명 · "+elig.reduce((a,x)=>a+x.vouchers,0)+"매");
 must(STU.slice(400,430).every(hb=>{const x=G.find(y=>y.hakbun===hb);return x&&x.vouchers===Math.min(2,Math.floor(x.stars/2))&&x.vouchers>=1;}),"매일 쓴 30명 모두 대상(별 "+STU.slice(400,430).map(hb=>(G.find(y=>y.hakbun===hb)||{}).stars).join(",")+")");
-must(G.every(x=>x.vouchers<=2&&x.vouchers===Math.min(2,Math.floor(x.stars/2))),"매수 = 별÷2(최대 2매)");
+must(G.every(x=>x.vouchers<=3&&x.vouchers===Math.min(3,Math.floor(x.stars/2))),"매수 = 별÷2(최대 3매)");
 const dk=call("s2301@x","state").giftDesk;must(dk&&dk.open&&dk.rows.length===elig.length,"도서부 배부 화면에 대상 "+(dk&&dk.rows.length)+"명");
 must(!call("s2301@x","clubMark",{ids:[elig[0].hakbun],on:true}).ERR,"도서부 지급 확인");
 must(call("s2302@x","clubMark",{ids:[elig[1].hakbun],on:true}).ERR,"도서부 아닌 학생은 못 함");

@@ -1,5 +1,5 @@
 /* 별과 상품권 규칙(회장님 2026-09-20):
-   ① 한 주 도장 최대 5개  ② 도장·별 누적, 도장 5개 = 별 1개  ③ 별 2개 = 문화상품권 5천 원 1매  ④ 한 번(한 달) 최대 2매
+   ① 한 주 도장 최대 5개  ② 도장·별 누적, 도장 5개 = 별 1개  ③ 별 2개 = 문화상품권 5천 원 1매  ④ 한 번(한 달) 최대 3매
    ⑤ 도서부가 배부 완료 → 학생 '수령했어요'  ⑥ 공지: 수령 기간 지나면 별이 사라짐  ⑦ 받으면 별이 사라짐  ⑧ 별 1개는 대상 아님 */
 const fs=require("fs");eval(fs.readFileSync(__dirname+"/../../core.gs","utf8")+";global.Core=Core;Core.CONF0.forEach(function(r){if(r[0]==='로그인방식')r[1]='구글';});");
 let NOW=new Date("2026-09-30T03:00:00Z"),EMAIL="";
@@ -47,10 +47,10 @@ a=st("3101");const b=st("3102"),cc=st("3103"),d=st("3104");
 must(a.giftNotice.open&&a.giftNotice.mine.vouchers===2,"③ 별 4개 → 2매");
 must(b.giftNotice.mine.vouchers===1,"③ 별 3개 → 1매(남는 1개는 대상 아님)");
 must(cc.giftNotice.mine.vouchers===0,"⑧ 별 1개는 대상 아님");
-must(d.giftNotice.mine.stars===6&&d.giftNotice.mine.vouchers===2,"④ 별 6개여도 최대 2매");
+must(d.giftNotice.mine.stars===6&&d.giftNotice.mine.vouchers===3,"④ 별 6개면 3매(한 번 수령 상한)");
 EMAIL="s2101@x";const dk=C().api("state",{}).giftDesk;
 must(dk.open&&dk.rows.map(x=>x.hakbun).join()==="3101,3102,3104","도서부 명단: 1매 이상인 학생만(3103 제외)");
-must(dk.rows.reduce((s0,x)=>s0+x.vouchers,0)===5,"필요한 상품권 5매");
+must(dk.rows.reduce((s0,x)=>s0+x.vouchers,0)===6,"필요한 상품권 6매(2+1+3)");
 EMAIL="s2101@x";C().api("clubMark",{ids:["3101"],on:true});
 a=st("3101");must(a.giftNotice.mine.paid&&a.claims[0].paid,"⑤ 배부 완료 → 학생 화면 '수령했어요'");
 must(a.stars.shown===0,"⑦ 받은 뒤 별이 사라짐(지금 별 "+a.stars.shown+")");
@@ -66,7 +66,7 @@ must(!bb.giftNotice||bb.giftNotice.from!=="2026-10-05","기간이 지나면 공�
 /* 교사 화면·메일 */
 NOW=new Date("2026-10-05T00:00:00Z");
 EMAIL="lib@x";const G=C().api("state",{}).gifts;must(G.def==="2026-10-05"&&G.rows["2026-10-05"].length===3,"관리자 상품권 탭: 10월 수령 대상 3명");
-const mails=C().giftMail();must(mails.length>=1&&/10월 수령 상품권 대상 3명 · 5매/.test(mails[0].subject),"수령 첫날 메일: "+(mails[0]&&mails[0].subject));
+const mails=C().giftMail();must(mails.length>=1&&/10월 수령 상품권 대상 3명 · 6매/.test(mails[0].subject),"수령 첫날 메일: "+(mails[0]&&mails[0].subject));
 must(C().giftMailKey()==="2026-10-05","메일은 수령 첫날에만");
 /* 설정을 비우면 매달 첫 월~목 */
 db.setConf("상품권배부","");NOW=new Date("2026-11-02T03:00:00Z");
