@@ -389,6 +389,11 @@ body.role-staff .news{background:#FFFBF0}
 .rlbar input[type=date],.rlbar select{width:auto;padding:7px 9px;font-size:15px}
 .rltable td.books{min-width:260px;line-height:1.6}
 .rltable td{vertical-align:top}
+/* 가입 현황: 반마다 가입률 막대, 아직 안 들어온 학생 묶음 */
+.jbar{display:inline-block;width:72px;height:8px;border-radius:5px;background:#EDE4D3;vertical-align:middle;overflow:hidden}
+.jbar i{display:block;height:100%;background:#8A6A3B;border-radius:5px}
+.jwait{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#FFFDF8}
+.jwait>div{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
 /* 내 서재 */
 .mstats{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;margin:14px 0 18px}
 .mstat{background:var(--paper-2);border-radius:10px;padding:10px 12px}
@@ -857,6 +862,7 @@ var PRAISE={
     "이번 주 자리는 다 찼고, 이건 책갈피야. 그냥 사라지지 않아."],
   star:["별 하나 획득! 도장 5개가 모이면 별이 돼.","반짝, 새 별이다. 이렇게 하나씩 쌓이는 거야."],
   wild:["만능 도장! 책갈피가 드디어 도장이 됐어.","萬 도장 획득. 어느 자리든 채울 수 있는 도장이야."],
+  teacher:["선생님이 직접 찍어 주신 도장이야. 이건 아무나 못 받아.","賞 도장! 선생님이 보고 계셨네."],
   quote:["문장 하나 남겼다. 이게 제일 짧고 제일 오래 남아.","좋은 문장 골랐네. 누군가 이 문장 보고 그 책 빌릴걸."],
   gift:["상품권 기준 달성! 다음 달 초에 도서관에서 받을 수 있어.",
     "이번 달 상품권 확보. 이제부터는 즐기면서 읽기만 하면 돼."],
@@ -943,6 +949,7 @@ function praiseFor(x,done){
   if(x.k==="quizmk")return pick(PRAISE.made);
   if(x.k==="quizsv"||x.k==="quiz")return pick(PRAISE.quiz);
   if(x.k==="wild")return pick(PRAISE.wild);
+  if(x.k==="teacher")return pick(PRAISE.teacher);
   return pick(PRAISE[x.k]||PRAISE.label);
 }
 function seenKey(){return "ungcheon-seoga-seen2|"+D.me.id;}
@@ -956,7 +963,8 @@ var SEAL={write:{c:"#9E3B24",ch:"讀",sub:"라벨·문장",name:"라벨·문장"
   quizsv:{c:"#1F6F6B",ch:"答",sub:"풀이",name:"퀴즈 풀이"},
   quiz:{c:"#2F6B3A",ch:"問",sub:"퀴즈",name:"퀴즈"},
   mission:{c:"#7A4B8A",ch:"萬",sub:"만능",name:"미션 보상"},
-  wild:{c:"#7A4B8A",ch:"萬",sub:"만능",name:"만능 도장"}};
+  wild:{c:"#7A4B8A",ch:"萬",sub:"만능",name:"만능 도장"},
+  teacher:{c:"#6B3F7A",ch:"賞",sub:"선생님",name:"선생님 도장"}};
 /* 한 주 도장 자리(다섯) */
 var SLOTS=["write","review","quizmk","quizsv","wild"];
 var SLOTN={write:"라벨·문장",review:"독후감",quizmk:"퀴즈 출제",quizsv:"퀴즈 풀이",wild:"만능 도장"};
@@ -966,7 +974,7 @@ function sealSVG(k,ev){
   var S_=SEAL[k]||SEAL.label,c=S_.c,frame;
   if(k==="review"||k==="theme")frame='<rect x="8" y="8" width="84" height="84" rx="6" fill="none" stroke="'+c+'" stroke-width="4"/><rect x="16" y="16" width="68" height="68" rx="3" fill="none" stroke="'+c+'" stroke-width="1.5"/>';
   else if(k==="quiz"||k==="quizmk"||k==="quizsv")frame='<path d="M50 5 L95 50 L50 95 L5 50 Z" fill="none" stroke="'+c+'" stroke-width="4"/><path d="M50 16 L84 50 L50 84 L16 50 Z" fill="none" stroke="'+c+'" stroke-width="1.5"/>';
-  else if(k==="wild"||k==="mission")frame='<path d="M32 6 H68 L94 32 V68 L68 94 H32 L6 68 V32 Z" fill="none" stroke="'+c+'" stroke-width="4"/><path d="M36 16 H64 L84 36 V64 L64 84 H36 L16 64 V36 Z" fill="none" stroke="'+c+'" stroke-width="1.5"/>';
+  else if(k==="wild"||k==="mission"||k==="teacher")frame='<path d="M32 6 H68 L94 32 V68 L68 94 H32 L6 68 V32 Z" fill="none" stroke="'+c+'" stroke-width="4"/><path d="M36 16 H64 L84 36 V64 L64 84 H36 L16 64 V36 Z" fill="none" stroke="'+c+'" stroke-width="1.5"/>';
   else frame='<circle cx="50" cy="50" r="45" fill="none" stroke="'+c+'" stroke-width="4"/><circle cx="50" cy="50" r="37" fill="none" stroke="'+c+'" stroke-width="1.5"/>';
   return '<svg class="seal" viewBox="0 0 100 100" role="img" aria-label="'+S_.name+' 도장">'+frame+
    '<text x="50" y="50" text-anchor="middle" font-family="Gowun Batang,serif" font-size="27" font-weight="700" fill="'+c+'">'+S_.ch+'</text>'+
@@ -1058,7 +1066,7 @@ function renderBoard(){
     '<div class="slots" style="grid-template-columns:repeat('+cap+',1fr)">'+s+'</div>'+
     (extra.length?'<div class="xrow"><span class="xlab">덤 도장 '+extra.length+'개</span>'+
       extra.map(function(x){return '<span class="xs" title="'+esc((SEAL[x.k]?SEAL[x.k].name:"")+' · '+x.t)+'">'+sealSVG(x.k,x.ev)+'<b>'+esc(x.t)+'</b></span>';}).join("")+
-      '<span class="hint">이 주의 주제·추천 도서·이벤트로 받은 도장이에요. 다섯 자리와 별개로 더 쌓여요.</span></div>':'')+
+      '<span class="hint">이 주의 주제·추천 도서·이벤트·선생님 도장으로 받은 도장이에요. 다섯 자리와 별개로 더 쌓여요.</span></div>':'')+
     (W.bonus||(ST.leaf&&ST.leaf.have)?'<div class="bonus">'+leafSVG()+'<span>'+
       (W.bonus?'이번 주 책갈피 <b>'+W.bonus+'</b>장 · ':'')+'모은 책갈피 <b>'+((ST.leaf&&ST.leaf.have)||0)+'</b>장 · '+
       '자리가 찬 뒤에 한 활동이에요. <b>'+((ST.leaf&&ST.leaf.per)||5)+'장이 모이면 만능 도장 1개</b>로 바뀌어요(한 주 1개).'+
@@ -1075,9 +1083,9 @@ function renderBoard(){
 
 var TS=[["shelf","서가"],["write","글 쓰기","쓰기"],["wall","게시판"],["quiz","북퀴즈","퀴즈"],["mine","내 서재"]];
 var TJ=[["shelf","서가"],["wall","게시판"],["quiz","북퀴즈","퀴즈"],["mine","내 서재"]];
-var TT=[["guide","교사 안내","안내"],["check","새 글"],["finish","상품권"],["readlog","독서 기록","독서"],["accounts","계정 관리","계정"],["tlabel","선생님 라벨·검색","내 라벨"],["suggest","추천 도서","추천"]];
-var TSUB=[["guide","교사 안내","안내"],["suggest","추천 도서","추천"],["tlabel","선생님 라벨·검색","내 라벨"]];
-var TA=[["guide","교사 안내"],["check","새 글"],["books","도서 관리"],["quizadm","퀴즈 관리"],["print","시상·인쇄"],["finish","상품권"],["readlog","독서 기록"],["accounts","계정 관리"],["tlabel","선생님 라벨·검색"],["suggest","추천 도서","추천"]];
+var TT=[["guide","교사 안내","안내"],["check","새 글"],["give","도장 주기","도장"],["finish","상품권"],["readlog","독서 기록","독서"],["accounts","가입 현황·계정","가입"],["tlabel","선생님 라벨·검색","내 라벨"],["suggest","추천 도서","추천"]];
+var TSUB=[["guide","교사 안내","안내"],["give","도장 주기","도장"],["suggest","추천 도서","추천"],["tlabel","선생님 라벨·검색","내 라벨"]];
+var TA=[["guide","교사 안내"],["check","새 글"],["books","도서 관리"],["quizadm","퀴즈 관리"],["print","시상·인쇄"],["finish","상품권"],["readlog","독서 기록"],["accounts","가입 현황·계정"],["give","도장 주기"],["tlabel","선생님 라벨·검색"],["suggest","추천 도서","추천"]];
 function tabList(){
   if(D.me.role==="student")return (D.canWrite?TS:TJ)
     .concat(D.me.club&&!D.preview?[["desk","배부 확인","배부"]]:[])
@@ -1106,7 +1114,7 @@ function toPanel(){
 }
 function renderPanel(){
   var f={shelf:pShelfAll,write:pWrite,wall:pWallAll,vote:pVote,quiz:pQuiz,check:pCheck,print:pPrintAll,result:pResult,
-    finish:pGift,books:pBooks,desk:pDesk,idea:pIdea,accounts:pAccounts,suggest:pSuggest,quizadm:pQuizAdm,guide:pGuide,tlabel:pTLabelAll,search:pSearch,mine:pMine,readlog:pReadlog}[ui.tab];
+    finish:pGift,books:pBooks,desk:pDesk,idea:pIdea,accounts:pAccounts,give:pGive,suggest:pSuggest,quizadm:pQuizAdm,guide:pGuide,tlabel:pTLabelAll,search:pSearch,mine:pMine,readlog:pReadlog}[ui.tab];
   $("panels").innerHTML=f?f():"";
   if(ui.tab==="write")wireWrite();
   if(ui.tab==="print")wirePrint();
@@ -1118,6 +1126,32 @@ function pShelfAll(){return pShelf()+'<div class="gapline"></div>'+pSearch();}
 function pWallAll(){return (ui.wf==="vote")?pWallHead()+pVote():pWall();}
 function pPrintAll(){return pResult()+'<div class="gapline"></div>'+pPrint();}
 function pTLabelAll(){return pTLabel()+'<div class="gapline"></div>'+pSearch();}
+/* ── 교사: 도장 주기(모든 선생님) ── */
+var GIVE_WHY=["기억에 남는 문구를 옮겨 적음","쉬는 시간마다 책을 읽음","독서 토론에서 좋은 질문","수업에서 읽은 책을 소개함","도서관 정리를 도와줌","친구에게 책을 추천해 줌"];
+function pGive(){
+  var R=(ui.giveOut&&ui.giveOut.list)||[],G=(D.given||[]);
+  var found=R.length?'<div class="stack" style="margin:12px 0">'+R.map(function(x){
+      return '<div class="card"><div class="meta"><span class="pill grey">'+esc(x.hakbun)+' '+esc(x.name)+' · '+esc(clsName(x.cls))+'</span>'+
+        (x.week?'<span class="pill">이번 주 선생님 도장 '+x.week+'개</span>':'')+
+        (x.got?'<span class="pill gold">오늘 내가 찍음</span>':'')+'</div>'+
+        '<div class="row" style="align-items:flex-end"><div class="field" style="flex:1;margin:0">'+
+          '<label for="gv-'+esc(x.hakbun)+'">왜 주는지 (학생 화면에 그대로 보입니다)</label>'+
+          '<input type="text" id="gv-'+esc(x.hakbun)+'" maxlength="60" value="'+esc(ui.giveWhy||"")+'" placeholder="예) 점심시간마다 읽는 모습"></div>'+
+        '<button class="btn sm" data-give="'+esc(x.hakbun)+'"'+(x.got?' disabled':'')+'>도장 찍기</button></div></div>';}).join("")+'</div>'
+    :(ui.giveQ?'<div class="empty">그런 학번·이름이 명단에 없습니다.</div>':'');
+  var chips='<div class="filters" style="margin:6px 0 0">'+GIVE_WHY.map(function(w){
+    return '<button class="chip" data-givewhy="'+esc(w)+'" aria-pressed="'+(ui.giveWhy===w)+'">'+esc(w)+'</button>';}).join("")+'</div>';
+  var mine=G.length?'<h3 class="sec gap">내가 찍어 준 도장</h3><div class="scrollx"><table class="rltable"><tr><th>때</th><th>학생</th><th>왜</th><th></th></tr>'+
+    G.slice(0,20).map(function(x){
+      return '<tr'+(x.off?' style="opacity:.5"':'')+'><td>'+esc(x.at)+'</td><td>'+esc(x.hakbun)+' '+esc(x.name)+'<div class="hint">'+esc(clsName(x.cls))+'</div></td>'+
+        '<td>'+esc(x.why)+'</td><td>'+(x.off?'<span class="pill grey">무름</span>':'<button class="btn ghost sm" data-giveundo="'+esc(x.id)+'">무르기</button>')+'</td></tr>';}).join("")+'</table></div>':'';
+  return '<h3 class="sec">'+sealSVG("teacher")+' 도장 주기</h3>'+
+    '<p class="sub">화면 밖에서 본 것을 도장으로 남깁니다 — 기억에 남는 문구를 옮겨 적은 학생, 평소에 책을 즐겨 읽는 학생, 독서 토론에서 좋은 질문을 한 학생. <b>모든 선생님</b>이 찍을 수 있고, 학생 도장판에는 <b>사유와 선생님 이름</b>이 함께 남습니다. 이 도장은 <b>자리를 차지하지 않는 만능 도장</b>이라, 그 주 다섯 자리가 어떻든 바로 한 칸이 됩니다.</p>'+
+    '<p class="libsum">오늘 '+(D.givenToday||0)+'개 찍었습니다 · 같은 학생에게는 하루 한 개까지</p>'+
+    '<div class="row" style="align-items:flex-end;gap:8px;max-width:460px"><div class="field" style="flex:1;margin:0">'+
+      '<label for="gv-q">학번이나 이름으로 찾기</label><input type="search" id="gv-q" value="'+esc(ui.giveQ||"")+'" placeholder="예) 1101 또는 김서준"></div>'+
+      '<button class="btn" id="gv-go">찾기</button></div>'+chips+found+mine;
+}
 /* ── 학생: 서가 ── */
 function ymdLocal(d){d=d||new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);}
 function md(s){var m=/^\d{4}-(\d{2})-(\d{2})/.exec(s||"");return m?Number(m[1])+"월 "+Number(m[2])+"일":"";}
@@ -1877,15 +1911,47 @@ function pCheck(){
     (rest.length?'<h3 class="sec gap">지난 글</h3><div class="grid2">'+rest.map(card).join("")+'</div>':'');
 }
 /* ── 교사: 계정 관리(관리자·학년 담당) ── */
+/* 가입 현황: 학년 담당은 그 학년, 관리자는 전교 */
+function pJoin(){
+  var J=D.join;if(!J)return "";
+  var S0=J.sum,pct=S0.total?Math.round(100*S0.pin/S0.total):0;
+  var rows=(J.rows||[]).map(function(x){
+    var p2=x.total?Math.round(100*x.pin/x.total):0;
+    return '<tr><td><b>'+esc(clsName(x.cls))+'</b></td><td>'+x.total+'</td>'+
+      '<td><b>'+x.pin+'</b></td><td>'+(x.total-x.pin)+'</td>'+
+      '<td><span class="jbar"><i style="width:'+p2+'%"></i></span> '+p2+'%</td>'+
+      '<td>'+x.dev+'</td><td>'+x.wrote+'</td><td>'+(x.lock?'<span class="pill" style="background:#FDECEA;color:#B0301E;border-color:#E9B4AA">'+x.lock+'</span>':'—')+'</td></tr>';}).join("");
+  /* 아직 안 들어온 학생: 반마다 학번순 */
+  var byCls={},order=[];
+  (J.wait||[]).forEach(function(x){if(!byCls[x.cls]){byCls[x.cls]=[];order.push(x.cls);}byCls[x.cls].push(x);});
+  var waitHTML=order.map(function(k){
+    return '<div class="jwait"><b>'+esc(clsName(k))+'</b> <span class="hint">'+byCls[k].length+'명</span><div>'+
+      byCls[k].map(function(x){return '<span class="pill grey">'+esc(x.hakbun)+' '+esc(x.name)+'</span>';}).join(" ")+'</div></div>';}).join("");
+  var tea="";
+  if(J.teachers){
+    var T0=J.teachers;
+    tea='<h3 class="sec gap">선생님 가입</h3><p class="libsum">'+T0.total+'분 중 <b>'+T0.pin+'분</b>이 PIN 을 정했습니다.</p>'+
+      (T0.wait.length?'<div class="jwait"><b>아직 안 들어오신 분</b><div>'+T0.wait.map(function(x){
+        return '<span class="pill grey">'+esc(x.name)+' · '+esc(x.job)+'</span>';}).join(" ")+'</div></div>':'');
+  }
+  return '<h3 class="sec">가입 현황 <span class="pill grey">'+esc(J.scope)+'</span></h3>'+
+    '<p class="sub">학생이 <b>학번·이름</b>으로 처음 들어와 <b>PIN 여섯 자리</b>를 정하면 가입입니다. 아직 안 들어온 학생은 아래에서 확인해 조회 시간에 챙겨 주세요. 명단에 없는 학생은 <b>학생 등록해 주기</b>로 넣어 주시면 됩니다.</p>'+
+    '<p class="libsum">명단 '+S0.total+'명 중 <b>'+S0.pin+'명</b>이 가입('+pct+'%) · 아직 <b>'+(S0.total-S0.pin)+'명</b>'+
+      ' · 기기에 로그인해 둔 학생 '+S0.dev+'명 · 글을 한 편이라도 쓴 학생 '+S0.wrote+'명'+(S0.lock?' · 잠긴 계정 '+S0.lock+'명':'')+'</p>'+
+    '<div class="scrollx"><table class="rltable"><tr><th>반</th><th>명단</th><th>가입</th><th>아직</th><th>가입률</th><th>기기</th><th>글 쓴 학생</th><th>잠김</th></tr>'+rows+'</table></div>'+
+    (waitHTML?'<details style="margin:12px 0 4px" open><summary class="hint" style="cursor:pointer">아직 안 들어온 학생 '+J.waitN+'명 보기'+(J.waitN>400?' (앞 400명)':'')+'</summary>'+
+      '<div class="row" style="margin:8px 0"><button class="btn ghost sm" id="join-copy">명단 복사</button></div>'+waitHTML+'</details>'
+      :'<p class="hint">모두 가입했습니다.</p>')+tea;
+}
 function pAccounts(){
   var R=(ui.accOut&&ui.accOut.list)||[];
-  return '<h3 class="sec">계정 관리</h3>'+
+  return pJoin()+'<div class="gapline"></div><h3 class="sec">계정 관리</h3>'+
     '<p class="sub">학생이 <b>다른 메일로 잘못 등록</b>했거나, 남의 학번으로 등록했거나, 기기를 바꿔 다시 등록해야 할 때 씁니다. 학번이나 이름으로 찾은 뒤 <b>등록 풀기</b>를 누르면 그 학생이 처음처럼 다시 등록할 수 있습니다. 로그인해 둔 PC·폰도 모두 풀립니다. 쓴 글과 도장은 그대로 남습니다.</p>'+
     '<div class="row" style="align-items:flex-end;gap:8px;max-width:460px"><div class="field" style="flex:1;margin:0">'+
       '<label for="acc-q">학번이나 이름</label><input type="search" id="acc-q" value="'+esc(ui.accQ||"")+'" placeholder="예) 1101 또는 김서준"></div>'+
       '<button class="btn" id="acc-go">찾기</button></div>'+
     '<h3 class="sec gap">학생 등록해 주기</h3>'+
-    '<p class="sub">학번(네 자리)과 이름을 적어 두면 그 학생이 로그인 화면에서 <b>학번·이름</b>으로 들어와 PIN 을 정합니다. 명단에 없는 학번이면 새 줄이 만들어지고, 구글 시트 <b>명단</b> 탭에 학번순으로 정리됩니다. 특이사항은 <b>비고</b>에 적어 두세요. 명단에 없는 학번이면 새 줄이 만들어지고, 구글 시트 <b>명단</b> 탭에 학번순으로 정리됩니다. 특이사항은 <b>비고</b>에 적어 두세요.</p>'+
+    '<p class="sub">학번(네 자리)과 이름을 적어 두면 그 학생이 로그인 화면에서 <b>학번·이름</b>으로 들어와 PIN 을 정합니다. 명단에 없는 학번이면 새 줄이 만들어지고, 구글 시트 <b>명단</b> 탭에 학번순으로 정리됩니다. 특이사항은 <b>비고</b>에 적어 두세요.</p>'+
     '<div class="form" style="max-width:640px"><div class="row" style="align-items:flex-end">'+
       '<div class="field" style="flex:0 0 120px;margin:0"><label for="ra-h">학번</label><input type="text" id="ra-h" inputmode="numeric" maxlength="4" placeholder="1101"></div>'+
       '<div class="field" style="flex:0 0 130px;margin:0"><label for="ra-n">이름</label><input type="text" id="ra-n"></div>'+
@@ -2363,7 +2429,7 @@ function howto(rows){return '<dl class="howto">'+rows.map(function(r){return '<d
 function stampNote(){
   return '<div class="box">도장은 선생님이 찍지 않습니다. 학생이 한 편을 내면 도장판에 자동으로 찍힙니다. '+
     '<b style="color:#9E3B24">라벨·문장 = 감빛 둥근 도장 讀·句</b>, <b style="color:#2B4C7E">독후감 = 쪽빛 네모 도장 感</b>, '+
-    '<b style="color:#2F6B3A">퀴즈 출제 = 초록 마름모 도장 問</b>, <b style="color:#1F6F6B">퀴즈 풀이 = 答</b>, <b style="color:#7A4B8A">만능 = 萬</b>. '+
+    '<b style="color:#2F6B3A">퀴즈 출제 = 초록 마름모 도장 問</b>, <b style="color:#1F6F6B">퀴즈 풀이 = 答</b>, <b style="color:#7A4B8A">만능 = 萬</b>, <b style="color:#6B3F7A">선생님 도장 = 賞</b>(<b>도장 주기</b> 탭에서 직접, 자리와 상관없는 만능 도장). '+
     '한 주에 <b>자리마다 한 칸</b>씩 모두 '+D.conf.weekCap+'칸입니다(라벨·문장 / 독후감 / 퀴즈 출제 / 퀴즈 풀이 / 만능). <b>라벨과 문장은 합쳐서 한 칸</b>이고, 같은 자리를 그 주에 또 채우면 <b>책갈피</b> 한 장이 쌓입니다. <b>책갈피 5장 = 만능 도장 1개</b>(한 주 1개). 누적 도장 <b>5개마다 별 1개</b>, <b>별 2개 = 문화상품권 5,000원 1매</b>(한 번 수령에 최대 2매, 별 1개는 대상 아님). '+
     '수령 기간에 받은 만큼만 별이 줄고, 못 받은 별은 그대로 남아 다음 기간에 씁니다. 글을 내리면 그 도장도 사라집니다.</div>';
 }
@@ -2549,6 +2615,11 @@ document.addEventListener("click",function(e){
     act("noticeAdd",{title:$("nt-t").value,body:$("nt-b").value,from:$("nt-f").value,to:$("nt-e").value,who:$("nt-w").value},"공지를 올렸습니다.").catch(function(){});return;}
   if(id==="news-open"){var nw=$("news");if(nw)nw.scrollIntoView({behavior:"smooth",block:"start"});return;}
   if(d.rlrange){var RR=rlRange();if(d.rlrange==="all"){ui.rlFrom="";ui.rlTo="";}else{ui.rlFrom=RR[d.rlrange][0];ui.rlTo=RR[d.rlrange][1];}saveUI();renderPanel();return;}
+  if(id==="join-copy"){
+    var W=(D.join&&D.join.wait)||[];
+    copyText(W.map(function(x){return clsName(x.cls)+" "+x.hakbun+" "+x.name;}).join(String.fromCharCode(10)),function(okc){
+      toast(okc?"아직 안 들어온 학생 "+W.length+"명을 복사했습니다.":"복사하지 못했습니다.");});
+    return;}
   if(d.rlcopy){var rr=rlRows().filter(function(x){return x.hakbun===d.rlcopy;})[0];
     if(rr)copyText(rr.text,function(ok){toast(ok?rr.name+" 학생 독서 기록을 복사했습니다.":"복사가 막혔습니다. 표에서 직접 선택해 복사해 주세요.");});return;}
   if(id==="rl-copyall"){var all=rlRows().filter(function(x){return x.text;}).map(function(x){return x.hakbun+"\t"+x.name+"\t"+x.text;}).join("\n");
@@ -2651,6 +2722,14 @@ document.addEventListener("click",function(e){
   if(id==="gift-csv"){var gw2=giftWin(),gr=[["학번","이름","학급","별","상품권(매)","배부","처리","수령 서명"]];
     (D.gifts.rows[gw2]||[]).forEach(function(x){gr.push([x.hakbun,x.name,x.cls,x.stars,x.vouchers,x.paid?"완료":"",x.who||"",""]);});
     csvDown("상품권_"+gw2+".csv",gr);return;}
+  if(id==="gv-go"){ui.giveQ=val("gv-q");saveUI();call("stampFind",{q:ui.giveQ}).then(function(r){ui.giveOut=r;renderPanel();}).catch(function(e){toast(e.message);});return;}
+  if(d.givewhy){ui.giveWhy=ui.giveWhy===d.givewhy?"":d.givewhy;saveUI();renderPanel();return;}
+  if(d.give){var why=val("gv-"+d.give);
+    if(!why||why.trim().length<2){toast("왜 주는지 한 마디 적어 주세요.");return;}
+    act("stampGive",{hakbun:d.give,reason:why},"도장을 찍어 주었습니다.").then(function(){
+      if(ui.giveQ)call("stampFind",{q:ui.giveQ}).then(function(r){ui.giveOut=r;renderPanel();});}).catch(function(){});return;}
+  if(d.giveundo){act("stampUndo",{id:d.giveundo},"도장을 무렀습니다.").then(function(){
+      if(ui.giveQ)call("stampFind",{q:ui.giveQ}).then(function(r){ui.giveOut=r;renderPanel();});}).catch(function(){});return;}
   if(d.award){act("award",{id:d.award,off:!!d.off},d.off?"수상을 취소했습니다.":"수상 처리했습니다.").catch(function(){});return;}
 
   if(id==="lib-run"){
