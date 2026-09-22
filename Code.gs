@@ -28,7 +28,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20260922-093316";
+var CODE_VERSION="20260922-104132";
 function doGet(e){
   try{
     var props=PropertiesService.getScriptProperties();
@@ -425,7 +425,7 @@ function installEditTriggers_(){
 /* 시트 모양 정리: 교사 '담당' 칸 드롭다운(관리자·1학년·2학년·3학년·교사), 명단 '도서부' 칸 드롭다운(Y).
    예전 값 '전체'는 '관리자'로, '3-2' 같은 반은 '3학년'으로 바꿔 둔다 */
 /* 시트 정리: 선생님이 볼 탭만 앞에 차례대로, 앱이 혼자 쓰는 탭은 숨김 */
-var SHEET_ORDER=["설정","명단","교사","도서","권장도서","주제","글","퀴즈","수령기간","수령대상","지급","공지","건의","문장","장서목록"];
+var SHEET_ORDER=["안내","설정","명단","교사","도서","권장도서","주제","이벤트","글","퀴즈","수령기간","수령대상","지급","공지","건의","문장","장서목록"];
 var SHEET_HIDE=["인증","기기","공감","투표","교사신청","퀴즈응답"];
 function tidySheets_(){
   var ss=ss_();
@@ -440,7 +440,47 @@ function tidySheets_(){
   });
   try{ss.setActiveSheet(ss.getSheetByName("설정")||ss.getSheets()[0]);}catch(x){}
 }
+/* 시트 쓰는 법을 '안내' 탭과 머리줄 메모에 적어 둔다(판이 바뀌면 다시 씀) */
+function writeSheetDoc_(){
+  var ss=ss_(),D=Core.SHEET_DOC||{},order=SHEET_ORDER.concat(Object.keys(D)).filter(function(v,i,a){return a.indexOf(v)===i&&D[v];});
+  /* ① 머리줄 메모: 칸 이름 위에 마우스를 올리면 뜻과 예시가 보인다 */
+  order.forEach(function(name){
+    var sh=ss.getSheetByName(name);if(!sh||sh.getLastColumn()<1)return;
+    var head=sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(String);
+    var notes=head.map(function(h){
+      var c=D[name].c[h];
+      return c?(h+"\n"+c[0]+(c[1]?"\n예) "+c[1]:"")):"";
+    });
+    try{sh.getRange(1,1,1,head.length).setNotes([notes]);}catch(e){}
+  });
+  /* ② 안내 탭: 표 하나로 모아 보기 */
+  var sh=ss.getSheetByName("안내")||ss.insertSheet("안내",0);
+  sh.clear();
+  var rows=[["탭","무엇을 담는 곳","칸","뜻","예시"]];
+  order.forEach(function(name){
+    var d=D[name],cols=Core.HEAD[name]||Object.keys(d.c);
+    rows.push([name,d.d+" ("+d.edit+")","","",""]);
+    cols.forEach(function(h){
+      var c=d.c[h];if(!c)return;
+      rows.push(["",""," "+h,c[0],c[1]||""]);
+    });
+  });
+  sh.getRange(1,1,rows.length,5).setValues(rows);
+  sh.getRange(1,1,1,5).setFontWeight("bold").setBackground("#F0E9D9");
+  sh.setFrozenRows(1);
+  sh.setColumnWidth(1,90);sh.setColumnWidth(2,420);sh.setColumnWidth(3,120);sh.setColumnWidth(4,420);sh.setColumnWidth(5,260);
+  /* 탭 이름 줄은 굵게 */
+  for(var i=2;i<=rows.length;i++){
+    if(rows[i-1][0]){
+      sh.getRange(i,1,1,5).setFontWeight("bold").setBackground("#FBF6EA");
+    }
+  }
+  sh.getRange(1,1,rows.length,5).setVerticalAlignment("top").setWrap(true);
+  return rows.length;
+}
+function sheetDocNow(){var n=writeSheetDoc_();say_("‘안내’ 탭에 시트 쓰는 법 "+n+"줄을 적었습니다. 칸 이름 위에 마우스를 올려도 설명이 뜹니다.");}
 function applySheetUi_(){
+  try{writeSheetDoc_();}catch(x){console.log("안내 탭: "+x.message);}
   try{tidySheets_();}catch(x){}
   var ss=ss_(),t=ss.getSheetByName("교사");
   if(t&&t.getLastRow()>=1){
