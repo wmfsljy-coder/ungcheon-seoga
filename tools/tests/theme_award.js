@@ -31,14 +31,14 @@ must(wk("3101").week.stamps.some(x=>x.k==="theme"),"도장판에 주제 도장(�
 /* 독후감 자리는 한 주에 하나 — 더 쓰면 책갈피 한 장, 그 뒤는 기록만 */
 post("3101","review","침묵의 봄","2026-10-07");post("3101","review","침묵의 봄","2026-10-08");
 let a=wk("3101");
-must(a.week.stamps.length===2&&a.week.bonus===1&&a.week.over===3,
-  "독후감만 이어 쓰면 도장 2개(주제 덤 포함) · 책갈피 1장 · 나머지는 기록만(도장 "+a.week.stamps.length+" · 책갈피 "+a.week.bonus+" · 남음 "+a.week.over+")");
+must(a.week.stamps.length===2&&a.week.bonus===2&&a.week.over===2,
+  "독후감 상한(2개)을 넘기면 책갈피로(도장 "+a.week.stamps.length+" · 책갈피 "+a.week.bonus+" · 덤은 따라오지 않음 "+a.week.over+")");
 post("3101","label","완득이","2026-10-08");
 T["퀴즈응답"].push({"주":"2026-10-05","학번":"3101","점수":"4","문항수":"5","시각":"2026-10-09 10:00:00"});
 a=wk("3101");
-must(a.week.stamps.length===4&&a.week.stamps.filter(x=>x.slot==="write").length===1&&a.week.stamps.filter(x=>x.slot==="quizsv").length===1,
+must(a.week.stamps.length===4&&a.week.stamps.filter(x=>x.slot==="write").length===1&&a.week.stamps.filter(x=>x.slot==="quiz").length===1,
   "라벨·퀴즈 풀이 자리를 채우면 네 칸("+a.week.stamps.length+"칸)");
-must(a.stars.leaf.have===1&&a.stars.leaf.per===5,"책갈피는 한 장 모였다(5장이면 만능 도장)");
+must(a.stars.leaf.have===2&&a.stars.leaf.per===5,"책갈피가 두 장 모였다(5장이면 만능 도장 · 지금 "+a.stars.leaf.have+"장)");
 /* 다음 주에 주제가 없으면 독후감도 1개 */
 post("3102","review","침묵의 봄","2026-10-13");
 must(wk("3102").week.stamps.length===1,"주제가 없는 주에는 독후감도 1개");
@@ -70,7 +70,7 @@ NOW=new Date("2026-10-20T03:00:00Z");   /* 주제 없는 주 */
 EMAIL="s3102@x";T["명단"].push({"학번":"3102","이름":"바","반":"3-1","이메일":"s3102@x","동의":"y"});
 const good=C().api("quizSubmit",{book:"침묵의 봄",page:"88쪽",q:"88쪽에서 저자가 경고한 것은 무엇인가요?",o1:"살충제가 생태계에 남긴 자취",o2:"도시의 소음",o3:"바다의 수온",o4:"철새의 이동",ans:1,why:"88쪽에 나옵니다"});
 must(good.stamped&&good.score>=good.bar,"성의껏 낸 문제: 품질 "+good.score+"/10 → 도장");
-must(wk("3102").week.stamps.some(x=>x.slot==="quizmk"),"낸 그 자리에서 問 도장이 찍힌다");
+must(wk("3102").week.stamps.some(x=>x.slot==="quiz"),"낸 그 자리에서 問 도장이 찍힌다");
 const poor=C().api("quizSubmit",{book:"완득이",page:"",q:"완득이는 누구인가요?",o1:"학생",o2:"교사",o3:"의사",o4:"군인",ans:1,why:""});
 must(!poor.stamped,"대충 낸 문제(품질 "+poor.score+")는 도장 없음");
-must(wk("3102").week.stamps.filter(x=>x.slot==="quizmk").length===1,"도장은 성의껏 낸 문제 하나만");
+must(wk("3102").week.stamps.filter(x=>x.slot==="quiz").length===1,"도장은 성의껏 낸 문제 하나만");

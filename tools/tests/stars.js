@@ -13,8 +13,8 @@ const C=()=>Core.make(db,env);C().maintain();T["주제"].length=0;   /* maintain
 db.setConf("상품권공개","Y");db.setConf("상품권배부","2026-10-05~2026-10-08, 2026-11-02~2026-11-05");
 T["교사"].push({"이메일":"lib@x","이름":"사서","담당":"관리자"},{"이메일":"g3@x","이름":"삼","담당":"3학년"});
 [["3101","가"],["3102","나"],["3103","다"],["3104","라"],["3105","마"],["2101","도서부"]].forEach(([h,n])=>T["명단"].push({"학번":h,"이름":n,"반":h[0]+"-"+h[1],"이메일":"s"+h+"@x","동의":"y","도서부":h==="2101"?"Y":""}));
-/* 2026-09-22 자리 규칙: 한 주에 라벨·문장 / 독후감 / 퀴즈 출제 / 퀴즈 풀이 한 칸씩(넷) → 그 순서대로 만든다.
-   다섯 번째부터는 자리가 차서 책갈피 한 장, 그 뒤는 기록만 남는다 */
+/* 2026-09-22 규칙: 한 주 다섯 칸, 종류별 상한은 라벨·문장 1 · 독후감 2 · 퀴즈 2.
+   그 순서대로 만들고, 상한을 넘기면 종류마다 책갈피 한 장, 그 뒤는 기록만 남는다 */
 let pid=0;const seenW={};
 function days(hb,list){list.forEach(d=>{
   const w=Core.weekKey(new Date(d+"T00:00:00Z"),0),key=hb+"|"+w,i=(seenW[key]=(seenW[key]||0)+1)-1;
@@ -35,7 +35,8 @@ function posts(hb,monday,k){days(hb,wk(monday,k));}
 const st=hb=>{EMAIL="s"+hb+"@x";return C().api("state",{});};
 const must=(c,m)=>{if(!c){console.log("✗",m);process.exitCode=1;}else console.log("✓",m);};
 let a=st("3105");
-must(a.week.stamps.length===4&&a.week.bonus===2,"① 한 주 자리는 넷(이번 주 도장 "+a.week.stamps.length+"개, 책갈피 "+a.week.bonus+"장)");
+must(a.week.stamps.length===5&&a.week.bonus===1,"① 한 주 다섯 칸 · 종류별 상한(이번 주 도장 "+a.week.stamps.length+"개, 책갈피 "+a.week.bonus+"장)");
+must(a.week.used.write===1&&a.week.used.review===2&&a.week.used.quiz===2,"라벨·문장 1 · 독후감 2 · 퀴즈 2 로 채워진다");
 a=st("3101");
 must(a.stars.total===4&&a.stars.stamps===21&&a.stars.mStamps===20&&a.stars.mStars===4,"② 9월 도장 20개 = 별 4개");
 let c3=st("3103");must(c3.stars.total===1&&c3.stars.toNext===3,"3103: 9월 도장 7개 = 별 1 + 남은 2(다음 별까지 3)");

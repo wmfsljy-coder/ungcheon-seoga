@@ -31,15 +31,15 @@ must(/한 마디 적어/.test(err(()=>C().api("stampGive",{hakbun:"1101",reason:
 must(/명단에서 찾지/.test(err(()=>C().api("stampGive",{hakbun:"9999",reason:"좋은 질문"}))),"명단에 없는 학번은 거부");
 C().api("stampGive",{hakbun:"1101",reason:"독서 토론에서 좋은 질문"});
 must(T["도장"].length===1&&T["도장"][0]["교사"]==="최과학"&&T["도장"][0]["취소"]==="","도장 시트에 한 줄");
-must(/이미 찍어/.test(err(()=>C().api("stampGive",{hakbun:"1101",reason:"또 주기"}))),"같은 학생에게는 하루 한 개");
+must(/이미 찍어/.test(err(()=>C().api("stampGive",{hakbun:"1101",reason:"또 주기"}))),"같은 학생에게는 한 주 한 개");
 C().api("stampGive",{hakbun:"1102",reason:"쉬는 시간마다 책을 읽음"});
-must(T["도장"].length===2,"다른 학생에게는 같은 날도 된다");
+must(T["도장"].length===2,"다른 학생에게는 같은 주에도 된다");
 
 /* 학생 도장판 */
 let a=st("1101");
 const w=a.week.stamps.filter(x=>x.k==="teacher")[0];
 must(w&&/독서 토론에서 좋은 질문 · 최과학 선생님/.test(w.t),"사유와 선생님 이름이 도장판에 보인다");
-must(w&&w.slot==="wild"&&w.extra===true,"자리를 차지하지 않는 만능 도장(덤)");
+must(w&&w.slot==="wild","만능 도장으로 들어간다(종류 상한 없음)");
 /* 자리를 다 채운 주에도 그대로 들어간다 */
 T["글"].push({"id":"g1","시각":"2026-10-05 10:00:00","주":"2026-10-05","종류":"label","학번":"1101","반":"1-1","책제목":"책1","본문":"글","상태":"posted"},
   {"id":"g2","시각":"2026-10-05 11:00:00","주":"2026-10-05","종류":"review","학번":"1101","반":"1-1","책제목":"책2","본문":"글","상태":"posted"});
@@ -47,14 +47,14 @@ T["퀴즈"].push({"id":"q1","시각":"2026-10-06 10:00:00","학번":"1101","책�
 T["퀴즈응답"].push({"주":"2026-10-05","학번":"1101","점수":"4","문항수":"5","시각":"2026-10-06 11:00:00"});
 a=st("1101");
 must(a.week.stamps.length===5&&a.week.stamps.filter(x=>x.k==="teacher").length===1,
-  "네 자리를 채운 주에도 선생님 도장은 그대로(도장 "+a.week.stamps.length+"개)");
+  "라벨 1 · 독후감 1 · 퀴즈 2 + 선생님 도장 1 = 다섯 칸(도장 "+a.week.stamps.length+"개)");
 must(a.stars.leaf.have===0,"선생님 도장은 책갈피를 쓰지 않는다");
 
 /* 하루 상한 */
-EMAIL="lib@x";db.setConf("교사도장하루","1");
+EMAIL="lib@x";db.setConf("교사도장주간","1");
 C().api("stampGive",{hakbun:"1101",reason:"도서관 정리를 도와줌"});
-must(/오늘은 1개까지/.test(err(()=>C().api("stampGive",{hakbun:"1102",reason:"책을 추천해 줌"}))),"선생님 하루 상한");
-db.setConf("교사도장하루","10");
+must(/이번 주에는 1개까지/.test(err(()=>C().api("stampGive",{hakbun:"1102",reason:"책을 추천해 줌"}))),"선생님 한 주 상한");
+db.setConf("교사도장주간","30");
 
 /* 무르기 */
 EMAIL="g1@x";

@@ -80,14 +80,16 @@ NOW=new Date("2026-11-09T02:00:00Z");
  must(!call("lib@x","award",{id:rk.voting.label[0].id}).ERR,"이달의 글 수상 처리");}
 NOW=new Date("2026-10-30T03:00:00Z");
 must(T["퀴즈"].some(q=>q["학번"]==="2105"&&q["상태"]==="출제"),"학생이 낸 문제가 다음 주 북퀴즈에 뽑힘");
-/* 도장 규칙: 한 주 자리 다섯 칸(자리마다 한 번). 주제·이벤트 덤은 그 위에 따로 얹힌다 */
+/* 도장 규칙: 한 주 다섯 칸, 종류별 상한 라벨·문장 1 · 독후감 2 · 퀴즈 2(만능은 상한 없음) */
 NOW=new Date("2026-10-30T03:00:00Z");
-let over=0,dup=0,maxM=0;STU.slice(0,626).forEach(hb=>{const s=call("s"+hb+"@x","state");
-  if(s.week){const own=s.week.stamps.filter(x=>!x.extra),seen={};
+let over=0,kbad=0,maxM=0;const LIM={write:1,review:2,quiz:2};
+STU.slice(0,626).forEach(hb=>{const s=call("s"+hb+"@x","state");
+  if(s.week){const own=s.week.stamps,n={};
     if(own.length>5)over++;
-    own.forEach(x=>{if(seen[x.slot])dup++;seen[x.slot]=1;});}
+    own.forEach(x=>{n[x.slot]=(n[x.slot]||0)+1;});
+    Object.keys(LIM).forEach(k=>{if((n[k]||0)>LIM[k])kbad++;});}
   maxM=Math.max(maxM,s.thisMonth?s.thisMonth.count:0);});
-must(over===0&&dup===0,"한 주 자리 도장은 다섯 칸까지, 자리마다 한 번(넘침 "+over+" · 중복 "+dup+")");console.log("  한 달 도장 최대 "+maxM+"개");
+must(over===0&&kbad===0,"한 주 도장은 다섯 칸까지, 종류별 상한도 지킨다(넘침 "+over+" · 상한 어김 "+kbad+")");console.log("  한 달 도장 최대 "+maxM+"개");
 /* 하루 2편 */
 NOW=new Date("2026-10-30T04:00:00Z");const hb0="3401";["label","review","label"].forEach((k,i)=>call("s"+hb0+"@x","submit",{kind:k,bookId:books()[i+10],text:text(k==="review"?320:60),why:"도서관에서 읽음",page:"3쪽"}));
 must(T["글"].filter(r=>r["학번"]===hb0&&r["시각"].startsWith("2026-10-30")).length===2,"하루 2편 제한");
