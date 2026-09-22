@@ -1,4 +1,5 @@
-/* 도장 배수 이벤트(2026-09-22): 기간·대상·종류를 정해 도장을 2배로 */
+/* 도장 배수 이벤트: 기간·대상·종류를 정해 도장을 2배로
+   2026-09-22 자리 규칙부터: 배수는 그 자리에서 도장이 된 활동에만 붙는다(같은 주에 또 쓴 라벨은 책갈피라 배수도 없다) */
 const fs=require("fs");eval(fs.readFileSync(__dirname+"/../../core.gs","utf8")+";global.Core=Core;");
 let NOW=new Date("2026-10-08T03:00:00Z"),EMAIL="";
 const T={};Object.keys(Core.HEAD).forEach(t=>T[t]=[]);
@@ -20,25 +21,27 @@ must(st("1101").week.stamps.length===1,"이벤트가 없으면 도장 1개");
 /* 관리자가 이벤트를 연다: 10/06~10/09, 1학년만, ×2 */
 EMAIL="lib@x";C().api("eventSet",{name:"가을 독서 주간",way:"배수",from:"2026-10-06",to:"2026-10-09",val:2,target:"1학년",memo:"1학년 도장 두 배"});
 must(T["이벤트"].length===1,"이벤트 시트에 한 줄");
-post("1101","label","2026-10-06");
+post("1101","review","2026-10-06");
 let a=st("1101");
-must(a.week.stamps.length===3&&a.week.stamps.filter(x=>x.ev===2).length===1,"이벤트 기간 라벨 하나 = 도장 2개(모두 "+a.week.stamps.length+")");
+must(a.week.stamps.length===3&&a.week.stamps.filter(x=>x.ev===2).length===1,"이벤트 기간 독후감 하나 = 도장 2개(모두 "+a.week.stamps.length+")");
+post("1101","label","2026-10-06");
+must(st("1101").week.stamps.length===3,"같은 주에 라벨을 또 쓰면 자리가 차서 배수도 없다(책갈피)");
 must(a.events.length===1&&a.events[0].mul===2&&a.events[0].name==="가을 독서 주간","학생 화면에 진행 중인 이벤트가 보인다");
 /* 대상이 아닌 학년은 그대로 */
 post("2101","label","2026-10-06");
 must(st("2101").week.stamps.length===1,"2학년은 대상이 아니라 그대로 1개");
 must(!st("2101").events.length,"대상이 아니면 이벤트 알림도 없다");
-/* 한 주 상한도 배수만큼 늘어난다: 이벤트 주에는 최대 10개 (별 하나에 세 종류가 필요하니 섞어서) */
-post("1101","review","2026-10-07");
+/* 한 주 상한도 배수만큼 늘어난다. 자리는 넷(라벨·문장 / 독후감 / 퀴즈 출제 / 퀴즈 풀이)이라 자리마다 2개씩 */
 T["퀴즈응답"].push({"주":"2026-10-05","학번":"1101","점수":"4","문항수":"5","시각":"2026-10-07 15:00:00"});
-post("1101","label","2026-10-08");post("1101","review","2026-10-08");post("1101","label","2026-10-09");
+T["퀴즈"].push({"id":"q1","시각":"2026-10-08 10:00:00","학번":"1101","책제목":"책","문제":"문제","품질":"8","상태":"대기","출처":"학생"});
 a=st("1101");
-must(a.week.stamps.length===10&&a.week.bonus>0,"이벤트 주 상한은 5×2=10개(도장 "+a.week.stamps.length+" · 책갈피 "+a.week.bonus+")");
-must(a.stars.mStars===2,"이벤트 주에는 별도 두 개까지(별 "+a.stars.mStars+")");
+must(a.week.stamps.length===7,"이벤트 주: 라벨 1 + 독후감 2 + 퀴즈 풀이 2 + 퀴즈 출제 2 = 7(도장 "+a.week.stamps.length+")");
+must(a.week.stamps.filter(x=>x.ev===2).length===3,"배수가 붙은 도장은 셋(독후감·퀴즈 풀이·퀴즈 출제)");
+must(a.stars.mStars===1,"도장 7개 = 별 1개(별 "+a.stars.mStars+")");
 /* 기간이 지나면 원래대로 */
 NOW=new Date("2026-10-13T03:00:00Z");
 post("1101","label","2026-10-12");post("1101","label","2026-10-12");post("1101","label","2026-10-12");post("1101","label","2026-10-12");
-must(st("1101").week.stamps.length===3,"이벤트가 끝나면 라벨 넉 장을 써도 도장 3개(원래 규칙)");
+must(st("1101").week.stamps.length===1&&st("1101").week.bonus===1,"이벤트가 끝나면 라벨 넉 장을 써도 도장 1개 + 책갈피 1장");
 /* 종류를 정하면 그 종류만 두 배 */
 EMAIL="lib@x";C().api("eventSet",{name:"독후감 주간",way:"배수",from:"2026-10-12",to:"2026-10-16",val:2,kind:"review"});
 post("2101","review","2026-10-13");post("2101","label","2026-10-13");
