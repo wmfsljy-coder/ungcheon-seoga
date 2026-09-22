@@ -1301,7 +1301,7 @@ function pMine(){
 function pIdea(){return '<h3 class="sec">건의함</h3>'+ideaBox(true);}
 /* 내 서재 맨 아래: 이 기기에서 들어오는 방법 */
 function loginBox(){
-  if(D&&D.conf&&D.conf.loginMode&&D.conf.loginMode!=="핀")return "";   /* 학교 구글 계정으로 들어오는 방식이면 필요 없다 */
+  if(D&&D.conf&&D.conf.loginMode==="google")return "";   /* 학교 구글 계정으로 들어오는 방식이면 필요 없다 */
   var auto=loginMode()==="auto",lk=myLink();
   return '<h3 class="sec gap">로그인 방법</h3>'+
     '<p class="sub">지금 이 기기는 <b>'+(auto?"자동 로그인":"올 때마다 PIN 넣기")+'</b> 입니다. '+
@@ -2619,7 +2619,7 @@ function renderAll(){
      (D.me.role==="student"?'<button id="notice-open" class="bell nt" type="button">공지사항'+(noticeCount()?'<i>'+noticeCount()+'</i>':'')+'</button><button id="guide-open" class="help guide-red" type="button">이용 안내</button>':'')+
      (D.me.role!=="student"&&D.news&&D.news.total?'<button id="news-open" class="bell" type="button">새 소식<i>'+D.news.total+'</i></button>':'')+
      (D.me.role!=="student"?'<button id="pv-open" type="button">학생 화면</button>':'')+
-     (D.conf.loginMode==="mail"?'<button id="logout" class="help" type="button">로그아웃</button>':'');
+     (D.conf.loginMode!=="google"?'<button id="logout" class="help" type="button">로그아웃</button>':'');
   $("pvbar").hidden=!pv;
   if(pv)$("pvbar").innerHTML='<span>'+(pv.as?'<b>'+esc(D.me.name)+'</b>('+esc(pv.as)+') 학생이 보는 화면':'<b>아직 아무것도 안 한 학생</b>이 보는 화면')+
     ' · 보기만 되고 저장은 되지 않습니다.</span>'+

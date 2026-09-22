@@ -1437,7 +1437,7 @@ function make(db,env){
   function pubConf(c){
     return {name:c["프로그램명"],sub:c["부제"],round:c["차수"],approve:approveMode(c),
       goal:Number(c["주간도장"])||5,weekCap:Number(c["주간도장"])||5,monthCap:Number(c["월간도장"])||0,
-      quote:todayQuote(),giftOn:S(c["상품권공개"])==="Y",giftNote:S(c["상품권안내"]),dayCap:Number(c["하루제출상한"])||2,voteN:Number(c["투표후보수"])||8,giftMin:Number(c["상품권기준"])||5,giftTypes:S(c["상품권세종류"])!=="N",limit:LIMIT,areas:S(c["추천방식"])==="장르"?GENRE_NAMES:TEEN_NAMES,lib:libConf(c),libChecked:S(c["도서확인"]),libResult:S(c["도서확인결과"]),loginMode:S(c["로그인방식"])==="구글"?"google":"mail",subjects:S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean),giftWins:giftWindows(c),recvSheet:(function(){try{return db.rows("수령기간").length>0;}catch(e){return false;}})(),giftPlace:S(c["상품권배부장소"]),selVer:S(c["선별판"]),upToDate:S(c["선별판"])==="3"&&S(c["퀴즈판"])==="4"&&S(c["문장판"])==="2",quizBooks:Number(c["퀴즈책수"])||3,monthN:Number(c["이달의권수"])||40,holdings:S(c["장서"]),month:S(c["이달"]),
+      quote:todayQuote(),giftOn:S(c["상품권공개"])==="Y",giftNote:S(c["상품권안내"]),dayCap:Number(c["하루제출상한"])||2,voteN:Number(c["투표후보수"])||8,giftMin:Number(c["상품권기준"])||5,giftTypes:S(c["상품권세종류"])!=="N",limit:LIMIT,areas:S(c["추천방식"])==="장르"?GENRE_NAMES:TEEN_NAMES,lib:libConf(c),libChecked:S(c["도서확인"]),libResult:S(c["도서확인결과"]),loginMode:S(c["로그인방식"])==="구글"?"google":"pin",subjects:S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean),giftWins:giftWindows(c),recvSheet:(function(){try{return db.rows("수령기간").length>0;}catch(e){return false;}})(),giftPlace:S(c["상품권배부장소"]),selVer:S(c["선별판"]),upToDate:S(c["선별판"])==="3"&&S(c["퀴즈판"])==="4"&&S(c["문장판"])==="2",quizBooks:Number(c["퀴즈책수"])||3,monthN:Number(c["이달의권수"])||40,holdings:S(c["장서"]),month:S(c["이달"]),
       period:S(c["이달"])?periodOf(S(c["이달"]),c["추천묶음"]):null,
       privacy:{keep:S(c["보유기간"]),owner:S(c["개인정보담당"])},quizBar:Number(c["퀴즈품질기준"])||6,quizTarget:Number(c["퀴즈문항수"])||5};
   }
@@ -1931,7 +1931,6 @@ function make(db,env){
     var keep=db.rows("퀴즈").filter(function(q){
       var st=S(q["상태"]);
       if(st==="예비"&&S(q["출처"])==="자동"&&mon&&S(q["월"])&&S(q["월"])>mon){n++;return false;}
-      if(st==="출제"&&S(q["주"])&&S(q["주"])>wk){n++;return false;}
       return true;
     });
     if(n)db.replace("퀴즈",keep);
@@ -2215,8 +2214,11 @@ function make(db,env){
     return {role:"teacher",kind:"subject",cls:"",grade:"",label:"교사"};
   }
   /* 이 교사가 그 반을 볼 수 있나: 관리자는 전체, 담임·학년 담당은 그 학년, 교사는 학생 기록을 보지 않는다 */
+  /* 이 사람이 그 학급을 볼 수 있나. 주체가 없으면 막는다(전체가 필요하면 ALL_CLS 를 쓴다) */
+  var ALL_CLS={role:"admin",_all:true};
   function seeCls(a,cls){
-    if(!a||a.role==="admin")return true;
+    if(!a)return false;
+    if(a.role==="admin")return true;
     return !!a.grade&&S(cls).indexOf(a.grade+"-")===0;
   }
   function student(a){if(a.role!=="student")fail("학생만 할 수 있습니다.");}
@@ -2576,7 +2578,7 @@ function make(db,env){
     pick=pick.slice(-3);
     pick.slice().reverse().forEach(function(i){
       var w=wins[i];
-      giftRows(null,w.from).forEach(function(x){
+      giftRows(ALL_CLS,w.from).forEach(function(x){   /* 관리자만 보는 수령대상 시트 — 전교생 기록 */
         out.push({"수령":winLabel(w),"시작":w.from,"끝":w.to,"학번":x.hakbun,"이름":x.name,"반":x.cls,"별":x.stars,"상품권":x.vouchers,
           "배부":x.paid?"배부 완료":(t>w.to?"기간 지남":t<w.from?"예정":"대기"),"처리자":x.who||"","처리시각":x.at||""});
       });
@@ -2593,11 +2595,14 @@ function make(db,env){
     }).filter(function(x){return x.vouchers>0||x.paid;}).sort(function(x,y){return x.hakbun<y.hakbun?-1:1;});
   }
   /* 도서부 배부 화면: 수령 기간에만 대상 학생의 학번·이름이 나간다(기간 전·후에는 명단 자체를 주지 않는다) */
-  function deskFor(c){
+  /* 수령 기간 배부 화면. who 를 주면 그 사람이 볼 수 있는 학급만 담는다.
+     who 를 비우면 명단 없이 기간 정보만 준다(전교생 명단이 새어 나가지 않게). */
+  function deskFor(c,who){
     var wins=recvWindows(c),t=today(env.now()),w=null;
     wins.forEach(function(x){if(t>=x.from&&t<=x.to)w=x;});
     if(!w)return {none:true,open:false,next:wins.filter(function(x){return x.from>t;})[0]||null,rows:[]};
-    return {from:w.from,to:w.to,label:winLabel(w),open:t>=w.from&&t<=w.to,place:S(c["상품권배부장소"]),rows:giftRows(null,w.from)};
+    return {from:w.from,to:w.to,label:winLabel(w),open:t>=w.from&&t<=w.to,place:S(c["상품권배부장소"]),
+      rows:who?giftRows(who,w.from):[]};
   }
   /* 도장이 한 번이라도 있었던 달(최근 달 먼저) */
   function stampMonths(){
@@ -2898,7 +2903,7 @@ function make(db,env){
       board:board,mine:mine,voteOpen:voteOpen(now),voteMon:votePeriod(now),voteL:vb("label"),voteR:vb("review"),
       quiz:{items:quiz,done:done?Number(done["점수"]):null,books:weekBooksOf(wk),bookInfo:(function(){var bl={};bookList().forEach(function(b){bl[tkey(b.t)]=b;});
         return weekBooksOf(wk).map(function(t){var b=bl[tkey(t)]||{};return {t:t,total:b.total||0,avail:b.avail,call:b.call||""};});})()},myQuiz:myQuiz,
-      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a.id),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftDesk:a.club?deskFor(c):null};
+      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a.id),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftDesk:a.club?deskFor(c,ALL_CLS):null};
   }
 
   function bookList(){
@@ -3051,7 +3056,7 @@ function make(db,env){
     res.today=today(now);
     res.myLabels=all.filter(function(r){return S(r["반"])===TEACHER_CLS&&S(r["이름"])===a.name;}).map(function(r){return full(r);});
     res.news=teacherNews(a,c,scope,fin,now);
-    res.giftNow=deskFor(c);res.notices=noticesFor("staff");
+    res.giftNow=deskFor(c,a);res.notices=noticesFor("staff");   /* 명단은 그 선생님이 볼 수 있는 학급만 */
     if(a.role==="admin"){res.allNotices=noticesFor("staff",true);res.ideas=allIdeas();
       res.teacherReqs=db.rows("교사신청").filter(function(r){return S(r["상태"])==="대기";}).map(function(r){return {id:S(r["id"]),at:S(r["시각"]).slice(0,16),name:S(r["이름"]),email:S(r["이메일"])};});}
     res.readlog=a.kind==="subject"?[]:readLog(a);
@@ -3098,7 +3103,7 @@ function make(db,env){
       .map(function(r){return {cls:S(r["반"]),name:S(r["이름"]),at:S(r["동의"])};});
     var done=fin.filter(function(f){return f.at&&f.at>since;});
     /* 매월 1~10일: 지난달 상품권 대상(이달 들어 '확인했어요'를 누르기 전까지) */
-    var gift=null,dk=deskFor(c);
+    var gift=null,dk=deskFor(c);   /* 기간만 씀 — 명단은 바로 아래에서 giftRows(a,…) 로 자른다 */
     if(!dk.none&&(!a.seen||a.seen<addDays(dk.from,-7)+" 00:00:00")){
       var pm=dk.label,rows=giftRows(a,dk.from).filter(function(x){return x.vouchers>0;});
       gift={label:pm,from:dk.from,to:dk.to,rows:rows.map(function(x){return {cls:x.cls,name:x.name,hakbun:x.hakbun,stars:x.stars,vouchers:x.vouchers,paid:x.paid};})};
@@ -3159,14 +3164,14 @@ function make(db,env){
           claim:w?{label:w.label,from:w.from,to:w.to,open:!!st.cur,stars:w.stars,vouchers:w.vouchers,paid:w.paid,paidN:w.paidN,who:w.who}:null};})};},
     clubMark:function(a,p){
       student(a);if(!a.club)fail("도서부만 할 수 있습니다.");
-      var dk=deskFor(conf());
+      var dk=deskFor(conf(),ALL_CLS);
       if(!dk.open)fail("지금은 상품권 배부 기간이 아닙니다.");
       var ok={};dk.rows.forEach(function(x){ok[x.hakbun]=true;});
       var ids=(p.ids||[]).map(S).filter(function(h){return ok[h];});
       if(!ids.length)fail("이번 배부 대상이 아닌 학생입니다.");
       markPaid(dk.from,ids,!!p.on,"도서부 "+a.name);
       return {ok:true};},
-    newsSeen:function(a){staff(a);db.set("교사","이메일",a.rowEmail,{"마지막확인":stamp(env.now())});},
+    newsSeen:function(a){staff(a);if(S(a.name))db.set("교사","이름",S(a.name),{"마지막확인":stamp(env.now())});},
     /* 계정 관리(관리자·학년 담당): 조회 → 등록 풀기(다시 등록하게) */
     rosterFind:function(a,p){staff(a);
       if(a.kind==="subject")fail("학년 담당 또는 관리자만 볼 수 있습니다.");
@@ -3330,8 +3335,9 @@ function make(db,env){
       return {ok:true};},
     teacherOk:function(a,p){admin(a);
       var r=db.rows("교사신청").filter(function(x){return S(x["id"])===S(p.id);})[0];if(!r)fail("요청을 찾지 못했습니다.");
-      var dam=S(p.dam)||"교사",email=lower(r["이메일"]);
-      if(!db.rows("교사").some(function(x){return lower(x["이메일"])===email;}))db.add("교사",{"이메일":email,"이름":S(r["이름"]),"담당":dam});
+      var dam=S(p.dam)||"교사",nm=S(r["이름"]).replace(/\s/g,"");
+      if(!nm)fail("신청에 이름이 없습니다.");
+      if(!db.rows("교사").some(function(x){return S(x["이름"]).replace(/\s/g,"")===nm;}))db.add("교사",{"이메일":S(r["이메일"]),"이름":S(r["이름"]),"담당":dam});
       db.set("교사신청","id",S(p.id),{"상태":"승인"});
       try{env.mail(email,"["+S(conf()["프로그램명"])+"] 선생님 등록이 승인되었습니다",S(r["이름"])+" 선생님, 등록이 승인되었습니다. 앱에서 ‘선생님’을 고르고 이름과 이 메일을 적어 로그인해 주세요.");}catch(e){}
       return {ok:true};},
@@ -3551,7 +3557,7 @@ function make(db,env){
     }
     out.timing.studentAvgMs=Math.round((Date.now()-t2)/Math.max(n,1));out.timing.studentMaxMs=sMax;
     chk("학생 화면 열림",!sErr.length&&n>0,n+"/"+st.length+"명 확인"+(sErr.length?" · "+sErr.slice(0,5).join(" / "):""));
-    try{var dk=deskFor(c);chk("도서부 배부 화면",!!dk,dk.none?"배부 기간 아님":dk.rows.length+"명 대상");}catch(e){chk("도서부 배부 화면",false,e.message);}
+    try{var dk=deskFor(c,ALL_CLS);chk("도서부 배부 화면",!!dk,dk.none?"배부 기간 아님":dk.rows.length+"명 대상");}catch(e){chk("도서부 배부 화면",false,e.message);}
     /* ── 문 열기 전 준비(못 하면 경고만, 막지는 않음) ── */
     var reg=st.filter(function(r){return S(r["핀"]);}).length;
     var tch=db.rows("교사"),tReg=tch.filter(function(r){return S(r["핀"]);}).length;
@@ -4477,7 +4483,7 @@ function pMine(){
 function pIdea(){return '<h3 class="sec">건의함</h3>'+ideaBox(true);}
 /* 내 서재 맨 아래: 이 기기에서 들어오는 방법 */
 function loginBox(){
-  if(D&&D.conf&&D.conf.loginMode&&D.conf.loginMode!=="핀")return "";   /* 학교 구글 계정으로 들어오는 방식이면 필요 없다 */
+  if(D&&D.conf&&D.conf.loginMode==="google")return "";   /* 학교 구글 계정으로 들어오는 방식이면 필요 없다 */
   var auto=loginMode()==="auto",lk=myLink();
   return '<h3 class="sec gap">로그인 방법</h3>'+
     '<p class="sub">지금 이 기기는 <b>'+(auto?"자동 로그인":"올 때마다 PIN 넣기")+'</b> 입니다. '+
@@ -5795,7 +5801,7 @@ function renderAll(){
      (D.me.role==="student"?'<button id="notice-open" class="bell nt" type="button">공지사항'+(noticeCount()?'<i>'+noticeCount()+'</i>':'')+'</button><button id="guide-open" class="help guide-red" type="button">이용 안내</button>':'')+
      (D.me.role!=="student"&&D.news&&D.news.total?'<button id="news-open" class="bell" type="button">새 소식<i>'+D.news.total+'</i></button>':'')+
      (D.me.role!=="student"?'<button id="pv-open" type="button">학생 화면</button>':'')+
-     (D.conf.loginMode==="mail"?'<button id="logout" class="help" type="button">로그아웃</button>':'');
+     (D.conf.loginMode!=="google"?'<button id="logout" class="help" type="button">로그아웃</button>':'');
   $("pvbar").hidden=!pv;
   if(pv)$("pvbar").innerHTML='<span>'+(pv.as?'<b>'+esc(D.me.name)+'</b>('+esc(pv.as)+') 학생이 보는 화면':'<b>아직 아무것도 안 한 학생</b>이 보는 화면')+
     ' · 보기만 되고 저장은 되지 않습니다.</span>'+
