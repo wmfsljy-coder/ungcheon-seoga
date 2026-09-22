@@ -29,7 +29,7 @@ var HEAD={
   "도장":["id","시각","주","학번","이름","반","사유","교사","취소"]
 };
 var CONF0=[["프로그램명","웅천 서가"],["부제","한 권 읽고, 한 줄 남기기"],["차수","1"],
-  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","2"],["월최대매수","2"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["교사도장주간","30"],["시상별","2"],["시상탑라벨","3"],["시상탑문장","3"],["시상탑독후감","5"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
+  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","2"],["월최대매수","2"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
   ["학교코드","S100000673"],["교육청코드","S10"],["학교명","웅천고등학교"],
   ["이달의권수","40"],["추천방식","권장"],["추천묶음","2026-09~2026-10"],["퀴즈문항수","5"],["퀴즈책수","3"],["퀴즈품질기준","6"],["보유기간","3학년은 졸업식 날까지, 1·2학년은 학년말(2월)까지"],["개인정보담당","도서관 담당 교사"]];
 /* 설정 시트 '설명' 칸에 들어가는 뜻풀이 */
@@ -54,8 +54,8 @@ var CONF_DESC={
   "주간독후감":"한 주에 독후감으로 받을 수 있는 도장 수(이 주의 주제·추천 도서 덤 도장 포함)",
   "주간퀴즈":"한 주에 퀴즈로 받을 수 있는 도장 수(출제와 풀이를 합쳐서)",
   "교사도장주간":"선생님 한 분이 한 주에 찍어 줄 수 있는 도장 수(같은 학생에게는 하루 한 개)",
-  "시상별":"이달의 부문에 뽑히면 주는 별 수(별 2개 = 문화상품권 1매)",
-  "시상탑라벨":"이달의 라벨 몇 위까지 뽑는지","시상탑문장":"이달의 문장 몇 위까지 뽑는지","시상탑독후감":"이달의 독후감 몇 위까지 뽑는지",
+  "시상별":"이달의 독후감에 뽑히면 주는 별 수(라벨·문장은 별 대신 만능 도장 1개)",
+  "시상탑라벨":"이달의 라벨 몇 위까지 뽑는지(만능 도장 1개)","시상탑문장":"이달의 문장 몇 위까지 뽑는지(만능 도장 1개)","시상탑독후감":"이달의 독후감 몇 위까지 뽑는지(별 1개)",
   "상품권당별":"별 몇 개에 문화상품권 1매(별이 이보다 적으면 수령 대상 아님)",
   "월최대매수":"한 번 수령 기간에 받을 수 있는 최대 매수",
   "상품권금액":"상품권 1매 금액(원). 학생 화면 안내에 쓰임",
@@ -98,6 +98,7 @@ var CONF_DESC={
   "개인정보담당":"개인정보 동의 안내에 나오는 담당자",
   "장서확인":"(자동 기록) 장서 수를 센 날",
   "별규칙판":"(자동 기록) 손대지 마세요",
+  "시상판":"(자동 기록) 시상 규칙의 판. 손대지 마세요",
   "선별판":"(자동 기록) 추천 도서 뽑는 방식의 판. 손대지 마세요",
   "퀴즈판":"(자동 기록) 북퀴즈 채우는 방식의 판. 손대지 마세요",
   "문장판":"(자동 기록) 오늘의 문장 기본 목록의 판. 손대지 마세요",
@@ -591,8 +592,8 @@ function weekKey(d,shift){
 /* 투표: 늘 열려 있고 올라온 지 7일 안의 글이 대상. 주마다 라벨·문장·독후감 2표씩, 같은 글에 두 번은 안 된다 */
 var VOTE_PER_WEEK=2;      /* 부문마다 한 주에 두 표 */
 var VOTE_DAYS=7;          /* 글은 올라온 날부터 이레 동안만 투표 대상 */
-var VOTE_TOP={label:3,quote:3,review:5};   /* 달마다 부문별 몇 위까지 시상하는지 */
-var AWARD_STARS=2;        /* 뽑히면 별 몇 개(별 2개 = 문화상품권 1매) */
+var VOTE_TOP={label:10,quote:10,review:10};   /* 달마다 부문별 몇 위까지 시상하는지 */
+var AWARD_STARS=1;        /* 이달의 독후감에 뽑히면 별 몇 개(라벨·문장은 만능 도장) */
 var KINDS3=["label","quote","review"];
 function kName(k){return k==="review"?"독후감":k==="quote"?"문장":"라벨";}
 function voteOpen(d){return true;}
@@ -1196,6 +1197,11 @@ function make(db,env){
     if(S(conf()["무인증판"])!=="1"){setConf("교사등록무인증","N");setConf("무인증판","1");}
     /* 별 규칙(2026-09-20)부터 한 달 도장 상한은 없음: 옛 기본값 20 → 0 을 한 번만 */
     if(S(conf()["별규칙판"])!=="1"){if(S(conf()["월간도장"])==="20")setConf("월간도장","0");setConf("별규칙판","1");}
+    /* 시상 규칙(2026-09-22): 독후감 10위까지 별 1개, 라벨·문장 10위까지 만능 도장 */
+    if(S(conf()["시상판"])!=="2"){
+      setConf("시상별","1");setConf("시상탑라벨","10");setConf("시상탑문장","10");setConf("시상탑독후감","10");
+      setConf("시상판","2");
+    }
     /* 이달 칸이 날짜로 바뀌어 있으면 글자로 다시 적는다 */
     var rawM=db.rows("설정").filter(function(r){return S(r["항목"])==="이달";})[0];
     if(rawM&&/^\d{4}-\d{2}-01/.test(S(rawM["값"])))setConf("이달",S(rawM["값"]).slice(0,7));
@@ -1893,7 +1899,7 @@ function make(db,env){
   /* 활동 → 도장 종류 */
   function slotOf(k){
     return (k==="review"||k==="theme")?"review":(k==="quizmk"||k==="quizsv"||k==="quiz")?"quiz":
-           (k==="mission"||k==="wild"||k==="teacher"||k==="welcome")?"wild":"write";
+           (k==="mission"||k==="wild"||k==="teacher"||k==="welcome"||k==="award")?"wild":"write";
   }
   /* 옛 이름(상품권 종류 조건에서 쓴다): 라벨·독후감·퀴즈 */
   function kindOf(k){var s=slotOf(k);return s==="write"?"label":s;}
@@ -1930,6 +1936,16 @@ function make(db,env){
         });
       });
     }catch(e0){}
+    /* 이달의 라벨·문장 시상: 만능 도장 하나(독후감은 별 1개라 여기 오지 않는다) */
+    try{
+      var aw=awardList();
+      Object.keys(aw).forEach(function(hb){
+        aw[hb].forEach(function(x){
+          if(!x.wild)return;
+          put(hb,{k:"award",t:"이달의 "+kName(x.kind)+" "+monLabel(x.mon)+" "+x.rank+"위 · 표 "+x.votes,at:x.at});
+        });
+      });
+    }catch(e5){}
     /* 학급 전원 가입: 마지막 한 사람이 PIN 을 정한 그때, 그 반 모두에게 만능 도장 하나 */
     try{
       var cl={};
@@ -2067,7 +2083,8 @@ function make(db,env){
   function winLabel(w){return Number(w.from.slice(5,7))+"월 수령";}
   var STARS=null,AWARDS=null;
   /* ── 이달의 부문 시상 ──
-     달마다(말일) 라벨·문장은 시상탑라벨(3)위, 독후감은 시상탑독후감(5)위까지 뽑아 별 시상별(2)개.
+     달마다(말일) 부문별로 뽑는다. 독후감 시상탑독후감(10)위까지는 별 시상별(1)개,
+     라벨·문장 시상탑라벨·시상탑문장(10)위까지는 만능 도장 1개.
      표는 그 달에 찍힌 표만 센다(매달 1일에 처음부터 다시). 같은 사람은 한 부문에서 한 번만 */
   function awardTops(c){c=c||conf();
     function n(k,d){var v=Number(c[k]);return v>0?v:d;}
@@ -2091,17 +2108,18 @@ function make(db,env){
         var top=tops[kind]||3,bar=list[Math.min(top,list.length)-1].v,got={},rank=0;
         list.filter(function(x){return x.v>=bar;}).forEach(function(x){
           if(got[x.hb])return;got[x.hb]=true;rank++;
-          (out[x.hb]=out[x.hb]||[]).push({mon:m,kind:kind,rank:rank,votes:x.v,id:x.id,stars:per,
-            at:day+" 23:"+p2(Math.min(59,50+rank))+":00"});
+          (out[x.hb]=out[x.hb]||[]).push({mon:m,kind:kind,rank:rank,votes:x.v,id:x.id,
+            stars:kind==="review"?per:0,wild:kind==="review"?0:1,
+            at:day+" 23:"+p2(Math.min(59,10+rank))+":00"});
         });
       });
     });
     return AWARDS=out;
   }
-  /* 시상으로 받은 별의 시각들 */
+  /* 시상으로 받은 별의 시각들(이달의 독후감) */
   function awardStarTimes(hb){
     var out=[];(awardList()[hb]||[]).forEach(function(a){
-      for(var i=0;i<a.stars;i++)out.push(a.at.slice(0,17)+p2(Math.min(59,i)));});
+      for(var i=0;i<(a.stars||0);i++)out.push(a.at.slice(0,17)+p2(Math.min(59,i)));});
     return out;
   }
   /* 별이 된 때(시각)들. 도장은 달이 바뀌어도 이어져 쌓이고, 다섯 개가 찰 때마다 별 하나 */
@@ -2557,7 +2575,7 @@ function make(db,env){
     var totals={bonus:sm.bonus.length};sm.stamps.forEach(function(x){totals[x.k]=(totals[x.k]||0)+1;});
     return {me:a,conf:pubConf(c),books:bookList(),week:week,thisMonth:thisMonth,progress:progress,stars:stars,claims:claims,months:months,
       today:today(now),canWrite:canWrite(a),covers:covers,quizLog:quizLog,stampTotals:totals,classFull:classFull,
-      awards:(awardList()[a.id]||[]).map(function(x){return {mon:x.mon,kind:x.kind,rank:x.rank,votes:x.votes,stars:x.stars};}).reverse(),
+      awards:(awardList()[a.id]||[]).map(function(x){return {mon:x.mon,kind:x.kind,rank:x.rank,votes:x.votes,stars:x.stars,wild:x.wild};}).reverse(),
       awardTops:awardTops(c),awardStars:Number(c["시상별"])||AWARD_STARS,
       classes:classStats(c,mon).map(function(x){return {cls:x.cls,total:x.total,joined:x.joined};}),
       board:board,mine:mine,voteOpen:voteOpen(now),voteMon:votePeriod(now),voteDays:VOTE_DAYS,voteTop:VOTE_TOP,

@@ -1378,9 +1378,9 @@ function pMine(){
     return '<button class="chip" data-mkind="'+x[0]+'" aria-pressed="'+(kind===x[0])+'">'+x[1]+'</button>';}).join("");
   var MS=D.months||[];
   var AW=(D.awards||[]);
-  var awtab=AW.length?'<h3 class="sec gap">이달의 부문 시상</h3><div class="scrollx"><table class="qlog"><tr><th>달</th><th>부문</th><th>순위</th><th>표</th><th>받은 별</th></tr>'+
-    AW.map(function(x){return '<tr><td>'+Number(String(x.mon).slice(5))+'월</td><td>'+kindName(x.kind)+'</td><td>'+x.rank+'위</td><td>'+x.votes+'표</td><td>★ '+x.stars+'개</td></tr>';}).join("")+
-    '</table></div><p class="hint">달마다 말일에 부문별로 표를 모아 뽑습니다. 받은 별은 문화상품권으로 바꿀 수 있어요.</p>':'';
+  var awtab=AW.length?'<h3 class="sec gap">이달의 부문 시상</h3><div class="scrollx"><table class="qlog"><tr><th>달</th><th>부문</th><th>순위</th><th>표</th><th>받은 것</th></tr>'+
+    AW.map(function(x){return '<tr><td>'+Number(String(x.mon).slice(5))+'월</td><td>'+kindName(x.kind)+'</td><td>'+x.rank+'위</td><td>'+x.votes+'표</td><td>'+(x.stars?'★ 별 '+x.stars+'개':'萬 만능 도장 1개')+'</td></tr>';}).join("")+
+    '</table></div><p class="hint">매달 말일에 부문별로 표를 모아 뽑습니다. 독후감은 별, 라벨·문장은 만능 도장이에요.</p>':'';
   var mtab=awtab+(MS.length?'<h3 class="sec gap">달별 도장·별</h3><div class="scrollx"><table class="qlog"><tr><th>달</th><th>도장</th><th>별</th><th>책갈피</th></tr>'+
     MS.map(function(x){return '<tr><td>'+Number(x.mon.slice(5))+'월</td><td>'+x.stamps+'개</td><td>'+(x.stars?'★ '+x.stars+'개':'<span class="hint">—</span>')+'</td><td>'+(x.bonus||"")+'</td></tr>';}).join("")+'</table></div>':'');
   var CL=D.claims||[];
@@ -1571,7 +1571,7 @@ function guideHTML(){
       '<li><b>도장이 취소되는 경우</b>: 인터넷 서평·다른 사람 글·AI가 쓴 글을 옮겨 적었을 때, 읽지 않고 썼을 때, 누군가를 겨냥하거나 거친 말이 있을 때, 같은 글을 되풀이해 냈을 때. 선생님이 글을 내리면 <b>그 도장과 그 도장으로 만들어진 별도 함께 사라져요.</b></li>'+
       '<li>맞춤법·글솜씨는 보지 않아요. <b>내 경험 한 줄</b>이면 충분해요.</li></ul>')+
     sec("3. 이름은 안 나와요",'<ul><li>게시판에는 학급만 보여요. 이름은 담임·담당 선생님만 봐요.</li>'+
-      '<li><b>투표</b>: <b>올라온 지 '+(D.voteDays||7)+'일 안</b>의 글 가운데 무작위 '+c.voteN+'편이 보여요(사람마다 달라요). 라벨·문장·독후감에 <b>주마다 2표씩</b> 쓸 수 있고, 월요일에 새 표가 생겨요. <b>매달 말일</b>에 부문별로 표를 모아 <b>라벨·문장 '+((D.awardTops||{}).label||3)+'위, 독후감 '+((D.awardTops||{}).review||5)+'위까지 뽑아 별 '+(D.awardStars||2)+'개</b>를 드려요(표는 매달 1일에 처음부터 다시). 누가 누구를 뽑았는지는 <b>다른 사람에게 보이지 않아요</b>(중복을 막는 표시만 남아요).</li>'+
+      '<li><b>투표</b>: <b>올라온 지 '+(D.voteDays||7)+'일 안</b>의 글 가운데 무작위 '+c.voteN+'편이 보여요(사람마다 달라요). 라벨·문장·독후감에 <b>주마다 2표씩</b> 쓸 수 있고, 월요일에 새 표가 생겨요. <b>매달 말일</b>에 부문별로 뽑아 <b>독후감은 '+((D.awardTops||{}).review||10)+'위까지 별 '+(D.awardStars||1)+'개</b>, <b>라벨·문장은 '+((D.awardTops||{}).label||10)+'위까지 만능 도장 1개</b>를 드려요(표는 매달 1일에 처음부터 다시). 누가 누구를 뽑았는지는 <b>다른 사람에게 보이지 않아요</b>.</li>'+
       '<li>친구 글에 <b>읽고 싶어요</b>를 누르면 글쓴이에게 숫자로 전해져요.</li></ul>')+
     sec("4. 책 찾기",'<ul><li><b>서가</b>: 이번 달 추천 도서(모두 학교 도서관에 있는 책, 매달 1일에 바뀜). 초록 <b>대출 가능</b>이면 지금 빌릴 수 있어요.</li>'+
       '<li><b>도서 검색</b>: 학교 도서관 책을 제목·지은이로 찾아요. 옆 번호(청구기호)대로 서가에서 찾으면 돼요.</li>'+
@@ -1843,7 +1843,7 @@ function pVote(){
   return '<h3 class="sec">투표</h3>'+
     '<p class="sub"><b>올라온 지 '+d+'일 안</b>의 글만 투표 대상이에요. 그 가운데 무작위로 몇 편이 보입니다(사람마다 다르고, 월요일마다 새로 섞여요). '+
       '<b>한 주에 라벨 '+per+'표 · 문장 '+per+'표 · 독후감 '+per+'표</b>까지, 같은 글에는 한 번만. 누가 뽑았는지는 아무에게도 보이지 않아요.</p>'+
-    '<div class="guidebanner"><span>🏅 <b>달마다 말일에 부문별로 표를 모아 라벨·문장은 '+top.label+'위, 독후감은 '+top.review+'위까지 뽑아 <u>별 '+(D.awardStars||2)+'개</u></b>를 드려요(별 2개 = 문화상품권 1매). 표는 <b>매달 1일에 처음부터</b> 다시 셉니다.</span></div>'+
+    '<div class="guidebanner"><span>🏅 <b>매달 말일</b>에 부문별로 표를 모아 뽑아요 — <b>이달의 독후감 '+top.review+'위까지 별 '+(D.awardStars||1)+'개</b>, <b>이달의 라벨·문장 '+top.label+'위까지 만능 도장 1개</b>. 표는 <b>매달 1일에 처음부터</b> 다시 셉니다.</span></div>'+
     '<div class="done" style="margin-bottom:16px">이번 주 남은 표 — 라벨 <b>'+((D.voteL&&D.voteL.left)||0)+'</b>표 · 문장 <b>'+((D.voteQ&&D.voteQ.left)||0)+'</b>표 · 독후감 <b>'+((D.voteR&&D.voteR.left)||0)+'</b>표 (월요일마다 새로 생겨요)</div>'+
     '<h3 class="sec" style="margin-top:20px">라벨 부문</h3>'+voteBlock("label",D.voteL)+
     '<h3 class="sec gap">문장 부문</h3>'+voteBlock("quote",D.voteQ)+

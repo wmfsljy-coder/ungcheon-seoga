@@ -49,7 +49,7 @@ must(/이미 뽑은 글/.test(err(()=>C().api("vote",{kind:"label",id:gL3}))),"�
 must(!err(()=>C().api("vote",{kind:"label",id:fresh})),"새 주에는 새 표로 다른 글을 뽑는다");
 NOW=new Date("2026-10-20T03:00:00Z");
 
-/* ── 달마다 부문별 시상 = 별 2개(문화상품권 대상) ── */
+/* ── 달마다 부문별 시상: 독후감 10위까지 별 1개, 라벨·문장 10위까지 만능 도장 ── */
 /* 10월 라벨: gL(3102) 3표, gL2(3105) 2표, gL3(3104) 1표, oldOne(3102) 0표 */
 function ballots(id,who){who.forEach(h=>T["투표"].push({"시각":"2026-10-20","주":"2026-10-19","종류":"label","투표자":"v|"+h+"|"+id,"글id":id}));}
 ballots(gL,["3103","3104"]);      /* gL 은 3101 표까지 3표 */
@@ -58,12 +58,14 @@ ballots(gL3,["3102"]);            /* 1표 */
 NOW=new Date("2026-11-03T03:00:00Z");
 let s2=st("3102"),s5=st("3105"),s4=st("3104"),s1=st("3101");
 const aw=hb=>st(hb).awards||[];
-must(s2.stars.total===2&&aw("3102").some(x=>x.kind==="label"&&x.rank===1),"라벨 1위(3표)에게 별 2개");
-must(s5.stars.total===2&&aw("3105").some(x=>x.kind==="label"&&x.rank===2),"라벨 2위(2표)에게 별 2개");
-must(aw("3104").some(x=>x.kind==="label"&&x.rank===3),"라벨 3위(1표)도 시상");
-must(aw("3103").some(x=>x.kind==="quote"),"문장 부문도 시상");
-must(aw("3104").some(x=>x.kind==="review"),"독후감 부문도 시상");
+const wild=hb=>(st(hb).stampTotals||{}).award||0;
+must(aw("3102").some(x=>x.kind==="label"&&x.rank===1&&x.wild===1&&!x.stars),"라벨 1위(3표)에게 만능 도장(별 아님)");
+must(s2.stars.total===0,"라벨 시상으로는 별이 붙지 않는다(별 "+s2.stars.total+")");
+must(wild("3102")===1,"만능 도장이 도장판에 찍힌다(만능 시상 도장 "+wild("3102")+"개)");
+must(aw("3105").some(x=>x.kind==="label"&&x.rank===2&&x.wild===1),"라벨 2위도 만능 도장");
+must(aw("3103").some(x=>x.kind==="quote"&&x.wild===1),"문장 부문도 만능 도장");
+must(aw("3104").some(x=>x.kind==="review"&&x.stars===1&&!x.wild),"독후감 부문은 별 1개");
+must(s4.stars.total===1,"독후감 시상 별 1개가 쌓인다(별 "+s4.stars.total+")");
 must(!aw("3101").length&&s1.stars.total===0,"표를 못 받은 학생에게는 시상이 없다");
-must(s4.stars.total===4&&aw("3104").length===2,"부문이 다르면 둘 다 받는다(라벨 3위 + 독후감 1위 = 별 4개)");
-must(s2.stars.rule.pair===2&&s2.giftNotice&&s2.giftNotice.mine.vouchers===1,"별 2개로 문화상품권 1매 대상이 된다");
-must(st("3102").awardTops.label===3&&st("3102").awardTops.review===5,"라벨·문장은 3위, 독후감은 5위까지");
+must(aw("3104").length===2&&wild("3104")===1&&st("3104").stars.total===1,"부문이 다르면 둘 다(라벨 3위 만능 + 독후감 1위 별)");
+must(st("3102").awardTops.label===10&&st("3102").awardTops.review===10,"라벨·문장·독후감 모두 10위까지");
