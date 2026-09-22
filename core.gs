@@ -808,7 +808,7 @@ var SHEET_DOC={
        "중분류":["더 자세한 갈래","한국소설"],"ISBN":["책 번호",""],"자료실":["어디에 있는지","자료실"]}},
   "공감":{d:"‘읽고 싶어요’ 기록(누가 눌렀는지는 알 수 없게 섞어 둡니다).",edit:"보기만 하세요",
     c:{"시각":["누른 때",""],"글id":["그 글",""],"누른이":["섞어 둔 값",""]}},
-  "투표":{d:"이달의 투표 기록(누가 누구를 뽑았는지 남기지 않습니다).",edit:"보기만 하세요",
+  "투표":{d:"이달의 투표 기록. 투표자 칸에는 이름·학번 대신 되돌릴 수 없는 표시만 들어갑니다(중복 투표를 막는 용도).",edit:"보기만 하세요",
     c:{"시각":["누른 때",""],"주":["투표한 주",""],"종류":["label / review",""],
        "투표자":["섞어 둔 값",""],"글id":["뽑은 글",""]}},
   "기기":{d:"자동 로그인해 둔 기기 목록. 로그아웃·PIN 초기화를 하면 해제됩니다.",edit:"보기만 하세요",
@@ -920,16 +920,17 @@ function make(db,env){
     });
     if(withState){
       var reqs=[],owner=[];
-      out.forEach(function(o,i){if(o.ok)o.copies.slice(0,maxPer||60).forEach(function(b){reqs.push(libStateReq(L,b.bookKey));owner.push(i);});});
+      out.forEach(function(o,i){o.tried=0;o.checked=0;
+        if(o.ok)o.copies.slice(0,maxPer||60).forEach(function(b){o.tried++;reqs.push(libStateReq(L,b.bookKey));owner.push(i);});});
       var st=httpAll(reqs),seen={};
       st.forEach(function(r,k){
         var o=out[owner[k]],d=libData(r);if(!d)return;
-        seen[owner[k]]=true;
+        seen[owner[k]]=true;o.checked++;        /* 실제로 상태를 받아 본 권수 */
         if(!o.cover&&S(d.coverUrl))o.cover=S(d.coverUrl);
         if(S(d.status)==="대출가능")o.avail++;
         else if(S(d.returnPlanDate)&&(!o.due||S(d.returnPlanDate)<o.due))o.due=S(d.returnPlanDate);
       });
-      out.forEach(function(o,i){if(o.ok&&o.found&&!seen[i])o.avail=-1;});   /* 상태 조회 실패 */
+      out.forEach(function(o,i){if(o.ok&&o.found&&!seen[i])o.avail=-1;});   /* 한 권도 확인 못 함 */
     }
     out.forEach(function(o){delete o.copies;});
     return out;
@@ -956,7 +957,7 @@ function make(db,env){
       if(!o.ok){failed++;return;}
       if(o.found){found++;
         upd[id]={"소장":"Y","수동":"","청구기호":o.callNo,"권수":o.total,"대출가능":o.avail<0?"":o.avail,"반납예정":o.due||"","확인":stamp_,
-          "표지":o.cover||S(b["표지"]),"확인권수":Math.min(o.total,STATE_CAP),"ISBN":S(b["ISBN"])||o.isbn||""};}
+          "표지":o.cover||S(b["표지"]),"확인권수":(o.checked||0),"ISBN":S(b["ISBN"])||o.isbn||""};}
       else if(S(b["출처"])==="자동")upd[id]={"소장":"Y","확인":stamp_};
       else upd[id]={"소장":S(b["수동"])==="Y"?"Y":"N","청구기호":S(b["수동"])==="Y"?S(b["청구기호"]):"","권수":"","대출가능":"","반납예정":"","확인":stamp_};
     });
@@ -1619,9 +1620,13 @@ function make(db,env){
     db.add("기기",{"토큰":env.hmac("dev|"+t),"계정":S(acc),"만든날":stamp(now),"마지막":td,"만료":addDays(td,keep),"해제":"","기기":S(p&&p.ua).slice(0,80)});
     return {token:t,remember:!(p&&p.remember===false)};
   }
-  function revokeAcc(acc){
-    var up={};db.rows("기기").forEach(function(r){if(S(r["계정"])===S(acc)&&S(r["해제"])!=="Y")up[S(r["토큰"])]={"해제":"Y"};});
+  /* 그 계정으로 로그인해 둔 기기를 모두 푼다. keepHash 를 주면 그 기기 하나만 남긴다
+     (PIN 을 바꾼 본인은 그대로 쓰고, 새어 나간 링크·다른 기기만 끊기게) */
+  function revokeAcc(acc,keepHash){
+    var up={};db.rows("기기").forEach(function(r){
+      if(S(r["계정"])===S(acc)&&S(r["해제"])!=="Y"&&S(r["토큰"])!==S(keepHash||""))up[S(r["토큰"])]={"해제":"Y"};});
     if(Object.keys(up).length)db.setMany("기기","토큰",up);
+    return Object.keys(up).length;
   }
   function who(p){
     var email;
@@ -1765,19 +1770,29 @@ function make(db,env){
     return {token:t3.token,remember:t3.remember,name:nmRow};
   }
   /* 내 PIN 바꾸기(로그인한 사람) */
+  /* 본인이 PIN 바꾸기.
+     - 지금 PIN 을 틀리면 로그인과 같은 시도 횟수 제한이 걸린다(5회 10분, 10회 하루)
+     - 바꾸고 나면 이 기기만 남기고 나머지 기기 로그인은 모두 풀린다
+       (로그인 링크가 새어 나갔을 때 PIN 변경만으로 되돌릴 수 있게) */
   function pinChange(a,p){
     var len=pinLen(),bad=pinOk(S(p.newPin),len);if(bad)fail(bad);
+    var acc,left,now=env.now();
     if(a.role==="student"){
       var r=db.rows("명단").filter(function(x){return S(x["학번"])===a.id;})[0];if(!r)fail("명단에서 찾지 못했습니다.");
-      if(S(r["핀"])&&pinHash(accKey("student",a.id),S(p.pin))!==S(r["핀"]))fail("지금 쓰는 PIN 이 맞지 않아요.");
+      left=lockLeft(r);if(left)fail("PIN 이 잠겨 있습니다. "+left+"분 뒤에 다시 해 주세요.");
+      if(S(r["핀"])&&pinHash(accKey("student",a.id),S(p.pin))!==S(r["핀"]))pinFail("명단","학번",a.id,r);
       if(S(p.newPin)===S(a.id))fail("학번과 같은 번호는 쓸 수 없어요.");
-      db.set("명단","학번",a.id,{"핀":pinHash(accKey("student",a.id),S(p.newPin)),"핀설정":stamp(env.now()),"실패":"0","잠금":""});
+      db.set("명단","학번",a.id,{"핀":pinHash(accKey("student",a.id),S(p.newPin)),"핀설정":stamp(now),"실패":"0","잠금":""});
+      acc=accKey("student",a.id);
     }else{
       var t=db.rows("교사").filter(function(x){return S(x["이름"])===a.name;})[0];if(!t)fail("교사 명단에서 찾지 못했습니다.");
-      if(S(t["핀"])&&pinHash(accKey("teacher",a.name),S(p.pin))!==S(t["핀"]))fail("지금 쓰는 PIN 이 맞지 않아요.");
-      db.set("교사","이름",a.name,{"핀":pinHash(accKey("teacher",a.name),S(p.newPin)),"핀설정":stamp(env.now()),"실패":"0","잠금":""});
+      left=lockLeft(t);if(left)fail("PIN 이 잠겨 있습니다. "+left+"분 뒤에 다시 해 주세요.");
+      if(S(t["핀"])&&pinHash(accKey("teacher",a.name),S(p.pin))!==S(t["핀"]))pinFail("교사","이름",a.name,t);
+      db.set("교사","이름",a.name,{"핀":pinHash(accKey("teacher",a.name),S(p.newPin)),"핀설정":stamp(now),"실패":"0","잠금":""});
+      acc=accKey("teacher",a.name);
     }
-    return {ok:true};
+    var here=deviceOf(p&&p._t),off=revokeAcc(acc,here&&here.hash);
+    return {ok:true,revoked:off};
   }
   function logout(p){
     var dv=deviceOf(p&&p._t);
@@ -1929,8 +1944,8 @@ function make(db,env){
   }
   /* ── 별과 상품권 ──
      도장(한 주 최대 주간도장)은 누적으로 쌓이고, 별당도장(5)개마다 별 1개.
-     수령 기간(설정 상품권배부, 비우면 매달 첫 월~목)마다 그 기간 시작 전까지 모은 별로 상품권: 별 상품권당별(2)개에 1매, 한 번에 월최대매수(2)매까지.
-     받으면 그 별은 사라지고, 기간이 끝날 때까지 안 받아도 사라진다. 기간이 시작된 뒤 생긴 별은 다음 수령으로 */
+     수령 기간(설정 상품권배부, 비우면 매달 첫 월~목)마다 지금 가진 별로 상품권: 별 상품권당별(2)개에 1매, 한 번에 월최대매수(2)매까지.
+     별은 상품권으로 바꿀 때만 빠진다. 기간 안에 못 받아도 그대로 남아 다음 수령에 쓸 수 있고, 기간 중에 새로 생긴 별도 쓸 수 있다 */
   function giftRule(c){c=c||conf();return {per:Number(c["별당도장"])||5,pair:Number(c["상품권당별"])||2,max:Number(c["월최대매수"])||2,won:Number(c["상품권금액"])||5000};}
   function monLabel(m){var x=/^(\d{4})-(\d{2})/.exec(S(m));return x?Number(x[2])+"월":S(m);}
   function nextMonthKey(m){var x=/^(\d{4})-(\d{2})/.exec(S(m));if(!x)return "";var y=Number(x[1]),mm=Number(x[2])+1;if(mm>12){mm=1;y++;}return y+"-"+p2(mm);}
@@ -2086,7 +2101,7 @@ function make(db,env){
       if(!rows.length&&a.role!=="admin")return;
       out.push({to:to,subject:"[웅천 서가] "+winLabel(w)+" 상품권 대상 "+rows.length+"명 · "+n+"매",
         body:(S(tr["이름"])||"")+" 선생님, "+winLabel(w)+" 상품권 대상입니다.\n\n"+
-          "수령 기간: "+w.from+" ~ "+w.to+(S(c["상품권배부장소"])?" · "+S(c["상품권배부장소"]):"")+" (기간이 지나면 별이 사라져 지급하지 않습니다)\n"+
+          "수령 기간: "+w.from+" ~ "+w.to+(S(c["상품권배부장소"])?" · "+S(c["상품권배부장소"]):"")+" (이 기간에 못 받은 별은 사라지지 않고 다음 수령에 쓸 수 있습니다)\n"+
           "기준: 도장 "+R.per+"개 = 별 1개, 별 "+R.pair+"개 = 문화상품권 "+R.won+"원 1매, 한 번에 최대 "+R.max+"매\n"+
           (a.role==="admin"?"전체":a.grade+"학년")+" 대상 "+rows.length+"명, "+n+"매\n\n"+
           rows.map(function(x){return x.cls+" "+x.hakbun+" "+x.name+" · 별 "+x.stars+"개 · "+x.vouchers+"매";}).join("\n")+

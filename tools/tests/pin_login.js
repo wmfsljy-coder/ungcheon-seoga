@@ -52,9 +52,19 @@ must(!!login({role:"teacher",name:" 일 담 ",pin:"820134"}).token,"이름의 �
 const req=login({role:"teacher",name:"모르는샘"});
 must(req.need==="approval"&&T["교사신청"].length===1,"교사 명단에 없으면 관리자 승인 대기");
 /* 6. PIN 바꾸기·초기화·잠금 풀기 */
-must(/지금 쓰는 PIN/.test(err(()=>C().api("pinChange",{_t:again.token,pin:"000000",newPin:"771122"}))),"지금 PIN 을 맞혀야 바꾼다");
-C().api("pinChange",{_t:again.token,pin:"493028",newPin:"771122"});
+must(/맞지 않/.test(err(()=>C().api("pinChange",{_t:again.token,pin:"000000",newPin:"771122"}))),"지금 PIN 을 맞혀야 바꾼다");
+/* PIN 변경에도 로그인과 같은 시도 횟수 제한이 걸린다 */
+for(let i=0;i<3;i++)err(()=>C().api("pinChange",{_t:again.token,pin:"000000",newPin:"771122"}));
+must(/10분/.test(err(()=>C().api("pinChange",{_t:again.token,pin:"000000",newPin:"771122"}))),"PIN 변경도 다섯 번 틀리면 잠긴다");
+NOW=new Date(NOW.getTime()+11*60000);
+/* 다른 기기에서도 로그인해 둔 상태를 만든다 */
+const other=login({role:"student",hakbun:"1101",name:"가온",pin:"493028"});
+must(!!other.token&&C().api("state",{_t:other.token}).me,"다른 기기에서도 로그인해 둔다");
+const ch=C().api("pinChange",{_t:again.token,pin:"493028",newPin:"771122"});
 must(!!login({role:"student",hakbun:"1101",name:"가온",pin:"771122"}).token,"바꾼 PIN 으로 들어간다");
+must(ch.revoked>=1,"PIN 을 바꾸면 다른 기기 로그인이 풀린다 ("+ch.revoked+"대)");
+must(C().api("state",{_t:other.token}).need==="login","다른 기기 토큰은 못 쓴다");
+must(!!C().api("state",{_t:again.token}).me,"PIN 을 바꾼 이 기기는 그대로 쓴다");
 const admTok=login({role:"teacher",name:"사서",newPin:"640913"}).token;
 C().api("pinReset",{_t:admTok,hakbun:"1101"});
 must(login({role:"student",hakbun:"1101",name:"가온"}).need==="setpin","선생님이 초기화하면 새 PIN 을 정한다");
