@@ -19,6 +19,7 @@ var HEAD={
   "인증":["이메일","코드","만료","시도","학번","보낸시각"],
   "수령기간":["시작","끝","메모"],
   "주제":["주","주제","설명","영역","숨김"],
+  "이벤트":["이름","시작","끝","배수","대상","종류","메모","숨김"],
   "건의":["id","시각","학번","이름","반","내용","답변","답변자","답변시각","상태"],
   "권장도서":["제목","지은이","영역","출처","권수","청구기호","ISBN","출판사","발행년","뺌"],
   "장서목록":["제목","지은이","출판사","발행년","청구기호","권수","분야","중분류","ISBN","자료실"],
@@ -1715,15 +1716,25 @@ function make(db,env){
       var n=Number(r["문항수"])||0,sc=Number(r["점수"])||0;
       if(n?sc*2>=n:sc>=1)put(S(r["학번"]),{k:"quiz",t:"북퀴즈 "+S(r["주"]).slice(5).replace("-","/")+" 주",at:S(r["시각"])});});
     var caps=stampCaps(),per=giftRule().per,out={};
+    var clsOf={};db.rows("명단").forEach(function(r){clsOf[S(r["학번"])]=S(r["반"]);});
+    var hasEv=eventRows().length>0;
     function newRun(mon){return {mon:mon,n:0,has:{}};}
     Object.keys(A).forEach(function(hb){
-      var w={},mo={},st=[],bo=[],run=newRun("");
-      A[hb].sort(function(x,y){return x.at<y.at?-1:1;}).forEach(function(x){
+      var w={},mo={},st=[],bo=[],run=newRun(""),cls=clsOf[hb]||"",capW={};
+      var raw=A[hb].sort(function(x,y){return x.at<y.at?-1:1;}),items=[];
+      raw.forEach(function(x){
+        var mul=hasEv?evMul(x.at,cls,x.k):1;
+        items.push(x);
+        for(var n2=1;n2<mul;n2++)items.push({k:x.k,t:x.t+" · 이벤트 ×"+mul,at:x.at+"~"+n2,ev:mul});
+      });
+      items.forEach(function(x){
         var y={k:x.k,t:x.t,at:x.at,wk:weekOfYmd(x.at),mon:S(x.at).slice(0,7)},kk=kindOf(y.k);
+        if(x.ev)y.ev=x.ev;
+        if(capW[y.wk]===undefined)capW[y.wk]=caps.week*(hasEv?evWeekMul(y.wk,cls):1);
         run.mon=y.mon;                                            /* 도장판은 달이 바뀌어도 이어진다 */
         var need=0;KINDS.forEach(function(t){if(t!==kk&&!run.has[t])need++;});
         var noRoom=(run.n+1+need)>per;                           /* 이 도장을 찍으면 빠진 종류를 채울 칸이 없다 */
-        if((w[y.wk]||0)<caps.week&&(mo[y.mon]||0)<caps.month&&!noRoom){
+        if((w[y.wk]||0)<capW[y.wk]&&(mo[y.mon]||0)<caps.month&&!noRoom){
           w[y.wk]=(w[y.wk]||0)+1;mo[y.mon]=(mo[y.mon]||0)+1;run.n++;run.has[kk]=true;st.push(y);
           if(run.n>=per)run=newRun(y.mon);   /* 별 하나를 채우면 새 판 */
         }
@@ -1970,6 +1981,60 @@ function make(db,env){
       .map(function(r){return {id:S(r["id"]),at:S(r["시각"]).slice(0,16),hakbun:S(r["학번"]),name:S(r["이름"]),cls:S(r["반"]),
         text:S(r["내용"]),reply:S(r["답변"]),who:S(r["답변자"]),replyAt:S(r["답변시각"]).slice(0,16)};});
   }
+  /* ── 도장 배수 이벤트 ──
+     '이벤트' 시트: 이름 · 시작 · 끝 · 배수(2) · 대상(비우면 전체, "1학년" "3-2" "1,2학년" 처럼) · 종류(비우면 전부, label/review/quiz)
+     기간 안에 한 활동은 도장을 배수만큼 받습니다. 그 주의 도장 상한(주간도장)도 같은 배수만큼 늘어납니다. */
+  function eventRows(){
+    return db.rows("이벤트").filter(function(r){return S(r["숨김"]).toUpperCase()!=="Y"&&S(r["시작"])&&S(r["끝"])&&(Number(r["배수"])||1)>1;});
+  }
+  function evHits(r,cls,kind){
+    var tg=S(r["대상"]).replace(/\s/g,"");
+    if(tg){
+      var ok=tg.split(/[,·]/).filter(Boolean).some(function(t){
+        t=t.replace("학년","");
+        if(/^\d$/.test(t))return S(cls).indexOf(t+"-")===0;      /* 학년 */
+        return S(cls)===t;                                        /* 반(3-2) */
+      });
+      if(!ok)return false;
+    }
+    var kd=S(r["종류"]).replace(/\s/g,"");
+    if(kd){
+      var k2=kind==="theme"?"review":kind;
+      if(kd.split(/[,·]/).filter(Boolean).indexOf(k2)<0)return false;
+    }
+    return true;
+  }
+  /* 그때·그 학생·그 종류에 걸리는 가장 큰 배수 */
+  function evMul(at,cls,kind){
+    var d=S(at).slice(0,10),m=1;
+    eventRows().forEach(function(r){
+      if(d<S(r["시작"])||d>S(r["끝"]))return;
+      if(!evHits(r,cls,kind))return;
+      m=Math.max(m,Number(r["배수"])||1);
+    });
+    return m;
+  }
+  /* 그 주(월요일 날짜)에 이 학생에게 걸리는 가장 큰 배수 — 주간 도장 상한을 늘릴 때 쓴다 */
+  function evWeekMul(wk,cls){
+    var to=addDays(wk,6),m=1;
+    eventRows().forEach(function(r){
+      if(S(r["끝"])<wk||S(r["시작"])>to)return;
+      if(!evHits(r,cls,""))return;
+      m=Math.max(m,Number(r["배수"])||1);
+    });
+    return m;
+  }
+  /* 지금 열려 있는 이벤트(학생 화면 알림용) */
+  function evNow(cls){
+    var d=today(env.now()),out=null;
+    eventRows().forEach(function(r){
+      if(d<S(r["시작"])||d>S(r["끝"]))return;
+      if(!evHits(r,cls,""))return;
+      var o={name:S(r["이름"])||"도장 이벤트",from:S(r["시작"]),to:S(r["끝"]),mul:Number(r["배수"])||2,kind:S(r["종류"]),memo:S(r["메모"])};
+      if(!out||o.mul>out.mul)out=o;
+    });
+    return out;
+  }
   /* 이 주의 주제: '주제' 시트에서 그 주(월요일 날짜) 한 줄. 도장을 더 주지는 않는다(한 주 5개·별 1개 그대로) */
   function themeRow(wk){return db.rows("주제").filter(function(r){return S(r["주"])===wk&&S(r["숨김"]).toUpperCase()!=="Y"&&S(r["주제"]);})[0]||null;}
   function themeOf(wk){var r=themeRow(wk);return r?{week:wk,title:S(r["주제"]),body:S(r["설명"]),area:S(r["영역"])}:null;}
@@ -2048,7 +2113,7 @@ function make(db,env){
       board:board,mine:mine,voteOpen:voteOpen(now),voteMon:votePeriod(now),voteL:vb("label"),voteR:vb("review"),
       quiz:{items:quiz,done:done?Number(done["점수"]):null,books:weekBooksOf(wk),bookInfo:(function(){var bl={};bookList().forEach(function(b){bl[tkey(b.t)]=b;});
         return weekBooksOf(wk).map(function(t){var b=bl[tkey(t)]||{};return {t:t,total:b.total||0,avail:b.avail,call:b.call||""};});})()},myQuiz:myQuiz,
-      hall:hallOfFame(likes),theme:themeOf(wk),ideas:myIdeas(a.id),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftDesk:a.club?deskFor(c):null};
+      hall:hallOfFame(likes),theme:themeOf(wk),event:evNow(a.cls),ideas:myIdeas(a.id),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftDesk:a.club?deskFor(c):null};
   }
 
   function bookList(){
@@ -2215,6 +2280,10 @@ function make(db,env){
     res.books=bookList();
     res.printable=all.filter(function(r){return posted(r)&&S(r["종류"])==="label";}).map(function(r){return full(r);});
     res.themes=themeList(now,3);
+    res.events=db.rows("이벤트").filter(function(r){return S(r["숨김"]).toUpperCase()!=="Y";})
+      .map(function(r){var d=today(now);return {name:S(r["이름"]),from:S(r["시작"]),to:S(r["끝"]),mul:Number(r["배수"])||2,
+        target:S(r["대상"]),kind:S(r["종류"]),memo:S(r["메모"]),live:d>=S(r["시작"])&&d<=S(r["끝"]),done:d>S(r["끝"])};})
+      .sort(function(x,y){return x.from<y.from?1:-1;});
     var m0=monthKey(now);res.monthly=monthlyPicks([m0,prevMonth(m0),prevMonth(prevMonth(m0))]);
     res.appUrl=env.appUrl?S(env.appUrl()):"";
     var winners={};all.forEach(function(r){if(S(r["수상"])==="Y")winners[S(r["학번"])]=true;});
@@ -2404,6 +2473,22 @@ function make(db,env){
     markPrinted:function(a,p){admin(a);(p.ids||[]).forEach(function(id){db.set("글","id",S(id),{"인쇄":"Y"});});},
     honor:function(a,p){admin(a);var r=getPost(a,p.id);
       db.set("글","id",S(p.id),{"명예":p.off?"":(S(p.mon)||S(r["시각"]).slice(0,7))});},
+    /* 도장 배수 이벤트(관리자) */
+    eventSet:function(a,p){admin(a);
+      var nm=S(p.name).slice(0,40),f=S(p.from),t=S(p.to),mul=Number(p.mul)||2;
+      if(!nm)fail("이벤트 이름을 적어 주세요.");
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(f)||!/^\d{4}-\d{2}-\d{2}$/.test(t))fail("시작·끝 날짜를 골라 주세요.");
+      if(t<f)fail("끝 날짜가 시작보다 빠릅니다.");
+      if(mul<2||mul>5)fail("배수는 2에서 5까지로 정해 주세요.");
+      var kd=S(p.kind).replace(/\s/g,"");
+      if(kd&&kd.split(",").some(function(x){return ["label","review","quiz"].indexOf(x)<0;}))fail("종류는 label·review·quiz 만 됩니다.");
+      db.add("이벤트",{"이름":nm,"시작":f,"끝":t,"배수":String(mul),"대상":S(p.target).slice(0,60),"종류":kd,"메모":S(p.memo).slice(0,120),"숨김":""});
+      return {ok:true};},
+    eventHide:function(a,p){admin(a);
+      var r=db.rows("이벤트").filter(function(x){return S(x["이름"])===S(p.name)&&S(x["시작"])===S(p.from);})[0];
+      if(!r)fail("그 이벤트를 찾지 못했습니다.");
+      db.set("이벤트","이름",S(p.name),{"숨김":"Y"});
+      return {ok:true};},
     /* 이 주의 주제(관리자): 주 = 그 주 월요일 날짜. 주제를 비우면 그 주는 없음 */
     themeSet:function(a,p){admin(a);
       var wk=S(p.week);if(!/^\d{4}-\d{2}-\d{2}$/.test(wk))fail("주(월요일 날짜)를 확인해 주세요.");

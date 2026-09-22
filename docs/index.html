@@ -181,6 +181,11 @@ textarea{resize:vertical;min-height:92px;line-height:1.7}
 .pill{font-size:11.5px;padding:2px 8px;border-radius:999px;background:var(--red-soft);color:var(--red)}
 .gapline{height:1px;background:var(--line);margin:26px 0 20px}
 .pill.theme{background:#E7F0E2;color:#3C5A32;border-color:#BBD3AF}
+.evbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;background:linear-gradient(90deg,#FDECEA,#FFF3C9);border:2px solid #B0301E;border-radius:12px;padding:9px 14px;margin:0 0 14px;color:#8A1F12}
+.evbar .x{font-family:Jua,sans-serif;font-size:20px;background:#B0301E;color:#fff;border-radius:10px;padding:1px 9px}
+.evbar b{font-family:var(--serif);font-weight:400;font-size:17px}
+.evbar .ed{font-size:12.5px;background:#fff;border:1px solid #E9B4AA;border-radius:999px;padding:1px 8px}
+.evbar .et{font-size:13.5px}
 .themebar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;background:#EFF6EA;border:1px solid #CADFBE;border-radius:12px;padding:9px 14px;margin:0 0 14px;color:#33502A}
 .themebar .tp{font-size:12px;background:#3C5A32;color:#fff;border-radius:999px;padding:2px 9px}
 .themebar b{font-family:var(--serif);font-weight:400;font-size:17px}
@@ -563,6 +568,7 @@ var HEAD={
   "인증":["이메일","코드","만료","시도","학번","보낸시각"],
   "수령기간":["시작","끝","메모"],
   "주제":["주","주제","설명","영역","숨김"],
+  "이벤트":["이름","시작","끝","배수","대상","종류","메모","숨김"],
   "건의":["id","시각","학번","이름","반","내용","답변","답변자","답변시각","상태"],
   "권장도서":["제목","지은이","영역","출처","권수","청구기호","ISBN","출판사","발행년","뺌"],
   "장서목록":["제목","지은이","출판사","발행년","청구기호","권수","분야","중분류","ISBN","자료실"],
@@ -2259,15 +2265,25 @@ function make(db,env){
       var n=Number(r["문항수"])||0,sc=Number(r["점수"])||0;
       if(n?sc*2>=n:sc>=1)put(S(r["학번"]),{k:"quiz",t:"북퀴즈 "+S(r["주"]).slice(5).replace("-","/")+" 주",at:S(r["시각"])});});
     var caps=stampCaps(),per=giftRule().per,out={};
+    var clsOf={};db.rows("명단").forEach(function(r){clsOf[S(r["학번"])]=S(r["반"]);});
+    var hasEv=eventRows().length>0;
     function newRun(mon){return {mon:mon,n:0,has:{}};}
     Object.keys(A).forEach(function(hb){
-      var w={},mo={},st=[],bo=[],run=newRun("");
-      A[hb].sort(function(x,y){return x.at<y.at?-1:1;}).forEach(function(x){
+      var w={},mo={},st=[],bo=[],run=newRun(""),cls=clsOf[hb]||"",capW={};
+      var raw=A[hb].sort(function(x,y){return x.at<y.at?-1:1;}),items=[];
+      raw.forEach(function(x){
+        var mul=hasEv?evMul(x.at,cls,x.k):1;
+        items.push(x);
+        for(var n2=1;n2<mul;n2++)items.push({k:x.k,t:x.t+" · 이벤트 ×"+mul,at:x.at+"~"+n2,ev:mul});
+      });
+      items.forEach(function(x){
         var y={k:x.k,t:x.t,at:x.at,wk:weekOfYmd(x.at),mon:S(x.at).slice(0,7)},kk=kindOf(y.k);
+        if(x.ev)y.ev=x.ev;
+        if(capW[y.wk]===undefined)capW[y.wk]=caps.week*(hasEv?evWeekMul(y.wk,cls):1);
         run.mon=y.mon;                                            /* 도장판은 달이 바뀌어도 이어진다 */
         var need=0;KINDS.forEach(function(t){if(t!==kk&&!run.has[t])need++;});
         var noRoom=(run.n+1+need)>per;                           /* 이 도장을 찍으면 빠진 종류를 채울 칸이 없다 */
-        if((w[y.wk]||0)<caps.week&&(mo[y.mon]||0)<caps.month&&!noRoom){
+        if((w[y.wk]||0)<capW[y.wk]&&(mo[y.mon]||0)<caps.month&&!noRoom){
           w[y.wk]=(w[y.wk]||0)+1;mo[y.mon]=(mo[y.mon]||0)+1;run.n++;run.has[kk]=true;st.push(y);
           if(run.n>=per)run=newRun(y.mon);   /* 별 하나를 채우면 새 판 */
         }
@@ -2514,6 +2530,60 @@ function make(db,env){
       .map(function(r){return {id:S(r["id"]),at:S(r["시각"]).slice(0,16),hakbun:S(r["학번"]),name:S(r["이름"]),cls:S(r["반"]),
         text:S(r["내용"]),reply:S(r["답변"]),who:S(r["답변자"]),replyAt:S(r["답변시각"]).slice(0,16)};});
   }
+  /* ── 도장 배수 이벤트 ──
+     '이벤트' 시트: 이름 · 시작 · 끝 · 배수(2) · 대상(비우면 전체, "1학년" "3-2" "1,2학년" 처럼) · 종류(비우면 전부, label/review/quiz)
+     기간 안에 한 활동은 도장을 배수만큼 받습니다. 그 주의 도장 상한(주간도장)도 같은 배수만큼 늘어납니다. */
+  function eventRows(){
+    return db.rows("이벤트").filter(function(r){return S(r["숨김"]).toUpperCase()!=="Y"&&S(r["시작"])&&S(r["끝"])&&(Number(r["배수"])||1)>1;});
+  }
+  function evHits(r,cls,kind){
+    var tg=S(r["대상"]).replace(/\s/g,"");
+    if(tg){
+      var ok=tg.split(/[,·]/).filter(Boolean).some(function(t){
+        t=t.replace("학년","");
+        if(/^\d$/.test(t))return S(cls).indexOf(t+"-")===0;      /* 학년 */
+        return S(cls)===t;                                        /* 반(3-2) */
+      });
+      if(!ok)return false;
+    }
+    var kd=S(r["종류"]).replace(/\s/g,"");
+    if(kd){
+      var k2=kind==="theme"?"review":kind;
+      if(kd.split(/[,·]/).filter(Boolean).indexOf(k2)<0)return false;
+    }
+    return true;
+  }
+  /* 그때·그 학생·그 종류에 걸리는 가장 큰 배수 */
+  function evMul(at,cls,kind){
+    var d=S(at).slice(0,10),m=1;
+    eventRows().forEach(function(r){
+      if(d<S(r["시작"])||d>S(r["끝"]))return;
+      if(!evHits(r,cls,kind))return;
+      m=Math.max(m,Number(r["배수"])||1);
+    });
+    return m;
+  }
+  /* 그 주(월요일 날짜)에 이 학생에게 걸리는 가장 큰 배수 — 주간 도장 상한을 늘릴 때 쓴다 */
+  function evWeekMul(wk,cls){
+    var to=addDays(wk,6),m=1;
+    eventRows().forEach(function(r){
+      if(S(r["끝"])<wk||S(r["시작"])>to)return;
+      if(!evHits(r,cls,""))return;
+      m=Math.max(m,Number(r["배수"])||1);
+    });
+    return m;
+  }
+  /* 지금 열려 있는 이벤트(학생 화면 알림용) */
+  function evNow(cls){
+    var d=today(env.now()),out=null;
+    eventRows().forEach(function(r){
+      if(d<S(r["시작"])||d>S(r["끝"]))return;
+      if(!evHits(r,cls,""))return;
+      var o={name:S(r["이름"])||"도장 이벤트",from:S(r["시작"]),to:S(r["끝"]),mul:Number(r["배수"])||2,kind:S(r["종류"]),memo:S(r["메모"])};
+      if(!out||o.mul>out.mul)out=o;
+    });
+    return out;
+  }
   /* 이 주의 주제: '주제' 시트에서 그 주(월요일 날짜) 한 줄. 도장을 더 주지는 않는다(한 주 5개·별 1개 그대로) */
   function themeRow(wk){return db.rows("주제").filter(function(r){return S(r["주"])===wk&&S(r["숨김"]).toUpperCase()!=="Y"&&S(r["주제"]);})[0]||null;}
   function themeOf(wk){var r=themeRow(wk);return r?{week:wk,title:S(r["주제"]),body:S(r["설명"]),area:S(r["영역"])}:null;}
@@ -2592,7 +2662,7 @@ function make(db,env){
       board:board,mine:mine,voteOpen:voteOpen(now),voteMon:votePeriod(now),voteL:vb("label"),voteR:vb("review"),
       quiz:{items:quiz,done:done?Number(done["점수"]):null,books:weekBooksOf(wk),bookInfo:(function(){var bl={};bookList().forEach(function(b){bl[tkey(b.t)]=b;});
         return weekBooksOf(wk).map(function(t){var b=bl[tkey(t)]||{};return {t:t,total:b.total||0,avail:b.avail,call:b.call||""};});})()},myQuiz:myQuiz,
-      hall:hallOfFame(likes),theme:themeOf(wk),ideas:myIdeas(a.id),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftDesk:a.club?deskFor(c):null};
+      hall:hallOfFame(likes),theme:themeOf(wk),event:evNow(a.cls),ideas:myIdeas(a.id),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftDesk:a.club?deskFor(c):null};
   }
 
   function bookList(){
@@ -2759,6 +2829,10 @@ function make(db,env){
     res.books=bookList();
     res.printable=all.filter(function(r){return posted(r)&&S(r["종류"])==="label";}).map(function(r){return full(r);});
     res.themes=themeList(now,3);
+    res.events=db.rows("이벤트").filter(function(r){return S(r["숨김"]).toUpperCase()!=="Y";})
+      .map(function(r){var d=today(now);return {name:S(r["이름"]),from:S(r["시작"]),to:S(r["끝"]),mul:Number(r["배수"])||2,
+        target:S(r["대상"]),kind:S(r["종류"]),memo:S(r["메모"]),live:d>=S(r["시작"])&&d<=S(r["끝"]),done:d>S(r["끝"])};})
+      .sort(function(x,y){return x.from<y.from?1:-1;});
     var m0=monthKey(now);res.monthly=monthlyPicks([m0,prevMonth(m0),prevMonth(prevMonth(m0))]);
     res.appUrl=env.appUrl?S(env.appUrl()):"";
     var winners={};all.forEach(function(r){if(S(r["수상"])==="Y")winners[S(r["학번"])]=true;});
@@ -2948,6 +3022,22 @@ function make(db,env){
     markPrinted:function(a,p){admin(a);(p.ids||[]).forEach(function(id){db.set("글","id",S(id),{"인쇄":"Y"});});},
     honor:function(a,p){admin(a);var r=getPost(a,p.id);
       db.set("글","id",S(p.id),{"명예":p.off?"":(S(p.mon)||S(r["시각"]).slice(0,7))});},
+    /* 도장 배수 이벤트(관리자) */
+    eventSet:function(a,p){admin(a);
+      var nm=S(p.name).slice(0,40),f=S(p.from),t=S(p.to),mul=Number(p.mul)||2;
+      if(!nm)fail("이벤트 이름을 적어 주세요.");
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(f)||!/^\d{4}-\d{2}-\d{2}$/.test(t))fail("시작·끝 날짜를 골라 주세요.");
+      if(t<f)fail("끝 날짜가 시작보다 빠릅니다.");
+      if(mul<2||mul>5)fail("배수는 2에서 5까지로 정해 주세요.");
+      var kd=S(p.kind).replace(/\s/g,"");
+      if(kd&&kd.split(",").some(function(x){return ["label","review","quiz"].indexOf(x)<0;}))fail("종류는 label·review·quiz 만 됩니다.");
+      db.add("이벤트",{"이름":nm,"시작":f,"끝":t,"배수":String(mul),"대상":S(p.target).slice(0,60),"종류":kd,"메모":S(p.memo).slice(0,120),"숨김":""});
+      return {ok:true};},
+    eventHide:function(a,p){admin(a);
+      var r=db.rows("이벤트").filter(function(x){return S(x["이름"])===S(p.name)&&S(x["시작"])===S(p.from);})[0];
+      if(!r)fail("그 이벤트를 찾지 못했습니다.");
+      db.set("이벤트","이름",S(p.name),{"숨김":"Y"});
+      return {ok:true};},
     /* 이 주의 주제(관리자): 주 = 그 주 월요일 날짜. 주제를 비우면 그 주는 없음 */
     themeSet:function(a,p){admin(a);
       var wk=S(p.week);if(!/^\d{4}-\d{2}-\d{2}$/.test(wk))fail("주(월요일 날짜)를 확인해 주세요.");
@@ -3757,14 +3847,15 @@ function praiseFor(x,done){
 function seenKey(){return "ungcheon-seoga-seen2|"+D.me.id;}
 /* 라벨=감빛 둥근 도장 '讀', 독후감=쪽빛 네모 도장 '感', 퀴즈=초록 마름모 도장 '問' */
 var SEAL={label:{c:"#9E3B24",ch:"讀",sub:"라벨",name:"라벨"},review:{c:"#2B4C7E",ch:"感",sub:"독후감",name:"독후감"},theme:{c:"#3C5A32",ch:"主",sub:"주제",name:"이 주의 주제 독후감"},quiz:{c:"#2F6B3A",ch:"問",sub:"퀴즈",name:"퀴즈"}};
-function sealSVG(k){
+function sealSVG(k,ev){
   var S_=SEAL[k]||SEAL.label,c=S_.c,frame;
   if(k==="review")frame='<rect x="8" y="8" width="84" height="84" rx="6" fill="none" stroke="'+c+'" stroke-width="4"/><rect x="16" y="16" width="68" height="68" rx="3" fill="none" stroke="'+c+'" stroke-width="1.5"/>';
   else if(k==="quiz")frame='<path d="M50 5 L95 50 L50 95 L5 50 Z" fill="none" stroke="'+c+'" stroke-width="4"/><path d="M50 16 L84 50 L50 84 L16 50 Z" fill="none" stroke="'+c+'" stroke-width="1.5"/>';
   else frame='<circle cx="50" cy="50" r="45" fill="none" stroke="'+c+'" stroke-width="4"/><circle cx="50" cy="50" r="37" fill="none" stroke="'+c+'" stroke-width="1.5"/>';
   return '<svg class="seal" viewBox="0 0 100 100" role="img" aria-label="'+S_.name+' 도장">'+frame+
    '<text x="50" y="50" text-anchor="middle" font-family="Gowun Batang,serif" font-size="27" font-weight="700" fill="'+c+'">'+S_.ch+'</text>'+
-   '<text x="50" y="69" text-anchor="middle" font-family="Jua,sans-serif" font-size="12.5" fill="'+c+'">'+S_.sub+'</text></svg>';
+   '<text x="50" y="69" text-anchor="middle" font-family="Jua,sans-serif" font-size="12.5" fill="'+c+'">'+S_.sub+'</text>'+
+   (ev?'<text x="78" y="26" text-anchor="middle" font-family="Jua,sans-serif" font-size="20" fill="#B0301E">×'+ev+'</text>':'')+'</svg>';
 }
 function foot(l){return [l.author,l.by||clsName(l.cls)].filter(Boolean).join(" · ");}
 function labelHTML(l){
@@ -3812,7 +3903,7 @@ function renderBoard(){
     if(ss===null||ST.total!==Number(ss))put(sk,String(ST.total));
   }
   for(var i=0;i<cap;i++){
-    s+=i<n?'<div class="slot on'+(newSlot&&i===n-1?' new':'')+'" title="'+esc(SEAL[g[i].k].name+' · '+g[i].t)+'">'+sealSVG(g[i].k)+'<span class="lb">'+esc(g[i].t)+'</span></div>'
+    s+=i<n?'<div class="slot on'+(newSlot&&i===n-1?' new':'')+'" title="'+esc(SEAL[g[i].k].name+' · '+g[i].t)+'">'+sealSVG(g[i].k,g[i].ev)+'<span class="lb">'+esc(g[i].t)+'</span></div>'
           :'<div class="slot"><span>'+(i+1)+'</span></div>';
   }
   var praise=fresh?praiseFor(last,false):"";
@@ -3837,7 +3928,7 @@ function renderBoard(){
   }
   var freshL=D.board.filter(function(l){return l.kind==="label";}).slice(0,3).map(labelHTML).join("");
   var gbn='<div class="guidebanner"><span>📌 <b>도장 '+R.per+'개 = 별 1개'+(GO&&!gb?', 별 '+R.pair+'개 = 문화상품권 '+won(R.won)+' 1매':'')+'</b></span><button class="btn sm" id="guide-open3" type="button">이용 안내 보기</button></div>';
-  el.innerHTML=gb+gbn+'<div class="board-head"><h2>'+esc(D.me.name)+'의 도장판</h2>'+
+  el.innerHTML=gb+gbn+eventBar()+'<div class="board-head"><h2>'+esc(D.me.name)+'의 도장판</h2>'+
     '<p>'+esc(wkLabel)+' · 라벨·독후감을 내거나 북퀴즈를 절반 이상 맞히면 한 칸. 한 주 '+cap+'칸까지, 넘치면 보너스 책갈피.</p>'+
     '<div class="count"><b>'+n+'</b> / '+cap+'</div></div>'+starRow(stars,newStar)+
     '<div class="slots" style="grid-template-columns:repeat('+cap+',1fr)">'+s+'</div>'+
@@ -3966,7 +4057,7 @@ function pShelf(){
     return arr.length?'<div class="shelf-head"><h4>'+title+'</h4><span>'+note+'</span></div><div class="shelf">'+arr.map(bookCard).join("")+'</div>':'';
   }
   var nt=noticesHTML();
-  return (nt?'<div class="ntinline">'+nt+'</div>':'')+feedStrip()+themeBar()+'<h3 class="sec">서가</h3>'+
+  return (nt?'<div class="ntinline">'+nt+'</div>':'')+feedStrip()+eventBar()+themeBar()+'<h3 class="sec">서가</h3>'+
     '<div class="recinfo"><h4>'+(lab?esc(lab)+' ':'이번 달 ')+'추천 도서'+(pd?'<span class="dday">'+ddayText(pd)+'</span>':'')+'</h4>'+
       '<ul>'+(!hasAuto?'<li><b>이번 달 추천 도서</b>는 지금 준비 중이에요(학교 도서관 목록을 불러오는 중). 그동안 <b>도서 검색</b>으로 읽고 싶은 책을 찾아보세요.</li>':
       '<li><b>이번 달 추천 도서</b>는 <b>청소년 권장도서</b> 가운데 우리 학교 도서관'+(hold?' 책 <b>'+hold+'</b>':' 책')+'에 있는 책을 소설·청소년·시·에세이·인문·철학·역사·사회·경제·과학·기술·예술·자기계발 <b>12개 영역</b>으로 나눠 골랐어요. 모두 학교 도서관에 있는 책이에요.'+
@@ -4198,7 +4289,7 @@ function pWrite(){
       (l.memo?'<span>선생님 메모: '+esc(l.memo)+'</span>':'')+'</div></div>';
   }).join("");
   var isL=ui.kind==="label",lim=D.conf.limit[ui.kind];
-  return themeBar()+'<h3 class="sec">읽고 나서 남기기</h3>'+
+  return eventBar()+themeBar()+'<h3 class="sec">읽고 나서 남기기</h3>'+
     '<p class="sub">라벨은 스티커로 인쇄돼 게시판에 붙고, 독후감은 웹 게시판에 올라갑니다. 읽을 친구를 떠올리며 쓰세요. 둘 다 이달의 투표 대상입니다.</p>'+
     '<div class="two"><div><div class="form">'+
       '<div class="field"><label>어떤 글인가요</label><div class="seg">'+
@@ -4272,6 +4363,7 @@ function guideHTML(){
       '<li><b>독후감</b>('+L.review.join("~")+'자): 읽고 남은 생각. 웹 게시판에 올라가요.</li>'+
       '<li><b>퀴즈</b>: 이번 주 북퀴즈를 <b>절반 이상</b> 맞히면 받아요. <b>틀려도 괜찮아요 — 문제를 성의껏 내면(품질 '+(c.quizBar||6)+'점 이상) 그 자리에서 도장 1개</b>를 받습니다.</li>'+
       '<li><b>이 주의 주제</b>: 그 주 주제에 맞는 책으로 <b>독후감</b>을 쓰면 도장 <b>2개</b>(라벨은 1개 그대로). 주제는 서가 맨 위에 나와요.</li>'+
+      '<li><b>도장 배수 이벤트</b>: 학교에서 정한 기간에는 도장이 <b>2배</b>로 찍혀요(그 주 도장 상한도 10개로 늘어요). 서가 맨 위에 ×2 띠가 보이면 그 기간이에요.</li>'+
       '<li><b>별 1개 = 도장 5개인데, 그 안에 세 가지가 다 있어야 해요.</b> 라벨만 다섯 편 쓰면 도장은 3개만 찍히고 두 자리는 독후감·퀴즈 자리로 남아요(그 두 편은 책갈피).</li></ul>')+
     sec("2. 글쓰기 약속",'<ul>'+
       '<li>하루에 '+c.dayCap+'편까지. 같은 책으로 같은 종류의 글은 한 번만.</li>'+
@@ -4499,6 +4591,14 @@ function pWall(){
 /* 명예의 전당: 달마다 뽑힌 우수 독후감(학급만) */
 /* 이 주의 주제: 도장을 더 주지는 않고, 이번 주에 함께 읽어 볼 갈래를 알려 준다 */
 function addDaysStr(d,n){var t=new Date(d+"T00:00:00");t.setDate(t.getDate()+n);return t.toISOString().slice(0,10);}
+/* 도장 배수 이벤트 띠 */
+function eventBar(){
+  var E=D.event;if(!E)return "";
+  return '<div class="evbar"><span class="x">×'+E.mul+'</span><b>'+esc(E.name)+'</b>'+
+    '<span class="ed">'+rangeLabel(E.from,E.to)+'</span>'+
+    '<span class="et">'+(E.kind?({label:"라벨",review:"독후감",quiz:"퀴즈"}[E.kind.split(",")[0]]||E.kind)+'만 ':'')+'도장이 <b>'+E.mul+'배</b>로 찍혀요'+
+      (E.memo?' · '+esc(E.memo):'')+'</span></div>';
+}
 function themeBar(){
   var T=D.theme;if(!T||!T.title)return "";
   return '<div class="themebar"><span class="tp">이 주의 주제</span><b>'+esc(T.title)+'</b>'+(T.area?'<span class="ta">'+esc(T.area)+'</span>':'')+
@@ -4954,6 +5054,32 @@ function pGift(){
 
 /* ── 담당: 도서 ── */
 /* 이 주의 주제(관리자): 이번 주와 다음 두 주를 미리 적어 둘 수 있다 */
+/* 도장 배수 이벤트(관리자): 기간·대상·종류를 정해 도장을 2~5배로 */
+function eventAdmin(){
+  if(!D.me||D.me.role!=="admin")return "";
+  var L=D.events||[];
+  var rows=L.length?'<div class="scrollx" style="margin-bottom:12px"><table><tr><th>이벤트</th><th>기간</th><th>배수</th><th>대상</th><th></th></tr>'+
+    L.map(function(e){
+      return '<tr><td><b>'+esc(e.name)+'</b>'+(e.memo?'<div class="hint">'+esc(e.memo)+'</div>':'')+'</td>'+
+        '<td>'+rangeLabel(e.from,e.to)+(e.live?' <span class="pill">진행 중</span>':e.done?' <span class="pill grey">끝남</span>':' <span class="pill grey">예정</span>')+'</td>'+
+        '<td>×'+e.mul+(e.kind?'<div class="hint">'+esc(({label:"라벨",review:"독후감",quiz:"퀴즈"}[e.kind.split(",")[0]]||e.kind))+'만</div>':'')+'</td>'+
+        '<td>'+esc(e.target||"전교생")+'</td>'+
+        '<td><button class="btn ghost sm" data-evhide="'+esc(e.name)+'" data-from="'+esc(e.from)+'">내리기</button></td></tr>';}).join("")+'</table></div>':'';
+  return '<h3 class="sec">도장 배수 이벤트</h3>'+
+    '<p class="sub">정한 기간 동안 <b>도장이 몇 배로</b> 찍힙니다(예: ×2 면 라벨 한 편에 도장 2개). 그 주의 도장 상한도 같은 배수로 늘어나, 한 주 5개가 <b>10개</b>가 됩니다. 별도 그만큼 빨리 쌓이니 <b>상품권 지출이 늘어납니다</b> — 기간을 짧게, 대상을 좁게 잡으세요.</p>'+
+    rows+
+    '<div class="form" style="max-width:660px"><div class="row" style="align-items:flex-end">'+
+      '<div class="field" style="flex:1;margin:0"><label for="ev-n">이벤트 이름</label><input type="text" id="ev-n" maxlength="40" placeholder="예) 가을 독서 주간"></div>'+
+      '<div class="field" style="flex:0 0 120px;margin:0"><label for="ev-m">배수</label><select id="ev-m"><option value="2">×2</option><option value="3">×3</option></select></div></div>'+
+    '<div class="row" style="align-items:flex-end">'+
+      '<div class="field" style="flex:1;margin:0"><label for="ev-f">시작</label><input type="date" id="ev-f"></div>'+
+      '<div class="field" style="flex:1;margin:0"><label for="ev-t">끝</label><input type="date" id="ev-t"></div></div>'+
+    '<div class="row" style="align-items:flex-end">'+
+      '<div class="field" style="flex:1;margin:0"><label for="ev-g">대상</label><input type="text" id="ev-g" placeholder="비우면 전교생 · 예) 1학년 또는 3-2 또는 1,2학년"></div>'+
+      '<div class="field" style="flex:0 0 150px;margin:0"><label for="ev-k">종류</label><select id="ev-k"><option value="">모두</option><option value="label">라벨만</option><option value="review">독후감만</option><option value="quiz">퀴즈만</option></select></div></div>'+
+    '<div class="row" style="align-items:flex-end"><div class="field" style="flex:1;margin:0"><label for="ev-memo">한 줄 안내(학생 화면에 보임)</label><input type="text" id="ev-memo" maxlength="120" placeholder="예) 시험 끝나고 한 주, 도장 두 배!"></div>'+
+      '<button class="btn" id="ev-go">이벤트 열기</button></div></div>';
+}
 function themeAdmin(){
   var L=D.themes||[];if(!L.length)return "";
   var areas=(D.conf.areas||[]).map(function(a){return '<option>'+esc(a)+'</option>';}).join("");
@@ -4979,7 +5105,7 @@ function pBooks(){
       ' <button type="button" class="hint" data-find="'+esc(b.t)+'" style="text-decoration:underline">검색해 보기</button></span></label>';}).join("");
   var o=D.conf.areas.map(function(s){return '<option>'+esc(s)+'</option>';}).join("");
   var m=/^\d{4}-(\d{2})/.exec(D.conf.month||"");
-  return themeAdmin()+'<h3 class="sec">서가 관리</h3>'+
+  return themeAdmin()+eventAdmin()+'<h3 class="sec">서가 관리</h3>'+
     '<p class="sub">서가에는 <b>이번 달 추천 도서</b>('+B.length+'권)만 나옵니다. 매달 1일 0시에 <b>청소년 권장도서</b>(인터넷 서점 청소년 추천·서울대 권장 100·책따세 등 널리 알려진 목록을 참고해 모은 것) 가운데 <b>우리 학교에 있는 책</b>에서 <b>12개 영역</b>(소설·청소년·시·에세이·인문·철학·역사·사회·정치·경제·경영·과학·기술·IT·예술·자기계발)으로 나눠 모두 '+esc(D.conf.monthN||40)+'권을 뽑습니다. 부수 2권 이상인 책 먼저, 최근 6달에 뽑힌 책은 빼고. 목록은 구글 시트 <b>권장도서</b> 탭에서 더하거나 ‘뺌’에 Y 로 뺄 수 있습니다. 모두 학교 도서관에 있는 책이며, 소장·대출 상태·책 소개는 매일 7시·15시·0시에 독서로에서 새로 받아 옵니다.</p>'+
     (D.conf.selVer!=="3"?'<div class="box" style="background:var(--paper-2);border-left:3px solid #B8860B;padding:10px 14px;margin:0 0 12px;font-size:13.5px"><b>청소년 권장도서에서 다시 뽑는 중입니다.</b> 1~3분 뒤 새로고침하세요. 오래 걸리면 아래 ‘대출 상태 지금 확인’을 누르세요.</div>':'')+
     '<div class="row"><button class="btn" id="lib-run">대출 상태 지금 확인</button><button class="btn ghost" id="cat-run">장서목록 시트 새로 받기</button>'+
@@ -5335,6 +5461,9 @@ document.addEventListener("click",function(e){
     act("ideaAdd",{text:tx},"보냈어요. 선생님이 읽고 답해 주실 거예요.").then(function(){var e=document.getElementById("idea-t");if(e)e.value="";}).catch(function(e){toast(e.message);});return;}
   if(d.idea){act("ideaReply",{id:d.idea,text:val("ir-"+d.idea)},"답변을 보냈습니다.").catch(function(e){toast(e.message);});return;}
   if(d.ideadel){act("ideaReply",{id:d.ideadel,del:1},"지웠습니다.").catch(function(e){toast(e.message);});return;}
+  if(id==="ev-go"){act("eventSet",{name:val("ev-n"),from:val("ev-f"),to:val("ev-t"),mul:val("ev-m"),target:val("ev-g"),kind:val("ev-k"),memo:val("ev-memo")},"이벤트를 열었습니다.")
+      .then(function(){["ev-n","ev-f","ev-t","ev-g","ev-memo"].forEach(function(k){var e=document.getElementById(k);if(e)e.value="";});}).catch(function(e){toast(e.message);});return;}
+  if(d.evhide){act("eventHide",{name:d.evhide,from:d.from},"이벤트를 내렸습니다.").catch(function(e){toast(e.message);});return;}
   if(d.theme){var i=d.i;act("themeSet",{week:d.theme,title:val("th-t"+i),body:val("th-b"+i),area:val("th-a"+i)},val("th-t"+i)?"이 주의 주제를 올렸습니다.":"그 주 주제를 비웠습니다.").catch(function(e){toast(e.message);});return;}
   if(d.honor){act("honor",{id:d.honor,mon:d.mon,off:!!d.off},d.off?"명예의 전당에서 내렸습니다.":"명예의 전당에 올렸습니다.").catch(function(){});return;}
   if(id==="gift-all"){var gw=giftWin(),ids=(D.gifts.rows[gw]||[]).filter(function(x){return x.vouchers>0&&!x.paid;}).map(function(x){return x.hakbun;});
