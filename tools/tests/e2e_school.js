@@ -30,7 +30,7 @@ const must=(c,m)=>{if(!c){console.log("✗",m);process.exitCode=1;}else console.
 const text=n=>"이 책은 정말 좋았다. ".repeat(Math.ceil(n/12)).slice(0,n);
 const books=()=>C().api.call?T["도서"].filter(b=>b["숨김"]!=="Y"&&b["월"]==="2026-09").map(b=>b.id):[];
 /* 한 달(4주) */
-let posts=0,answered=0,votes=0,likes=0;
+let posts=0,answered=0,votes=0,likes=0,quotes=0;
 for(let w=0;w<4;w++){
   NOW=new Date(Date.parse("2026-10-05T00:30:00Z")+w*7*864e5);
   C().ensureWeeklyQuiz();
@@ -38,11 +38,22 @@ for(let w=0;w<4;w++){
   must(st.quiz&&st.quiz.items.length===5&&st.quiz.books.length<=3,w+1+"주차 북퀴즈 5문제 · 책 "+(st.quiz&&st.quiz.books.length)+"권");
   for(let d=0;d<5;d++){
     NOW=new Date(Date.parse("2026-10-05T01:00:00Z")+(w*7+d)*864e5);
-    for(let k=0;k<70;k++){const hb=pick(STU),rev=rnd()<0.3;
+    for(let k=0;k<70;k++){const hb=pick(STU),roll=rnd();
+      if(roll<0.35){   /* 문장 채집(하루 하나, 게시판에는 안 쌓임) */
+        const r=call("s"+hb+"@x","quoteAdd",{bookId:pick(books()),page:(20+k)+"쪽",
+          text:"읽다가 멈춘 문장 "+hb+"-"+w+d+k+": 같은 자리를 두 번 읽게 만드는 대목이었다."});
+        if(!r.ERR)quotes++;continue;}
+      const rev=roll<0.6;
       const r=call("s"+hb+"@x","submit",{kind:rev?"review":"label",bookId:pick(books()),text:text(rev?320:60),why:"도서관에서 빌려 읽었다",page:rev?"45쪽":"",head:rev?"한 줄 머리":""});
       if(!r.ERR)posts++;}
-    /* 열심히 하는 30명: 한 주에 라벨 3 · 독후감 1 · 북퀴즈 1 (별 1개에 세 종류가 다 필요) */
-    if(d!==2)STU.slice(400,430).forEach((hb,j)=>{const rev=d===1;
+    /* 열심히 하는 30명: 한 주에 라벨 1 · 문장 2 · 독후감 1 · 북퀴즈 1 = 도장 5개
+       (문장 채집은 '라벨' 종류로 치므로 별 1개의 세 종류 규칙도 채워진다) */
+    if(d!==2)STU.slice(400,430).forEach((hb,j)=>{
+      if(d===0||d===3){   /* 문장 채집 */
+        const r=call("s"+hb+"@x","quoteAdd",{bookId:books()[(w*5+d+j)%40],page:(30+d)+"쪽",
+          text:"오래 곁에 두고 싶은 문장 "+hb+"-"+w+d+": 읽는 동안 마음이 조용해졌다."});
+        if(!r.ERR)quotes++;return;}
+      const rev=d===1;
       const r=call("s"+hb+"@x","submit",{kind:rev?"review":"label",bookId:books()[(w*5+d+j)%40],text:text(rev?320:60),why:"매일 조금씩 읽는다",page:rev?"45쪽":"",head:rev?"한 줄 머리":""});if(!r.ERR)posts++;});
     if(d===2)STU.slice(400,430).forEach(hb=>{const s2=call("s"+hb+"@x","state");if(!s2.quiz||s2.quiz.done!=null)return;
       const ans={};s2.quiz.items.forEach(q=>{const row=T["퀴즈"].find(x=>x.id===q.id);ans[q.id]=Number(row["정답"])-1;});
@@ -62,7 +73,7 @@ const QHB=STU[3];   /* 투표권 시험용 학생은 대량 투표에서 뺀다 
 for(let k=0;k<200;k++){const hb=pick(STU);if(hb===QHB)continue;const s2=call("s"+hb+"@x","state");
   if(!s2.voteL||!s2.voteL.list.length||!s2.voteL.left)continue;
   if(!call("s"+hb+"@x","vote",{kind:"label",id:s2.voteL.list[0].id}).ERR)votes++;}
-console.log("글",posts,"편 · 공감",likes,"· 퀴즈 응답",answered,"· 투표",votes);
+console.log("글",posts,"편 · 문장 채집",quotes,"개 · 공감",likes,"· 퀴즈 응답",answered,"· 투표",votes);
 must(votes>50,"이달의 투표(11월 3일): "+votes+"표");
 {const s3=call("s"+STU[5]+"@x","state");must(s3.voteL.list.every(l=>l.date.slice(0,7)==="2026-10"),"후보는 지난달(10월) 글");}
 /* 주마다 라벨 2표·독후감 2표, 같은 글에 두 번은 안 됨 */
@@ -85,7 +96,7 @@ NOW=new Date("2026-10-30T03:00:00Z");
 let over=0,maxM=0;STU.slice(0,626).forEach(hb=>{const s=call("s"+hb+"@x","state");if(s.week&&s.week.stamps.length>5)over++;maxM=Math.max(maxM,s.thisMonth?s.thisMonth.count:0);});
 must(over===0,"한 주 도장 5개 넘은 학생 없음");console.log("  한 달 도장 최대 "+maxM+"개");
 /* 하루 2편 */
-NOW=new Date("2026-10-30T04:00:00Z");const hb0="3401";["label","review","label"].forEach((k,i)=>call("s"+hb0+"@x","submit",{kind:k,bookId:books()[i+10],text:text(k==="review"?320:60),why:"도서관에서 읽음",page:"3쪽"}));
+NOW=new Date("2026-10-30T04:00:00Z");const hb0="3401";["review","review","review"].forEach((k,i)=>call("s"+hb0+"@x","submit",{kind:k,bookId:books()[i+10],text:text(320),why:"도서관에서 읽음",page:"3쪽",head:"한 줄 머리"}));
 must(T["글"].filter(r=>r["학번"]===hb0&&r["시각"].startsWith("2026-10-30")).length===2,"하루 2편 제한");
 /* 학년 담당 범위 */
 const g2=call("g2@x","state");must(g2.posts.every(p=>p.cls.startsWith("2-")),"2학년 담당은 2학년 글만 ("+g2.posts.length+"편)");
@@ -120,7 +131,7 @@ EMAIL="s1101@x";t=Date.now();for(let i=0;i<50;i++)C().api("state",{});const sMs=
 EMAIL="lib@x";t=Date.now();for(let i=0;i<10;i++)C().api("state",{});const aMs=(Date.now()-t)/10;
 console.log("화면 계산(글 "+T["글"].length+"편): 학생 "+sMs.toFixed(1)+"ms · 관리자 "+aMs.toFixed(1)+"ms");
 must(sMs<300&&aMs<1500,"화면 계산 시간 적당");
-const bad=Object.keys(errs).filter(k=>!/하루에|같은 책으로|이미 눌렀|내 글에는|이미 투표|이미 뽑은|표를 다 썼|이미 풀었|투표할 수 없는|글을 찾을 수|도서부만|관리자\(사서/.test(k));
+const bad=Object.keys(errs).filter(k=>!/하루에|같은 책으로|이미 눌렀|내 글에는|이미 투표|이미 뽑은|표를 다 썼|이미 풀었|투표할 수 없는|글을 찾을 수|도서부만|관리자\(사서|라벨은 한 주에|문장 채집은 하루에|이미 올린 문장|다른 친구가 먼저/.test(k));
 must(!bad.length,"예상 밖 오류 없음"+(bad.length?": "+bad.slice(0,5).join(" | "):""));
 console.log("거절된 요청(정상 규칙):",JSON.stringify(Object.fromEntries(Object.entries(errs).filter(([k])=>!bad.includes(k)).map(([k,v])=>[k.split(":")[1].slice(0,20),v]))));
 /* 이달의 한 줄 포스터·명예의 전당(학급만) */
