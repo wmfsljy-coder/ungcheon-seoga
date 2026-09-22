@@ -118,7 +118,8 @@ const dk=call("s2301@x","state").giftDesk;must(dk&&dk.open&&dk.rows.length===eli
 must(!call("s2301@x","clubMark",{ids:[elig[0].hakbun],on:true}).ERR,"도서부 지급 확인");
 must(call("s2302@x","clubMark",{ids:[elig[1].hakbun],on:true}).ERR,"도서부 아닌 학생은 못 함");
 must(call("lib@x","state").gifts.rows["2026-11-02"].find(x=>x.hakbun===elig[0].hakbun).paid,"관리자 화면에 배부 완료");
-must(call("s"+elig[0].hakbun+"@x","state").stars.shown===0,"받은 학생의 별이 사라짐");
+(function(){const S1=call("s"+elig[0].hakbun+"@x","state").stars;
+  must(S1.used>=2&&S1.shown===Math.max(0,S1.total-S1.used),"받은 만큼만 별이 줄어든다(쌓인 "+S1.total+" · 쓴 "+S1.used+" · 남은 "+S1.shown+")");})();
 const gs=call("s"+elig[0].hakbun+"@x","state");must(gs.giftNotice&&gs.giftNotice.mine.paid,"받은 학생 공지에 '수령했어요'");
 /* 속도: 글이 쌓인 뒤 화면 계산 */
 let t=Date.now();for(let i=0;i<50;i++)C().api("state",{});
