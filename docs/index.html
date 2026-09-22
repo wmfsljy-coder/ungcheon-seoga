@@ -1107,7 +1107,16 @@ var AREA_CATS=[
 var JUNK=/학생부|자소서|자기소개서|면접|진학|클래스룸|아동교육|대입|입시|입학사정관|대학\s*간다|합격|전략서|토익|토플|텝스|자격증|수험|문제집|수능|모의고사|기출|교과서|자습서|참고서|평가문제|EBS|워크북|사전|총서|길라잡이|핵심\s*정리|개념원리|만화로\s*보는\s*교과/;
 
 /* ── 작은 도구 ── */
-function S(v){return v==null?"":String(v).trim();}
+/* 공백이 아닌 글자인가(트림이 떼어 내는 것들만 뺀다) */
+function NSP(c){return c>32&&c!==160&&c!==0x1680&&(c<0x2000||c>0x200A)&&c!==0x2028&&c!==0x2029&&c!==0x202F&&c!==0x205F&&c!==0x3000&&c!==0xFEFF;}
+/* 값을 글자열로. 한 번 부르는 값은 싸지만 한 화면에 수백만 번 불리므로,
+   앞뒤에 공백이 없으면 자르지 않고 그대로 돌려준다(새 글자열을 만들지 않는다) */
+function S(v){
+  if(typeof v==="string"){var n=v.length;if(!n)return v;
+    if(NSP(v.charCodeAt(0))&&NSP(v.charCodeAt(n-1)))return v;
+    return v.trim();}
+  return v==null?"":String(v).trim();
+}
 function p2(n){return (n<10?"0":"")+n;}
 function kst(d){return new Date(d.getTime()+9*3600000);}
 function ymd(k){return k.getUTCFullYear()+"-"+p2(k.getUTCMonth()+1)+"-"+p2(k.getUTCDate());}
@@ -1188,12 +1197,19 @@ function shownAuthor(a){
 }
 function monthKey(d){return ymd(kst(d)).slice(0,7);}
 /* "2026-09-24 10:00:00" → 그 주 월요일 "2026-09-21" */
+var WOY_={},PM_={};
 function weekOfYmd(s){
-  var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(S(s));if(!m)return "";
+  var k=S(s).slice(0,10),c=WOY_[k];if(c!==undefined)return c;
+  var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(k);
+  if(!m)return WOY_[k]="";
   var d=new Date(Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3]))),dow=(d.getUTCDay()+6)%7;
-  return ymd(new Date(d.getTime()-dow*86400000));
+  return WOY_[k]=ymd(new Date(d.getTime()-dow*86400000));
 }
-function prevMonth(mon){var m=/^(\d{4})-(\d{2})/.exec(mon);var y=Number(m[1]),mm=Number(m[2])-1;if(mm<1){mm=12;y--;}return y+"-"+p2(mm);}
+function prevMonth(mon){
+  var c=PM_[mon];if(c!==undefined)return c;
+  var m=/^(\d{4})-(\d{2})/.exec(mon);var y=Number(m[1]),mm=Number(m[2])-1;if(mm<1){mm=12;y--;}
+  return PM_[mon]=y+"-"+p2(mm);
+}
 /* 설정 '추천묶음'(예: 2026-09~2026-10, 여러 개는 쉼표)에 든 달은 첫 달 추천을 계속 쓴다 */
 function periodOf(mon,spec){
   var out={key:mon,from:mon,to:mon};
@@ -1355,12 +1371,17 @@ var SHEET_DOC={
 
 function make(db,env){
 
+  /* 설정은 한 화면에서 수백 번 읽히는데 60줄을 매번 훑을 까닭이 없다.
+     setConf 로 고칠 때만 다시 읽는다(고치는 곳은 모두 아래 setConf 를 지난다) */
+  var CONF_=null;
+  function setConf(k,v){CONF_=null;return db.setConf(k,v);}
   function conf(){
+    if(CONF_)return CONF_;
     var c={};CONF0.forEach(function(r){c[r[0]]=r[1];});
     db.rows("설정").forEach(function(r){if(S(r["항목"]))c[S(r["항목"])]=S(r["값"]);});
     /* 시트가 "2026-09" 를 날짜로 바꿔 둔 경우 되돌린다 */
     var mm=/^(\d{4}-\d{2})-01( 00:00:00)?$/.exec(S(c["이달"]));if(mm)c["이달"]=mm[1];
-    return c;
+    return CONF_=c;
   }
   function approveMode(c){return c["게시방식"]==="확인";}
   function libConf(c){c=c||conf();return {neis:c["학교코드"],prov:c["교육청코드"],school:c["학교명"]};}
@@ -1491,7 +1512,7 @@ function make(db,env){
     /* 여러 권을 찾았는데 한 권도 없다고 나오면 조회가 막혔거나 깨진 것이다. '없음'으로 적으면 서가가 통째로 비게 되므로 그대로 둔다 */
     if(rows.length>=5&&found===0)return {checked:rows.length,found:0,failed:failed,suspect:true};
     db.setMany("도서","id",upd);
-    if((!ids||ids.length>=5)&&failed<rows.length)db.setConf("도서확인",stamp_);   /* 전체 확인이나 새로 뽑은 달 목록 */
+    if((!ids||ids.length>=5)&&failed<rows.length)setConf("도서확인",stamp_);   /* 전체 확인이나 새로 뽑은 달 목록 */
     return {checked:rows.length,found:found,failed:failed};
   }
   /* 이번 달 추천 도서: 학교 장서의 대분류(장르)마다 2권 안팎, 모두 합쳐 이달의권수(40)권.
@@ -1597,14 +1618,14 @@ function make(db,env){
     if(!force){
       var pre=db.rows("도서").filter(function(b){return S(b["출처"])==="자동"&&S(b["월"])===mon&&S(b["숨김"])!=="Y";}).map(function(b){return S(b["id"]);});
       if(pre.length){
-        db.setConf("이달",mon);db.setConf("선별판","3");
+        setConf("이달",mon);setConf("선별판","3");
         var r0=refreshLibrary(pre);
         return {month:mon,picked:pre.length,activated:true,found:r0.found,ids:pre};
       }
     }
     var ids=pickBooks(mon);
     if(!ids)return {month:mon,picked:0,failed:true};
-    db.setConf("이달",mon);db.setConf("선별판","3");
+    setConf("이달",mon);setConf("선별판","3");
     var r=refreshLibrary(ids);
     return {month:mon,picked:ids.length,found:r.found,ids:ids};
   }
@@ -1660,12 +1681,12 @@ function make(db,env){
     try{dropPreMade();}catch(e){}   /* 미리 만들어 둔 문제 정리 */
     /* 설정 시트: 새 판에서 늘어난 항목을 채우고, 설명 칸을 붙인다 */
     var have={};db.rows("설정").forEach(function(r){have[S(r["항목"])]=r;});
-    CONF0.forEach(function(kv){if(!have[kv[0]]){db.setConf(kv[0],kv[1]);}});
+    CONF0.forEach(function(kv){if(!have[kv[0]]){setConf(kv[0],kv[1]);}});
     db.rows("설정").forEach(function(r){
       var k=S(r["항목"]),d=CONF_DESC[k];
       if(d&&S(r["설명"])!==d)db.set("설정","항목",k,{"설명":d});
     });
-    if(S(conf()["이달의권수"])==="24")db.setConf("이달의권수","40");
+    if(S(conf()["이달의권수"])==="24")setConf("이달의권수","40");
     /* 수령기간 시트: 비어 있으면 한 번 채운다(설정 상품권배부에 적힌 날짜, 없으면 이번 학년도 매달 첫 월요일~목요일) */
     if(S(conf()["수령기간판"])!=="1"){
       try{
@@ -1675,15 +1696,15 @@ function make(db,env){
           if(!ws.length){var m0=S(cc["수령시작월"])||"2026-10";for(var k=0;k<5;k++){var f0=firstMonday(m0);ws.push({"시작":f0,"끝":addDays(f0,3),"메모":Number(m0.slice(5))+"월 수령"});m0=nextMonthKey(m0);}}
           addRows("수령기간",ws);
         }
-        db.setConf("수령기간판","1");
+        setConf("수령기간판","1");
       }catch(e){}
     }
     /* 상품권 안내를 켠다(2026-09-20 회장님 지시). 관리자가 나중에 N 으로 바꾸면 그대로 둔다 */
-    if(S(conf()["상품권판"])!=="1"){db.setConf("상품권공개","Y");db.setConf("상품권판","1");}
+    if(S(conf()["상품권판"])!=="1"){setConf("상품권공개","Y");setConf("상품권판","1");}
     /* 첫 공지사항과 이 주의 주제 초안(비어 있을 때 한 번만. 관리자가 고치면 그대로) */
     if(S(conf()["첫안내판"])!=="1"){
       try{
-        if(!S(conf()["공지사항"]))db.setConf("공지사항","웅천 서가 문을 엽니다: 책 한 권 읽고 한 줄만 남기면 도장이 찍혀요. 도장 5개면 별 1개.\n별 1개에는 라벨·독후감·북퀴즈가 하나씩 꼭 필요해요. 북퀴즈는 월요일마다 새로 나옵니다.\n문화상품권: 별 2개 = 5,000원 1매, 수령 기간에 도서관에서 받아요(그때만 받을 수 있어요). 도장과 별은 계속 쌓입니다.\n로그인이 안 되면: 담임 선생님이나 도서관에 말해 주세요.");
+        if(!S(conf()["공지사항"]))setConf("공지사항","웅천 서가 문을 엽니다: 책 한 권 읽고 한 줄만 남기면 도장이 찍혀요. 도장 5개면 별 1개.\n별 1개에는 라벨·독후감·북퀴즈가 하나씩 꼭 필요해요. 북퀴즈는 월요일마다 새로 나옵니다.\n문화상품권: 별 2개 = 5,000원 1매, 수령 기간에 도서관에서 받아요(그때만 받을 수 있어요). 도장과 별은 계속 쌓입니다.\n로그인이 안 되면: 담임 선생님이나 도서관에 말해 주세요.");
         if(!db.rows("주제").length){
           var TH=[["함께 읽는 첫 주","아무 책이나 좋아요. 한 줄 남기고 도장부터 받아 보기",""],
                   ["과학의 눈으로 보기","실험·우주·몸·기후가 나오는 책 한 권","과학"],
@@ -1693,24 +1714,24 @@ function make(db,env){
           TH.forEach(function(t,i){rows.push({"주":weekKey(env.now(),i),"주제":t[0],"설명":t[1],"영역":t[2],"숨김":""});});
           addRows("주제",rows);
         }
-        db.setConf("첫안내판","1");
+        setConf("첫안내판","1");
       }catch(e){}
     }
     /* 메일 인증은 폐기(2026-09-20): 학번·이름 + PIN 여섯 자리로 */
-    if(S(conf()["로그인방식"])==="메일")db.setConf("로그인방식","핀");
+    if(S(conf()["로그인방식"])==="메일")setConf("로그인방식","핀");
     /* 교사 등록 학생도 첫 인증은 거치게(2026-09-20 회장님 지시). 관리자가 나중에 Y 로 바꾸면 그대로 둔다 */
-    if(S(conf()["무인증판"])!=="1"){db.setConf("교사등록무인증","N");db.setConf("무인증판","1");}
+    if(S(conf()["무인증판"])!=="1"){setConf("교사등록무인증","N");setConf("무인증판","1");}
     /* 별 규칙(2026-09-20)부터 한 달 도장 상한은 없음: 옛 기본값 20 → 0 을 한 번만 */
-    if(S(conf()["별규칙판"])!=="1"){if(S(conf()["월간도장"])==="20")db.setConf("월간도장","0");db.setConf("별규칙판","1");}
+    if(S(conf()["별규칙판"])!=="1"){if(S(conf()["월간도장"])==="20")setConf("월간도장","0");setConf("별규칙판","1");}
     /* 이달 칸이 날짜로 바뀌어 있으면 글자로 다시 적는다 */
     var rawM=db.rows("설정").filter(function(r){return S(r["항목"])==="이달";})[0];
-    if(rawM&&/^\d{4}-\d{2}-01/.test(S(rawM["값"])))db.setConf("이달",S(rawM["값"]).slice(0,7));
+    if(rawM&&/^\d{4}-\d{2}-01/.test(S(rawM["값"])))setConf("이달",S(rawM["값"]).slice(0,7));
     /* 오늘의 문장: 기본 목록에서 시트에 없는 문장을 한 번 채운다(선생님이 숨긴 문장은 그대로) */
     if(S(conf()["문장판"])!=="2"){
       try{
         var haveQ={};db.rows("문장").forEach(function(r){haveQ[S(r["문장"])]=1;});
         addRows("문장",QUOTES.filter(function(q){return !haveQ[q[0]];}).map(function(q){return {"문장":q[0],"출처":q[1],"종류":q[2],"숨김":""};}));
-        db.setConf("문장판","2");
+        setConf("문장판","2");
       }catch(e){}
     }
     /* 권장도서 시트: 기본 목록에서 시트에 없는 책을 채운다(사서 선생님이 '뺌'에 Y 한 책·직접 넣은 책은 그대로) */
@@ -1719,7 +1740,7 @@ function make(db,env){
         var haveT={};db.rows("권장도서").forEach(function(r){haveT[norm(r["제목"])]=1;});
         addRows("권장도서",TEEN.filter(function(x){return !haveT[norm(x[0])];}).map(function(x){
           return {"제목":x[0],"지은이":x[1],"영역":x[2],"출처":x[3],"권수":x[4],"청구기호":x[5],"ISBN":x[6],"출판사":x[7],"발행년":x[8],"뺌":""};}));
-        db.setConf("권장도서판",TEEN_VER);
+        setConf("권장도서판",TEEN_VER);
       }catch(e){}
     }
     try{sortRoster();}catch(e){}
@@ -1732,11 +1753,11 @@ function make(db,env){
         var monNow=monthKey(env.now());
         var bk=db.rows("도서").filter(function(r){return S(r["숨김"])!=="Y"||!S(r["월"])||monthsBetween(S(r["월"]),monNow)<6;});
         if(bk.length!==db.rows("도서").length)db.replace("도서",bk);
-        db.setConf("정리일",td);
+        setConf("정리일",td);
       }catch(e){}
     }
-    if(S(conf()["부제"])==="3학년이 남기는 한 줄")db.setConf("부제","한 권 읽고, 한 줄 남기기");
-    if(S(conf()["프로그램명"])==="웅천 가을 서가")db.setConf("프로그램명","웅천 서가");
+    if(S(conf()["부제"])==="3학년이 남기는 한 줄")setConf("부제","한 권 읽고, 한 줄 남기기");
+    if(S(conf()["프로그램명"])==="웅천 가을 서가")setConf("프로그램명","웅천 서가");
     var upd={},repaired=S(conf()["서가복구"])==="1",seenT={};
     db.rows("도서").forEach(function(b){
       if(S(b["숨김"])==="Y"||!S(b["월"]))return;
@@ -1753,7 +1774,7 @@ function make(db,env){
       if(Object.keys(p).length)upd[id]=Object.assign(upd[id]||{},p);
     });
     if(Object.keys(upd).length)db.setMany("도서","id",upd);
-    if(!repaired)db.setConf("서가복구","1");
+    if(!repaired)setConf("서가복구","1");
   }
   /* ── 북퀴즈 ──
      추천 도서를 뽑으면 그 기간의 '문제 은행'을 미리 만들어 둔다(상태 예비, 월=기간). 책 내용을 지어내지 않고 독서로 자료만 쓴다.
@@ -2041,9 +2062,9 @@ function make(db,env){
       .sort(function(x,y){return x["청구기호"]<y["청구기호"]?-1:x["청구기호"]>y["청구기호"]?1:0;});
     var was=Number(conf()["장서"])||0;
     db.replace("장서목록",rows);
-    db.setConf("장서",String(n));db.setConf("장서종",String(rows.length));db.setConf("장서목록일",today(env.now()));
+    setConf("장서",String(n));setConf("장서종",String(rows.length));setConf("장서목록일",today(env.now()));
     var diff=was?n-was:0;
-    db.setConf("장서변화",today(env.now())+" · "+n+"권"+(was?(diff>0?" (지난번보다 +"+diff+"권 늘었습니다)":diff<0?" ("+(-diff)+"권 줄었습니다)":" (지난번과 같습니다)"):""));
+    setConf("장서변화",today(env.now())+" · "+n+"권"+(was?(diff>0?" (지난번보다 +"+diff+"권 늘었습니다)":diff<0?" ("+(-diff)+"권 줄었습니다)":" (지난번과 같습니다)"):""));
     return {copies:n,titles:rows.length,diff:diff};
   }
   function libCount(){
@@ -2068,22 +2089,22 @@ function make(db,env){
     maintain();
     var p=libProbe();
     /* 독서로가 안 되면 퀴즈만(지난번에 받아 둔 청구기호로 만든다) */
-    if(!p.ok){db.setConf("도서확인결과",stamp(env.now())+" · "+p.why);
+    if(!p.ok){setConf("도서확인결과",stamp(env.now())+" · "+p.why);
       return {down:true,why:p.why,rotate:null,lib:{checked:0,found:0,failed:0},quiz:ensureWeeklyQuiz()};}
     var r=rotateMonth(S(conf()["선별판"])!=="3"),l=refreshLibrary(null,r&&r.ids),filled=0,cc=conf();
     try{fillDetails(60);}catch(e){}
     if(S(cc["장서확인"])!==today(env.now())){
-      try{var hn=libCount();if(hn){db.setConf("장서",String(hn));db.setConf("장서확인",today(env.now()));}}catch(e){}
+      try{var hn=libCount();if(hn){setConf("장서",String(hn));setConf("장서확인",today(env.now()));}}catch(e){}
     }
     try{filled=fillPostInfo(20);}catch(e){}
     try{syncRecvSheet();}catch(e){}
     /* 장서목록 시트는 달마다 한 번 새로 */
     if(S(conf()["장서목록일"]).slice(0,7)!==monthKey(env.now()))try{crawlCatalog();}catch(e){}
-    db.setConf("도서확인결과",stamp(env.now())+" · "+(l.suspect?"책 제목 조회가 한 권도 맞지 않음 — 지난 값을 그대로 둠":"정상 · "+(r&&r.picked?"이번 달 추천 도서 "+r.picked+"권 새로 뽑음"+(l.checked?", ":""):"")+(l.checked||!(r&&r.picked)?l.checked+"권 대출 상태 확인":"")+(l.failed?", "+l.failed+"권 응답 없음":"")));
+    setConf("도서확인결과",stamp(env.now())+" · "+(l.suspect?"책 제목 조회가 한 권도 맞지 않음 — 지난 값을 그대로 둠":"정상 · "+(r&&r.picked?"이번 달 추천 도서 "+r.picked+"권 새로 뽑음"+(l.checked?", ":""):"")+(l.checked||!(r&&r.picked)?l.checked+"권 대출 상태 확인":"")+(l.failed?", "+l.failed+"권 응답 없음":"")));
     if(r&&r.picked)try{renewWeekAuto();}catch(e){}
     /* 퀴즈판 3(2026-09-20): 이번 주 문제를 부수 많은 책에서 한 번 다시 낸다 */
     if(S(conf()["퀴즈판"])!=="4")try{renewWeekAuto(true);}catch(e){}
-    db.setConf("퀴즈판","4");
+    setConf("퀴즈판","4");
     /* 퀴즈는 청구기호를 받아 온 뒤에 채운다(첫 실행에서도 자동 문제가 나오게) */
     var qz=ensureWeeklyQuiz(),nx=null;
     try{nx=prePickNext();}catch(e){}
@@ -3236,7 +3257,7 @@ function make(db,env){
         if(posted(r)&&S(r["시각"]).slice(0,7)===pm&&S(r["학번"])&&!won[S(r["학번"])])pool[S(r["학번"])]={hakbun:S(r["학번"]),name:S(r["이름"]),cls:S(r["반"])};});
       var list=Object.keys(pool).sort().map(function(k){return pool[k];});
       return {picked:shuffle(list,env.uid()).slice(0,Math.max(1,Number(p.n)||3)),pool:list.length};},
-    setMode:function(a,p){admin(a);db.setConf("게시방식",p.approve?"확인":"바로");},
+    setMode:function(a,p){admin(a);setConf("게시방식",p.approve?"확인":"바로");},
     markPrinted:function(a,p){admin(a);(p.ids||[]).forEach(function(id){db.set("글","id",S(id),{"인쇄":"Y"});});},
     honor:function(a,p){admin(a);var r=getPost(a,p.id);
       db.set("글","id",S(p.id),{"명예":p.off?"":(S(p.mon)||S(r["시각"]).slice(0,7))});},
