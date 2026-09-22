@@ -1037,7 +1037,7 @@ var TS=[["shelf","서가"],["write","글 쓰기","쓰기"],["wall","게시판"],
 var TJ=[["shelf","서가"],["wall","게시판"],["quiz","북퀴즈","퀴즈"],["mine","내 서재"]];
 var TT=[["guide","교사 안내","안내"],["check","새 글"],["finish","상품권"],["readlog","독서 기록","독서"],["accounts","계정 관리","계정"],["tlabel","선생님 라벨·검색","내 라벨"],["suggest","추천 도서","추천"]];
 var TSUB=[["guide","교사 안내","안내"],["suggest","추천 도서","추천"],["tlabel","선생님 라벨·검색","내 라벨"]];
-var TA=[["guide","교사 안내"],["check","새 글"],["books","도서 관리"],["quizadm","퀴즈 관리"],["print","시상·인쇄"],["finish","상품권"],["readlog","독서 기록"],["accounts","계정 관리"],["tlabel","선생님 라벨·검색"]];
+var TA=[["guide","교사 안내"],["check","새 글"],["books","도서 관리"],["quizadm","퀴즈 관리"],["print","시상·인쇄"],["finish","상품권"],["readlog","독서 기록"],["accounts","계정 관리"],["tlabel","선생님 라벨·검색"],["suggest","추천 도서","추천"]];
 function tabList(){
   if(D.me.role==="student")return (D.canWrite?TS:TJ)
     .concat(D.me.club&&!D.preview?[["desk","배부 확인","배부"]]:[])

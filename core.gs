@@ -1070,7 +1070,9 @@ function make(db,env){
     var have=db.rows("도서").some(function(b){return S(b["출처"])==="자동"&&S(b["월"])===ahead&&S(b["숨김"])!=="Y"&&/청소년 권장도서/.test(S(b["추천사"]))===(S(conf()["추천방식"])!=="장르");}),picked=0;
     if(!have){var ids=pickBooks(ahead);if(!ids)return {month:ahead,failed:true};picked=ids.length;}
     fillDetails(60,ahead);
-    return {month:ahead,picked:picked,bank:buildBank(ahead)};
+    /* 문제 은행은 미리 만들지 않는다: 그 달 추천 도서는 선생님 추천으로 계속 늘어나므로,
+       그 주가 되어 ensureWeeklyQuiz 가 그때의 서가를 보고 만든다. */
+    return {month:ahead,picked:picked,bank:0};
   }
   /* 책 소개·핵심어·표지(독서로 상세, ISBN으로). 소개 "-" = 받아 봤지만 없음 */
   function unent(t){return S(t).replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#0?39;/g,"'").replace(/&nbsp;/g," ").replace(/&amp;/g,"&");}
@@ -1106,6 +1108,7 @@ function make(db,env){
     return true;
   }
   function maintain(){
+    try{dropPreMade();}catch(e){}   /* 미리 만들어 둔 문제 정리 */
     /* 설정 시트: 새 판에서 늘어난 항목을 채우고, 설명 칸을 붙인다 */
     var have={};db.rows("설정").forEach(function(r){have[S(r["항목"])]=r;});
     CONF0.forEach(function(kv){if(!have[kv[0]]){db.setConf(kv[0],kv[1]);}});
@@ -1328,23 +1331,44 @@ function make(db,env){
   }
   var BANK_KINDS=["about","keyword","author","call","kdc"];
   /* 한 기간의 문제 은행: 책마다 소개글·핵심어·지은이·청구기호(또는 분야) 문제를 만들어 '예비'로 둔다. 이미 있으면 그대로 */
+  /* 그 달 서가의 문제 은행. 한 달에 한 번이 아니라 **문제가 아직 없는 책만** 채운다.
+     선생님 추천 도서가 달 중간에 들어와도 그 책 문제가 다음 주에 나올 수 있게. */
   function buildBank(mon){
     if(!mon)return 0;
     var rows=db.rows("퀴즈");
-    if(rows.some(function(q){return S(q["월"])===mon&&S(q["상태"])==="예비";}))return 0;
     var books=periodBooks(mon);if(books.length<4)return 0;
+    var had={};
+    rows.forEach(function(q){if(S(q["월"])===mon&&S(q["상태"])==="예비")had[tkey(q["책제목"])]=1;});
+    var todo=books.filter(function(b){return !had[tkey(b.t)];});
+    if(!todo.length)return 0;
     var F=qFactory(books,"bank|"+mon),out=[],seen={};
     rows.forEach(function(q){seen[norm(q["문제"])]=1;});
-    books.forEach(function(b,i){
+    todo.forEach(function(b,i){
       ["about","keyword","author",i%2?"call":"kdc"].forEach(function(k){
         var x=F.build(b,k);if(!x||seen[norm(x.q)])return;seen[norm(x.q)]=1;
         out.push(qRow(b,k,x,"bank|"+mon,{"상태":"예비","주":"","월":mon}));
       });
     });
-    addRows("퀴즈",out);
+    if(out.length)addRows("퀴즈",out);
     return out.length;
   }
+  /* 미리 만들어 둔 문제를 시트에서 지운다.
+     - 다음 달치로 미리 만들어 둔 자동 문제 은행(상태 예비)
+     - 아직 오지 않은 주에 걸린 출제 문제
+     학생이 낸 문제(대기)와 지난 기록은 건드리지 않는다. */
+  function dropPreMade(){
+    var mon=S(conf()["이달"]),wk=weekKey(env.now(),0),n=0;
+    var keep=db.rows("퀴즈").filter(function(q){
+      var st=S(q["상태"]);
+      if(st==="예비"&&S(q["출처"])==="자동"&&mon&&S(q["월"])&&S(q["월"])>mon){n++;return false;}
+      if(st==="출제"&&S(q["주"])&&S(q["주"])>wk){n++;return false;}
+      return true;
+    });
+    if(n)db.replace("퀴즈",keep);
+    return n;
+  }
   function ensureWeeklyQuiz(){
+    try{dropPreMade();}catch(e){}
     var c=conf(),now=env.now(),wk=weekKey(now,0),target=Number(c["퀴즈문항수"])||5,bar=Number(c["퀴즈품질기준"])||6;
     var maxB=Number(c["퀴즈책수"])||3,mon=S(c["이달"]);
     /* 같은 주에 같은 문제가 두 번 이상 출제돼 있으면 하나만 남긴다 */
@@ -2994,7 +3018,7 @@ function make(db,env){
       posts:db.rows("글").length,copyDist:(function(){var h={};db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y"){var n=Number(b["권수"])||0;h[n]=(h[n]||0)+1;}});return h;})(),
       maxCopies:(function(){var m=0;db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y")m=Math.max(m,Number(b["권수"])||0);});return m;})(),loginMode:S(c["로그인방식"]),students:db.rows("명단").length,teachers:db.rows("교사").length};
   }
-  return {pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz};
+  return {pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
 }
 
 return {SHEET_DOC:SHEET_DOC,TEEN:TEEN,GENRES:GENRES,make:make,HEAD:HEAD,CONF0:CONF0,CONF_DESC:CONF_DESC,AREAS:AREAS,seedBooks:seedBooks,weekKey:weekKey,libMatch:libMatch,libSearchUrl:libSearchUrl,periodOf:periodOf,seedQuotes:seedQuotes,QUOTES:QUOTES,weekOfYmd:weekOfYmd,prevMonth:prevMonth,quizQuality:quizQuality,shownTitle:shownTitle,shownAuthor:shownAuthor,AREA_CATS:AREA_CATS};
