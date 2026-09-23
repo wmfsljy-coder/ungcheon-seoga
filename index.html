@@ -419,6 +419,10 @@ body.role-staff .news{background:#FFFBF0}
 .qcard .qmk{font-family:var(--serif);font-size:32px;line-height:.7;color:#C9A227}
 .qcard .qtx{font-family:var(--serif);font-size:17px;line-height:1.75;margin:6px 0 10px;white-space:pre-wrap}
 .qcard .qft{font-size:12.5px;color:var(--muted)}
+.bcomic{font-size:12.5px;padding:3px 6px}
+.ckline{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:13.5px;color:var(--ink)}
+.ckline input{width:16px;height:16px}
+.seg3 button[disabled]{opacity:.45;cursor:not-allowed}
 .seg3 button{flex:1;min-width:0;font-size:13px;padding:9px 6px}
 .ltrack{display:inline-flex;gap:4px;align-items:center}
 .ltrack i{width:14px;height:18px;border-radius:2px;border:1px solid #D8C79A;background:#FFF}
@@ -1477,8 +1481,11 @@ function pWrite(){
       (l.likes?'<span class="pill">'+l.likes+'명이 읽고 싶어 했어요</span>':'')+(l.printed?'<span>인쇄해서 붙였어요</span>':'')+(l.won?'<span class="pill gold">이달의 글</span>':'')+
       (l.memo?'<span>선생님 메모: '+esc(l.memo)+'</span>':'')+'</div></div>';
   }).join("");
+  var bk0=D.books.filter(function(x){return x.id===ui.pick;})[0],lockComic=!!(bk0&&bk0.comic),isComic=lockComic||!!ui.comic;
+  var noReview=isComic&&D.conf.comicRule!=="허용";
   var seg=[["label","라벨 한 줄"],["quote","문장"],["review","독후감"]].map(function(x){
-    return '<button data-kind="'+x[0]+'" aria-pressed="'+(K===x[0])+'">'+x[1]+' ('+D.conf.limit[x[0]].join("~")+'자)</button>';}).join("");
+    var off=x[0]==="review"&&noReview;
+    return '<button data-kind="'+x[0]+'" aria-pressed="'+(K===x[0])+'"'+(off?' disabled title="만화·웹툰은 라벨·문장으로 남겨 주세요"':'')+'>'+x[1]+' ('+D.conf.limit[x[0]].join("~")+'자)</button>';}).join("");
   var tLab=isL?'읽는 사람이 이 책을 집어들게 만드는 한 줄':isQ?'책에서 옮겨 적을 한 문장':'읽고 나서 남은 생각';
   var tPh=isL?'예) 표지 보고 무거울 줄 알았는데 하루 만에 읽었다. 읽고 나니까…'
     :isQ?'예) 나는 내가 아는 것보다 더 오래 기다릴 수 있는 사람이었다.'
@@ -1491,7 +1498,10 @@ function pWrite(){
           :isQ?'책에서 마음에 남은 문장을 그대로 옮겨 적어요. 가장 짧게 남기는 방법이에요.'
           :'읽고 난 생각을 길게. 한 주에 한 편이면 도장 한 칸이에요.')+
         ' <b>라벨과 문장은 한 주에 합쳐서 한 칸</b>이에요.</p></div>'+
-      '<div class="field"><label for="w-book">책 고르기</label><select id="w-book">'+opts+'</select></div>'+
+      '<div class="field"><label for="w-book">책 고르기</label><select id="w-book">'+opts+'</select>'+
+        '<label class="ckline"><input type="checkbox" id="w-comic"'+(isComic?' checked':'')+(lockComic?' disabled':'')+'><span>만화·웹툰이에요'+
+        (lockComic?' <span class="hint">(서가에 만화로 표시된 책이에요)</span>':'')+'</span></label>'+
+        (noReview?'<p class="hint" style="margin:6px 0 0;color:var(--red)">만화·웹툰은 <b>라벨·문장</b>으로 남겨 주세요. 도장은 똑같이 한 개 받아요(독후감 도장만 줄글 책에 드립니다).</p>':'')+'</div>'+
       '<div id="w-free" hidden><div class="field"><label for="w-t">책 제목</label><input type="text" id="w-t"></div>'+
       '<div class="field"><label for="w-a">지은이</label><input type="text" id="w-a"></div></div>'+
       '<div class="field"><label for="w-why">이 책을 언제, 어떻게 읽게 됐나요 (게시되지 않습니다)</label>'+
@@ -1515,8 +1525,10 @@ function wireWrite(){
   var isL=K==="label";
   function cur(){
     var free=sel.value==="free",bk=D.books.filter(function(x){return x.id===sel.value;})[0];
+    var cb=$("w-comic");
     return {kind:K,bookId:sel.value,title:free?ti.value.trim():bk.t,author:free?au.value.trim():bk.a,call:free?"":bk.call,
-      cls:D.me.cls,head:hd?hd.value.trim():"",text:ta.value.trim(),why:why.value.trim(),page:pg?pg.value.trim():""};
+      cls:D.me.cls,head:hd?hd.value.trim():"",text:ta.value.trim(),why:why.value.trim(),page:pg?pg.value.trim():"",
+      comic:!!(cb&&cb.checked)};
   }
   function upd(){
     var o=cur(),n=o.text.length;
@@ -1527,7 +1539,10 @@ function wireWrite(){
     pv.innerHTML=isL?labelHTML(o):K==="quote"?quoteHTML(o):'<div class="card">'+reviewHTML(o)+'</div>';
   }
   [ta,ti,au,hd,why,pg].forEach(function(e){if(e)e.addEventListener("input",upd);});
-  sel.addEventListener("change",function(){ui.pick=sel.value;saveUI();upd();});
+  sel.addEventListener("change",function(){ui.pick=sel.value;saveUI();
+    var nb=D.books.filter(function(x){return x.id===sel.value;})[0];
+    if(nb&&nb.comic){ui.comic=true;if(ui.kind==="review")ui.kind="label";saveUI();renderPanel();return;}
+    upd();});
   if(sel.value==="free"&&ui.freeT){ti.value=ui.freeT;au.value=ui.freeA||"";ui.freeT="";ui.freeA="";}
   upd();
   b.addEventListener("click",function(){
@@ -1566,6 +1581,7 @@ function guideHTML(){
       '<li><b>별 1개 = 도장 '+R.per+'개.</b> 한 주 '+c.weekCap+'칸을 다 채우면 별 하나가 되는 셈이에요. 라벨만 이어 쓰면 도장은 한 개고 나머지는 책갈피로 모여요.</li></ul>')+
     sec("2. 글쓰기 약속",'<ul>'+
       '<li>하루에 '+c.dayCap+'편까지. 같은 책으로 같은 종류의 글(라벨·문장·독후감)은 한 번만.</li>'+
+      '<li><b>만화·웹툰</b>은 <b>라벨·문장</b>으로 남겨요. 도장은 똑같이 한 개 받고, <b>독후감 도장만</b> 줄글 책에 드려요. 『쥐』·『페르세폴리스』 같은 <b>그래픽노블</b>은 선생님이 예외로 열어 두면 독후감도 돼요.</li>'+
       '<li>목록에 없는 책도 돼요. 어떤 책이든 읽었으면 쓸 수 있어요.</li>'+
       '<li>‘이 책을 언제, 어떻게 읽게 됐나’는 꼭 적어요(선생님만 봐요).</li>'+
       '<li><b>도장이 취소되는 경우</b>: 인터넷 서평·다른 사람 글·AI가 쓴 글을 옮겨 적었을 때, 읽지 않고 썼을 때, 누군가를 겨냥하거나 거친 말이 있을 때, 같은 글을 되풀이해 냈을 때. 선생님이 글을 내리면 <b>그 도장과 그 도장으로 만들어진 별도 함께 사라져요.</b></li>'+
@@ -2363,7 +2379,10 @@ function pBooks(){
   var rows=B.map(function(b){
     return '<tr><td>'+esc(b.t)+'<div class="hint">'+esc(b.a)+' · '+esc(b.s)+' · '+(b.src==="auto"?'자동 선별':'선생님 추천')+'</div></td>'+
       '<td>'+(libBadge(b)||'<span class="hint">확인 전</span>')+(b.manual?' <span class="hint">직접 표시</span>':'')+'</td>'+
-      '<td class="callno">'+esc(b.call)+'</td><td><button class="btn ghost sm" data-hide="'+b.id+'">빼기</button></td></tr>';}).join("");
+      '<td class="callno">'+esc(b.call)+'</td>'+
+      '<td><select class="bcomic" data-bcomic="'+b.id+'"><option value=""'+(b.comic?'':' selected')+'>줄글</option>'+
+        '<option value="Y"'+(b.comic?' selected':'')+'>만화</option><option value="예외">만화·예외</option></select></td>'+
+      '<td><button class="btn ghost sm" data-hide="'+b.id+'">빼기</button></td></tr>';}).join("");
   var manual=miss.map(function(b){
     return '<label><input type="checkbox" data-lib="'+b.id+'"'+(b.lib===true?' checked':'')+'><span>'+esc(b.t)+
       ' <button type="button" class="hint" data-find="'+esc(b.t)+'" style="text-decoration:underline">검색해 보기</button></span></label>';}).join("");
@@ -2378,7 +2397,8 @@ function pBooks(){
     (D.conf.libResult?'<div class="box" style="background:var(--paper-2);border-left:3px solid '+(/정상/.test(D.conf.libResult)?'#2F6B3A':'#B0452A')+';padding:10px 14px;margin:12px 0 0;font-size:13.5px">독서로 확인 결과: <b>'+esc(D.conf.libResult)+'</b>'+
       (/정상/.test(D.conf.libResult)?'':'<br>계속 실패하면 Apps Script 편집기에서 <b>libTest</b>를 실행하고 실행 로그를 알려 주세요. 연결이 안 되는 동안에도 서가·글쓰기·도장은 그대로 되고, 대출 표시와 이번 달 추천만 쉽니다.')+'</div>':'')+
     '<p class="hint" id="lib-msg" style="margin:10px 0 0">'+esc(ui.libMsg||"")+'</p>'+
-    '<div class="scrollx" style="margin-top:12px"><table><tr><th>책</th><th>학교 도서관</th><th>청구기호</th><th></th></tr>'+rows+'</table></div>'+
+    '<div class="scrollx" style="margin-top:12px"><table><tr><th>책</th><th>학교 도서관</th><th>청구기호</th><th>갈래</th><th></th></tr>'+rows+'</table></div>'+
+    '<p class="hint" style="margin:6px 0 0"><b>갈래</b> — ‘만화’로 두면 그 책으로는 <b>라벨·문장만</b> 쓸 수 있습니다(독후감 도장 없음). 『쥐』·『페르세폴리스』 같은 그래픽노블처럼 독후감까지 인정할 책은 <b>만화·예외</b>로 두세요. 청구기호가 ‘'+esc(((D.conf.comicKeys)||["만"]).join(", "))+'’로 시작하면 자동으로 만화로 봅니다.</p>'+
     (manual?'<h3 class="sec gap">못 찾은 책 — 직접 표시</h3>'+
       '<p class="sub">도서관에 제목이 다르게 등록된 책은 자동으로 못 찾습니다. ‘검색해 보기’로 확인하고, 실제로 있는 책이면 체크하세요. 체크한 책은 자동 확인이 못 찾아도 ‘도서관에 있음’으로 남습니다.</p>'+
       '<div class="libgrid">'+manual+'</div>':'')+
@@ -2449,6 +2469,7 @@ function bankHTML(){
 function todo(rows){return '<table class="todo">'+rows.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>';}).join("")+'</table>';}
 function howto(rows){return '<dl class="howto">'+rows.map(function(r){return '<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>';}).join("")+'</dl>';}
 function stampNote(){
+  var R=rule();
   return '<div class="box">도장은 선생님이 찍지 않습니다. 학생이 한 편을 내면 도장판에 자동으로 찍힙니다. '+
     '<b style="color:#9E3B24">라벨·문장 = 감빛 둥근 도장 讀·句</b>, <b style="color:#2B4C7E">독후감 = 쪽빛 네모 도장 感</b>, '+
     '<b style="color:#2F6B3A">퀴즈 출제 = 초록 마름모 도장 問</b>, <b style="color:#1F6F6B">퀴즈 풀이 = 答</b>, <b style="color:#7A4B8A">만능 = 萬</b>, <b style="color:#6B3F7A">선생님 도장 = 賞</b>(<b>도장 주기</b> 탭에서 직접, 자리와 상관없는 만능 도장). '+
@@ -2565,6 +2586,9 @@ function pGuide(){
 document.addEventListener("change",function(e){
   if(e.target.id==="ev-w"){ui.evWay=e.target.value;saveUI();renderPanel();return;}
   var d=e.target.dataset||{};
+  if(e.target.id==="w-comic"){ui.comic=e.target.checked;saveUI();if(ui.comic&&ui.kind==="review")ui.kind="label";renderPanel();return;}
+  if(d.bcomic){act("bookComic",{id:d.bcomic,v:e.target.value},
+    e.target.value==="Y"?"만화로 표시했습니다(라벨·문장만).":e.target.value==="예외"?"만화·예외로 표시했습니다(독후감도 인정).":"줄글로 되돌렸습니다.").catch(function(){});return;}
   if(e.target.id==="g-ok"){var gb=$("g-go2")||$("g-agree")||$("g-agree2");if(gb)gb.disabled=!e.target.checked;return;}
   if(e.target.id==="libonly"){ui.libOnly=e.target.checked;saveUI();renderPanel();return;}
   if(e.target.id==="wq"){ui.wq=e.target.value;saveUI();renderPanel();return;}

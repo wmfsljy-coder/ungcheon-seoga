@@ -8,8 +8,8 @@ var HEAD={
   "설정":["항목","값","설명"],
   "명단":["학번","이름","반","동의","도서부","등록방법","등록일","최근접속","비고","핀","핀설정","실패","잠금","이메일"],
   "교사":["이름","담당","마지막확인","핀","핀설정","실패","잠금","이메일"],
-  "도서":["id","제목","지은이","영역","추천","추천사","소장","청구기호","권수","대출가능","반납예정","확인","수동","출처","월","숨김","표지","확인권수","ISBN","소개","핵심어","추천교사"],
-  "글":["id","시각","주","차수","종류","학번","이름","반","도서id","책제목","지은이","머리글","본문","계기","쪽수","상태","메모","인쇄","수상","확인","청구기호","표지","명예"],
+  "도서":["id","제목","지은이","영역","추천","추천사","소장","청구기호","권수","대출가능","반납예정","확인","수동","출처","월","숨김","표지","확인권수","ISBN","소개","핵심어","추천교사","만화"],
+  "글":["id","시각","주","차수","종류","학번","이름","반","도서id","책제목","지은이","머리글","본문","계기","쪽수","상태","메모","인쇄","수상","확인","청구기호","표지","명예","만화"],
   "투표":["시각","주","종류","투표자","글id"],
   "퀴즈":["id","시각","차수","주","상태","책제목","쪽수","문제","보기1","보기2","보기3","보기4","정답","해설","학번","반","출처","품질","품질근거","월"],
   "퀴즈응답":["주","학번","점수","시각","차수","문항수"],
@@ -29,7 +29,7 @@ var HEAD={
   "도장":["id","시각","주","학번","이름","반","사유","교사","취소"]
 };
 var CONF0=[["프로그램명","웅천 서가"],["부제","한 권 읽고, 한 줄 남기기"],["차수","1"],
-  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","2"],["월최대매수","3"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
+  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","2"],["월최대매수","3"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["만화규칙","라벨만"],["만화청구기호","만, 만화, 657"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
   ["학교코드","S100000673"],["교육청코드","S10"],["학교명","웅천고등학교"],
   ["이달의권수","40"],["추천방식","권장"],["추천묶음","2026-09~2026-10"],["퀴즈문항수","5"],["퀴즈책수","3"],["퀴즈품질기준","6"],["보유기간","3학년은 졸업식 날까지, 1·2학년은 학년말(2월)까지"],["개인정보담당","도서관 담당 교사"]];
 /* 설정 시트 '설명' 칸에 들어가는 뜻풀이 */
@@ -53,6 +53,8 @@ var CONF_DESC={
   "주간라벨문장":"한 주에 라벨·문장으로 받을 수 있는 도장 수(둘을 합쳐서)",
   "주간독후감":"한 주에 독후감으로 받을 수 있는 도장 수(이 주의 주제·추천 도서 덤 도장 포함)",
   "주간퀴즈":"한 주에 퀴즈로 받을 수 있는 도장 수(출제와 풀이를 합쳐서)",
+  "만화규칙":"만화·웹툰을 어떻게 볼지. 라벨만 = 라벨·문장만 쓸 수 있고 독후감 도장은 없음(기본) / 허용 = 줄글과 똑같이 / 금지 = 아예 못 냄",
+  "만화청구기호":"청구기호가 이 글자로 시작하면 만화로 봅니다(쉼표로 여러 개). 학교 분류에 맞게 고치세요. 예: 만, 만화, 657",
   "교사도장주간":"선생님 한 분이 한 주에 찍어 줄 수 있는 도장 수(같은 학생에게는 하루 한 개)",
   "시상별":"이달의 독후감에 뽑히면 주는 별 수(라벨·문장은 별 대신 만능 도장 1개)",
   "시상탑라벨":"이달의 라벨 몇 위까지 뽑는지(만능 도장 1개)","시상탑문장":"이달의 문장 몇 위까지 뽑는지(만능 도장 1개)","시상탑독후감":"이달의 독후감 몇 위까지 뽑는지(별 1개)",
@@ -910,7 +912,7 @@ function make(db,env){
   function pubConf(c){
     return {name:c["프로그램명"],sub:c["부제"],round:c["차수"],approve:approveMode(c),
       goal:Number(c["주간도장"])||5,weekCap:Number(c["주간도장"])||5,monthCap:Number(c["월간도장"])||0,
-      quote:todayQuote(),giftOn:S(c["상품권공개"])==="Y",giftNote:S(c["상품권안내"]),dayCap:Number(c["하루제출상한"])||2,voteN:Number(c["투표후보수"])||8,giftMin:Number(c["상품권기준"])||5,giftTypes:S(c["상품권세종류"])!=="N",limit:LIMIT,areas:S(c["추천방식"])==="장르"?GENRE_NAMES:TEEN_NAMES,lib:libConf(c),libChecked:S(c["도서확인"]),libResult:S(c["도서확인결과"]),loginMode:S(c["로그인방식"])==="구글"?"google":"pin",subjects:S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean),giftWins:giftWindows(c),recvSheet:(function(){try{return db.rows("수령기간").length>0;}catch(e){return false;}})(),giftPlace:S(c["상품권배부장소"]),selVer:S(c["선별판"]),upToDate:S(c["선별판"])==="3"&&S(c["퀴즈판"])==="4"&&S(c["문장판"])==="2",quizBooks:Number(c["퀴즈책수"])||3,leafWeek:Number(c["주간책갈피"])||5,monthN:Number(c["이달의권수"])||40,holdings:S(c["장서"]),month:S(c["이달"]),
+      quote:todayQuote(),giftOn:S(c["상품권공개"])==="Y",giftNote:S(c["상품권안내"]),dayCap:Number(c["하루제출상한"])||2,voteN:Number(c["투표후보수"])||8,giftMin:Number(c["상품권기준"])||5,giftTypes:S(c["상품권세종류"])!=="N",limit:LIMIT,areas:S(c["추천방식"])==="장르"?GENRE_NAMES:TEEN_NAMES,lib:libConf(c),libChecked:S(c["도서확인"]),libResult:S(c["도서확인결과"]),loginMode:S(c["로그인방식"])==="구글"?"google":"pin",subjects:S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean),giftWins:giftWindows(c),recvSheet:(function(){try{return db.rows("수령기간").length>0;}catch(e){return false;}})(),giftPlace:S(c["상품권배부장소"]),selVer:S(c["선별판"]),upToDate:S(c["선별판"])==="3"&&S(c["퀴즈판"])==="4"&&S(c["문장판"])==="2",quizBooks:Number(c["퀴즈책수"])||3,leafWeek:Number(c["주간책갈피"])||5,comicRule:comicRule(c),comicKeys:comicKeys(c),monthN:Number(c["이달의권수"])||40,holdings:S(c["장서"]),month:S(c["이달"]),
       period:S(c["이달"])?periodOf(S(c["이달"]),c["추천묶음"]):null,
       privacy:{keep:S(c["보유기간"]),owner:S(c["개인정보담당"])},quizBar:Number(c["퀴즈품질기준"])||6,quizTarget:Number(c["퀴즈문항수"])||5};
   }
@@ -1624,6 +1626,33 @@ function make(db,env){
   }
 
   /* 글 한 편의 청구기호: 추천 도서면 시트 값, 아니면 독서로에서 한 번 찾아본다(실패해도 글은 낸다) */
+  /* 만화 형식이지만 독후감까지 인정하는 책(그래픽노블·교양만화).
+     기준: ① 한 권으로 완결된 서사나 논지가 있고 ② 원작자가 분명하며
+           ③ 수상·교과 연계처럼 공적으로 평가받은 작품.
+     학교에 이 책이 들어오면 자동으로 '예외'가 되고, 도서 시트에서 바꿀 수 있다 */
+  var COMIC_OK=["쥐","마우스","페르세폴리스","풀","송곳","미생","습지생태보고서","100도씨","100℃",
+    "내 어머니 이야기","팔레스타인","십시일반","사이시옷","아냐의 유령","나의 아름다운 정원",
+    "만화로 보는 기후변화","세상에서 가장 재미있는 미적분","세상에서 가장 재미있는 통계학",
+    "세상에서 가장 재미있는 물리학","세상에서 가장 재미있는 유전학","만화로 배우는 곤충의 진화"];
+  /* ── 만화·웹툰 ──
+     학교 분류(청구기호 앞자리)나 도서 시트 '만화' 칸, 학생 자진 체크로 가린다.
+     도서 시트에 '예외'라고 적으면 그래픽노블·학습만화처럼 독후감도 인정한다 */
+  function comicRule(c){return S((c||conf())["만화규칙"])||"라벨만";}
+  function comicKeys(c){return S((c||conf())["만화청구기호"]).split(/[,\n]+/).map(function(x){return S(x);}).filter(Boolean);}
+  function callIsComic(call,c){
+    var k=S(call).replace(/^\s+/,"");if(!k)return false;
+    return comicKeys(c).some(function(p){return k.indexOf(p)===0;});
+  }
+  /* 이 책이 만화인가: {comic:참/거짓, free:예외인가} */
+  function comicOf(bookRow,call,said,c){
+    c=c||conf();
+    var mark=bookRow?S(bookRow["만화"]):"";
+    if(!mark&&bookRow&&COMIC_OK.some(function(t){return norm(shownTitle(bookRow["제목"]))===norm(t);}))return {comic:false,ok:true};
+    if(mark==="예외")return {comic:false,ok:true};
+    if(mark==="Y")return {comic:true,ok:false};
+    if(callIsComic(call||(bookRow?bookRow["청구기호"]:""),c))return {comic:true,ok:false};
+    return {comic:!!said,ok:false};
+  }
   function libInfoFor(bookRow){
     return bookRow?{call:S(bookRow["청구기호"]),cover:S(bookRow["표지"])}:{call:"",cover:""};   /* 목록 밖 책은 fillPostInfo 가 나중에 채움 */
   }
@@ -1913,10 +1942,13 @@ function make(db,env){
       var k=norm(shownTitle(b["제목"]));if(!bArea[k])bArea[k]=S(b["영역"]);
       if(S(b["숨김"])!=="Y"&&S(b["월"]))(bMon[k]=bMon[k]||{})[S(b["월"])]=true;
     });
-    var perConf=conf()["추천묶음"];
+    var perConf=conf()["추천묶음"],cmRule=comicRule(),cmBook={};
+    db.rows("도서").forEach(function(b){if(S(b["만화"]))cmBook[S(b["id"])]=S(b["만화"]);});
     db.rows("글").forEach(function(r){
       if(!posted(r))return;
       var kind=writeKind(r["종류"]);
+      /* 만화 독후감은 라벨·문장 자리로. 선생님이 나중에 책을 만화로 바꿔도 그때부터 반영된다 */
+      if(kind==="review"&&cmRule!=="허용"&&(S(r["만화"])==="Y"||cmBook[S(r["도서id"])]==="Y"))kind="label";
       put(S(r["학번"]),{k:kind,t:S(r["책제목"]),at:S(r["시각"])});
       /* 덤 책갈피: 그달 추천 도서이거나 이 주의 주제에 맞는 독후감(겹쳐도 한 장) */
       if(kind==="review"){
@@ -2594,7 +2626,7 @@ function make(db,env){
         src:S(b["출처"])==="자동"?"auto":"pick",cover:S(b["표지"])==="-"?"":S(b["표지"]),isbn:S(b["ISBN"]),
         lib:S(b["소장"])==="Y"?true:S(b["소장"])==="N"?false:null,manual:S(b["수동"])==="Y",
         call:S(b["청구기호"]),total:Number(S(b["권수"]))||0,avail:av===""?null:Number(av),due:S(b["반납예정"]),checked:S(b["확인"]),
-        chk:Number(S(b["확인권수"]))||0};});
+        chk:Number(S(b["확인권수"]))||0,comic:comicOf(b,b["청구기호"],false).comic};});
   }
 
   function submit(a,p){
@@ -2611,6 +2643,11 @@ function make(db,env){
     if(why.length<5)fail("이 책을 언제·어떻게 읽게 됐는지 한 줄 적어 주세요.");
     if(kind==="review"&&!page)fail("가장 기억나는 쪽수나 장면을 적어 주세요.");
     if(kind==="quote"&&!page)fail("몇 쪽에 있는 문장인지 적어 주세요.");
+    /* 만화·웹툰: 기본은 라벨·문장까지만 */
+    var cm=comicOf(b,b?b["청구기호"]:"",!!p.comic,c),rule=comicRule(c);
+    if(cm.comic&&rule==="금지")fail("만화·웹툰은 글을 낼 수 없어요. 줄글 책으로 남겨 주세요.");
+    if(cm.comic&&rule!=="허용"&&kind==="review")
+      fail("만화·웹툰은 <라벨>이나 <문장>으로 남겨 주세요. 독후감 도장은 줄글 책에만 드려요.".replace(/[<>]/g,"’").replace(/’/g,"‘"));
     var mine=db.rows("글").filter(function(r){return S(r["학번"])===a.id&&S(r["상태"])!=="down";});
     var cap=Number(c["하루제출상한"])||2,td=today(now);
     if(mine.filter(function(r){return S(r["시각"]).slice(0,10)===td;}).length>=cap)
@@ -2620,7 +2657,8 @@ function make(db,env){
     var st=approveMode(c)?"waiting":"posted",li=libInfoFor(b,title,author);
     db.add("글",{"id":"g"+env.uid(),"시각":stamp(now),"주":weekKey(now,0),"차수":c["차수"],"종류":kind,
       "학번":a.id,"이름":a.name,"반":a.cls,"도서id":bookId,"책제목":title,"지은이":author,
-      "머리글":S(p.head),"본문":text,"계기":why,"쪽수":page,"상태":st,"청구기호":li.call,"표지":li.cover});
+      "머리글":S(p.head),"본문":text,"계기":why,"쪽수":page,"상태":st,"청구기호":li.call,"표지":li.cover,
+      "만화":cm.comic?"Y":""});
     return {status:st};
   }
   function stamp(now){
@@ -2987,6 +3025,12 @@ function make(db,env){
       var list=Object.keys(pool).sort().map(function(k){return pool[k];});
       return {picked:shuffle(list,env.uid()).slice(0,Math.max(1,Number(p.n)||3)),pool:list.length};},
     setMode:function(a,p){admin(a);setConf("게시방식",p.approve?"확인":"바로");},
+    bookComic:function(a,p){staff(a);
+      var r=db.rows("도서").filter(function(x){return S(x["id"])===S(p.id);})[0];
+      if(!r)fail("책을 찾지 못했습니다.");
+      var v=S(p.v);if(["","Y","예외"].indexOf(v)<0)fail("만화 표시는 비우거나 Y·예외 만 됩니다.");
+      db.set("도서","id",S(p.id),{"만화":v});
+      return {ok:true,v:v};},
     markPrinted:function(a,p){admin(a);(p.ids||[]).forEach(function(id){db.set("글","id",S(id),{"인쇄":"Y"});});},
     honor:function(a,p){admin(a);var r=getPost(a,p.id);
       db.set("글","id",S(p.id),{"명예":p.off?"":(S(p.mon)||S(r["시각"]).slice(0,7))});},
