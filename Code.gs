@@ -34,7 +34,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20260925-103345";
+var CODE_VERSION="20260925-105822";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -66,7 +66,21 @@ function doGet(e){
   if(e&&e.parameter&&e.parameter.backup){
     var b={};
     if(!keyOk_(e.parameter.backup))b={error:"열쇠가 맞지 않습니다."};
-    else{try{b.name=backupMonthly_(true);b.where=backupFolderUrl_();}catch(x){b.error=String(x&&x.message||x);}}
+    else{
+      try{b.name=backupMonthly_(true);b.where=backupFolderUrl_();}catch(x){b.error=String(x&&x.message||x);}
+      /* 드라이브 권한이 실제로 왔는지, 지금 어느 계정으로 도는지 확인용 */
+      try{DriveApp.getRootFolder().getName();b.drive="ok";}catch(x2){b.drive=String(x2&&x2.message||x2).slice(0,120);}
+      try{b.asUser=Session.getEffectiveUser().getEmail();}catch(x3){b.asUser="(알 수 없음)";}
+      /* 폴더에 실제로 무엇이 들어 있는지 */
+      try{
+        var db9=makeDb_(),want9="";
+        db9.rows("설정").forEach(function(r){if(String(r["항목"]).trim()==="백업폴더")want9=String(r["값"]);});
+        var fd=backupFolder_(want9),fi=fd.getFiles(),names=[];
+        while(fi.hasNext()&&names.length<30)names.push(fi.next().getName());
+        names.sort();b.folder=fd.getName();b.files=names;
+      }catch(x4){b.files=String(x4&&x4.message||x4).slice(0,120);}
+      if(BACKUP_ERR)b.copyErr=BACKUP_ERR;
+    }
     return ContentService.createTextOutput(JSON.stringify(b)).setMimeType(ContentService.MimeType.JSON);
   }
   /* 실제 데이터 점검(읽기만). tools/.testkey 의 열쇠가 있어야 열린다 */
@@ -432,19 +446,46 @@ function backupMonthly_(force){
   /* ① 드라이브 권한이 있으면 '웅천 서가 백업' 폴더 안에 사본을 둔다.
      ② 권한이 아직이면 스프레드시트 기능만으로 사본을 만든다(내 드라이브 맨 위에 생김).
         둘 다 같은 사본이고, 권한을 한 번 승인하면 그때부터 폴더로 들어간다. */
-  var url="",where="";
-  try{
-    var it=DriveApp.getFoldersByName("웅천 서가 백업"),folder=it.hasNext()?it.next():DriveApp.createFolder("웅천 서가 백업");
+  var url="",where="",folder=null;
+  try{folder=backupFolder_(conf["백업폴더"]);}catch(e0){BACKUP_ERR="폴더: "+e0.message;}
+  /* ① 폴더 안에 구글 시트 사본 그대로(드라이브 전체 권한이 있을 때) */
+  if(folder)try{
     var copy=DriveApp.getFileById(ss.getId()).makeCopy(name,folder);
-    url=copy.getUrl();where="웅천 서가 백업 폴더";
-    try{tidyBackups_(folder,ss.getId());}catch(e2){}   /* 권한 승인 전에 만든 사본도 폴더로 모은다 */
-  }catch(e){
+    url=copy.getUrl();where=folder.getName()+" 폴더";
+    try{tidyBackups_(folder,ss.getId());}catch(e2){console.log("사본 모으기: "+e2.message);}
+  }catch(e){BACKUP_ERR=String(e&&e.message||e).slice(0,200);}
+  /* ② 사본을 못 만들면 엑셀 파일로 내려받아 폴더에 넣는다(읽기 권한만 있어도 됨) */
+  if(!url&&folder)try{
+    var f2=backupExport_(folder,name);
+    url=f2.getUrl();where=folder.getName()+" 폴더(엑셀)";
+  }catch(e3){BACKUP_ERR=(BACKUP_ERR?BACKUP_ERR+" / ":"")+"엑셀: "+String(e3&&e3.message||e3).slice(0,120);}
+  /* ③ 그래도 안 되면 내 드라이브에 시트 사본 */
+  if(!url){
     var cp=SpreadsheetApp.openById(ss.getId()).copy(name);
-    url=cp.getUrl();where="내 드라이브(폴더 권한 승인 전)";
+    url=cp.getUrl();where="내 드라이브(폴더에 못 넣음)";
   }
   db.setConf("백업월",key);
-  db.setConf("백업",Utilities.formatDate(now,tz,"yyyy-MM-dd HH:mm")+" · "+name+" · "+where+" · "+url);
+  db.setConf("백업",Utilities.formatDate(now,tz,"yyyy-MM-dd HH:mm")+" · "+name+" · "+where+" · "+url+
+    (where.indexOf("폴더에 못")>=0?" · 드라이브 ‘모든 파일 보기·수정’ 권한을 허용하면 백업폴더로 들어갑니다":""));
   return name;
+}
+var BACKUP_ERR="";
+/* 시트를 엑셀로 내려받아 폴더에 넣는다(makeCopy 권한이 없을 때 쓰는 길) */
+function backupExport_(folder,name){
+  var id=ss_().getId();
+  var url="https://www.googleapis.com/drive/v3/files/"+id+"/export?mimeType="+
+    encodeURIComponent("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  var res=UrlFetchApp.fetch(url,{headers:{Authorization:"Bearer "+ScriptApp.getOAuthToken()},muteHttpExceptions:true});
+  if(res.getResponseCode()!==200)throw new Error("내보내기 "+res.getResponseCode());
+  return folder.createFile(res.getBlob().setName(name+".xlsx"));
+}
+/* 백업을 넣을 폴더: 설정 '백업폴더'(드라이브 주소나 ID) → 이름으로 찾기 → 새로 만들기 */
+function backupFolder_(want){
+  var id=String(want||"").trim();
+  var m=/[-\w]{25,}/.exec(id);       /* 드라이브 주소에서 폴더 ID만 뽑는다 */
+  if(m){try{return DriveApp.getFolderById(m[0]);}catch(e){console.log("백업폴더 ID 로 열지 못했습니다: "+e.message);}}
+  var it=DriveApp.getFoldersByName("웅천 서가 백업");
+  return it.hasNext()?it.next():DriveApp.createFolder("웅천 서가 백업");
 }
 /* 권한이 없던 동안 내 드라이브에 흩어져 만들어진 사본을 폴더로 모으고, 오래된 것은 정리한다 */
 function tidyBackups_(folder,selfId){
@@ -470,8 +511,9 @@ function tidyBackups_(folder,selfId){
 /* 백업 폴더 주소(없으면 만든다) */
 function backupFolderUrl_(){
   try{
-    var it=DriveApp.getFoldersByName("웅천 서가 백업");
-    return (it.hasNext()?it.next():DriveApp.createFolder("웅천 서가 백업")).getUrl();
+    var db=makeDb_(),want="";
+    db.rows("설정").forEach(function(r){if(String(r["항목"]).trim()==="백업폴더")want=String(r["값"]);});
+    return backupFolder_(want).getUrl();
   }catch(e){return "";}
 }
 /* 메뉴·편집기에서 바로 눌러 만드는 백업(권한 확인도 이때 함께 물어봅니다) */
