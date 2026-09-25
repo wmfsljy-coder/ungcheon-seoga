@@ -34,7 +34,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20260925-105822";
+var CODE_VERSION="20260925-111212";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -80,6 +80,17 @@ function doGet(e){
         names.sort();b.folder=fd.getName();b.files=names;
       }catch(x4){b.files=String(x4&&x4.message||x4).slice(0,120);}
       if(BACKUP_ERR)b.copyErr=BACKUP_ERR;
+      if(e.parameter.keep){try{
+        var dbK=makeDb_(),wantK="";
+        dbK.rows("설정").forEach(function(r){if(String(r["항목"]).trim()==="백업폴더")wantK=String(r["값"]);});
+        tidyBackups_(backupFolder_(wantK),ss_().getId(),Number(e.parameter.keep));
+      }catch(x6){b.keepErr=String(x6&&x6.message||x6).slice(0,120);}}
+      /* 지금 토큰에 실제로 어떤 권한이 붙어 있는지(승인 화면에서 무엇이 빠졌는지 바로 보인다) */
+      try{
+        var ti=UrlFetchApp.fetch("https://oauth2.googleapis.com/tokeninfo?access_token="+encodeURIComponent(ScriptApp.getOAuthToken()),{muteHttpExceptions:true});
+        var js=JSON.parse(ti.getContentText()||"{}");
+        b.scopes=String(js.scope||"").split(" ").map(function(x){return x.replace("https://www.googleapis.com/auth/","");}).sort();
+      }catch(x5){b.scopes=String(x5&&x5.message||x5).slice(0,100);}
     }
     return ContentService.createTextOutput(JSON.stringify(b)).setMimeType(ContentService.MimeType.JSON);
   }
@@ -452,7 +463,7 @@ function backupMonthly_(force){
   if(folder)try{
     var copy=DriveApp.getFileById(ss.getId()).makeCopy(name,folder);
     url=copy.getUrl();where=folder.getName()+" 폴더";
-    try{tidyBackups_(folder,ss.getId());}catch(e2){console.log("사본 모으기: "+e2.message);}
+    try{tidyBackups_(folder,ss.getId(),conf["백업보관"]);}catch(e2){console.log("사본 모으기: "+e2.message);}
   }catch(e){BACKUP_ERR=String(e&&e.message||e).slice(0,200);}
   /* ② 사본을 못 만들면 엑셀 파일로 내려받아 폴더에 넣는다(읽기 권한만 있어도 됨) */
   if(!url&&folder)try{
@@ -488,7 +499,7 @@ function backupFolder_(want){
   return it.hasNext()?it.next():DriveApp.createFolder("웅천 서가 백업");
 }
 /* 권한이 없던 동안 내 드라이브에 흩어져 만들어진 사본을 폴더로 모으고, 오래된 것은 정리한다 */
-function tidyBackups_(folder,selfId){
+function tidyBackups_(folder,selfId,keep){
   var moved=0,names=[];
   var it=DriveApp.searchFiles('title contains "백업" and trashed = false');
   while(it.hasNext()&&moved<50){
@@ -501,11 +512,14 @@ function tidyBackups_(folder,selfId){
     try{f.moveTo(folder);moved++;names.push(f.getName());}catch(e){}
   }
   if(moved)console.log("백업 사본 "+moved+"개를 폴더로 옮겼습니다: "+names.join(", "));
-  /* 스무 개가 넘으면 오래된 것부터 버린다(휴지통으로) */
+  /* 정한 개수가 넘으면 오래된 것부터 버린다(휴지통으로 — 30일 안에는 되살릴 수 있다) */
+  var n=Number(keep)>0?Number(keep):12;
   var all=[],fi=folder.getFiles();
   while(fi.hasNext())all.push(fi.next());
   all.sort(function(x,y){return x.getDateCreated()<y.getDateCreated()?1:-1;});
-  all.slice(20).forEach(function(f){try{f.setTrashed(true);}catch(e){}});
+  var gone=0;
+  all.slice(n).forEach(function(f){try{f.setTrashed(true);gone++;}catch(e){}});
+  if(gone)console.log("오래된 백업 "+gone+"개를 휴지통으로 보냈습니다(남긴 것 "+Math.min(n,all.length)+"개).");
   return moved;
 }
 /* 백업 폴더 주소(없으면 만든다) */
