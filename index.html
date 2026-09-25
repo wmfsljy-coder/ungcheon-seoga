@@ -1170,6 +1170,7 @@ function pGive(){
         '<td>'+esc(x.why)+'</td><td>'+(x.off?'<span class="pill grey">무름</span>':'<button class="btn ghost sm" data-giveundo="'+esc(x.id)+'">무르기</button>')+'</td></tr>';}).join("")+'</table></div>':'';
   return '<h3 class="sec">'+sealSVG("teacher")+' 도장 주기</h3>'+
     '<p class="sub">화면 밖에서 본 것을 도장으로 남깁니다 — 기억에 남는 문구를 옮겨 적은 학생, 평소에 책을 즐겨 읽는 학생, 독서 토론에서 좋은 질문을 한 학생. <b>모든 선생님</b>이 찍을 수 있고, 학생 도장판에는 <b>사유와 선생님 이름</b>이 함께 남습니다. 이 도장은 <b>만능 도장</b>이라 종류 상한과 상관없이 도장판에 들어가고, 그 주 다섯 칸이 이미 찼으면 <b>다음 주로 넘어갑니다</b>.</p>'+
+    '<div class="box" style="margin:10px 0"><b>아끼지 말고 많이 찍어 주세요.</b> 책을 즐겨 읽는 학생, 쉬는 시간에 책을 펴는 학생, 기억에 남는 문구를 옮겨 적는 학생, 친구에게 책을 권하는 학생 — 눈에 띄면 그 자리에서 한 개씩 주세요. <b>선생님이 보고 계신다는 것</b>이 학생에게는 가장 큰 상입니다. 만능 도장이라 그 학생의 빠진 자리를 채워 줍니다.</div>'+
     '<p class="libsum">이번 주 '+(D.givenWeek||0)+' / '+(D.giveCap||30)+'개 찍었습니다 · 같은 학생에게는 <b>하루 한 개</b>까지 (주 상한은 월요일에 새로 열립니다)</p>'+
     '<div class="row" style="align-items:flex-end;gap:8px;max-width:460px"><div class="field" style="flex:1;margin:0">'+
       '<label for="gv-q">학번이나 이름으로 찾기</label><input type="search" id="gv-q" value="'+esc(ui.giveQ||"")+'" placeholder="예) 1101 또는 김서준"></div>'+
@@ -1581,6 +1582,7 @@ function guideHTML(){
       '<li><b>별 1개 = 도장 '+R.per+'개.</b> 한 주 '+c.weekCap+'칸을 다 채우면 별 하나가 되는 셈이에요. 라벨만 이어 쓰면 도장은 한 개고 나머지는 책갈피로 모여요.</li></ul>')+
     sec("2. 글쓰기 약속",'<ul>'+
       '<li>하루에 '+c.dayCap+'편까지. 같은 책으로 같은 종류의 글(라벨·문장·독후감)은 한 번만.</li>'+
+      (c.writeWeek?'<li><b>라벨과 문장은 한 주에 합쳐서 '+c.writeWeek+'편</b>까지 낼 수 있어요. 첫 편이 <b>도장</b>, 나머지는 <b>책갈피</b>가 돼요(책갈피 '+((D.stars&&D.stars.leaf&&D.stars.leaf.per)||5)+'장 = 만능 도장 1개).</li>':'')+
       '<li><b>만화·웹툰</b>은 <b>라벨·문장</b>으로 남겨요. 도장은 똑같이 한 개 받고, <b>독후감 도장만</b> 줄글 책에 드려요. 『쥐』·『페르세폴리스』 같은 <b>그래픽노블</b>은 선생님이 예외로 열어 두면 독후감도 돼요.</li>'+
       '<li>목록에 없는 책도 돼요. 어떤 책이든 읽었으면 쓸 수 있어요.</li>'+
       '<li>‘이 책을 언제, 어떻게 읽게 됐나’는 꼭 적어요(선생님만 봐요).</li>'+
@@ -2546,14 +2548,16 @@ function noticeAdmin(){
   var list=L.length?'<div class="scrollx"><table><tr><th>공지</th><th>대상</th><th>기간</th><th></th></tr>'+L.map(function(n){
     var live=!n.hidden&&(!n.from||t>=n.from)&&(!n.to||t<=n.to);
     return '<tr><td><b>'+esc(n.title)+'</b>'+(n.body?'<div class="hint">'+esc(n.body)+'</div>':'')+'</td><td>'+esc(n.who)+'</td><td>'+(rangeLabel(n.from,n.to)||'늘')+
+      (n.pinned?' <span class="pill gold">늘 맨 위</span>':'')+
       (n.hidden?' <span class="pill grey">내림</span>':live?' <span class="pill">보이는 중</span>':'')+'</td>'+
       '<td><button class="btn ghost sm" data-nhide="'+esc(n.id)+'" data-on="'+(n.hidden?0:1)+'">'+(n.hidden?'다시 올리기':'내리기')+'</button></td></tr>';}).join("")+'</table></div>':'';
-  return '<h3 class="sec">학생 공지사항</h3><p class="sub">학생 화면 오른쪽(폰은 서가 맨 위) <b>공지사항</b>에 나갑니다. 상품권 배부 안내는 설정의 <b>상품권배부</b> 날짜로 자동으로 뜨니 따로 쓰지 않아도 됩니다.</p>'+
+  return '<h3 class="sec">공지사항</h3><p class="sub">학생 화면 오른쪽(폰은 서가 맨 위) <b>공지사항</b>에 나갑니다. <b>구글 시트 ‘공지’ 탭</b>에서 줄을 더해도 똑같이 올라갑니다. <b>늘 맨 위</b>로 두면 기간과 상관없이 규칙 안내처럼 붙어 있습니다. 상품권 배부 안내는 설정의 <b>상품권배부</b> 날짜로 자동으로 뜨니 따로 쓰지 않아도 됩니다.</p>'+
     '<div class="form" style="max-width:560px"><div class="field"><label for="nt-t">제목</label><input type="text" id="nt-t" maxlength="60" placeholder="예) 이번 주 금요일 도서관 휴관"></div>'+
     '<div class="field"><label for="nt-b">내용</label><textarea id="nt-b" rows="3" maxlength="300"></textarea></div>'+
     '<div class="row"><div class="field"><label for="nt-f">보이기 시작</label><input type="date" id="nt-f" value="'+esc(t)+'"></div>'+
     '<div class="field"><label for="nt-e">끝(비우면 계속)</label><input type="date" id="nt-e"></div>'+
     '<div class="field"><label for="nt-w">대상</label><select id="nt-w"><option>학생</option><option>모두</option><option>교사</option></select></div></div>'+
+    '<label style="display:flex;gap:8px;align-items:center;margin-bottom:10px;font-size:13.5px"><input type="checkbox" id="nt-pin"> 늘 맨 위에 두기(기간 무시)</label>'+
     '<button class="btn" id="nt-add">공지 올리기</button></div>'+list;
 }
 function guideSubject(){
@@ -2561,6 +2565,7 @@ function guideSubject(){
     ["추천 도서","‘추천 도서’ 탭에서 분야를 고르고 책 제목·지은이·추천사 한 줄을 넣으면 추천 도서에 바로 올라갑니다(학교 도서관에 있는 책만, <b>권수 제한 없음</b>). <b>이번 달·다음 달</b> 가운데 골라 넣을 수 있습니다. 같은 책으로 <b>라벨</b>도 남겨 주시면 게시판에 인쇄되어 학생들에게 더 잘 보입니다."],
     ["선생님 라벨","학생 라벨과 같은 모양으로 한 줄 추천을 남깁니다. 이름이 찍히고 투표·도장과는 무관합니다."],
     ["도서 검색","학교 도서관에 책이 있는지, 지금 빌릴 수 있는지 봅니다."]])+
+    '<div class="box"><b>도장은 아끼지 말고 많이 찍어 주세요.</b> 책을 즐겨 읽는 학생, 수업에서 책 이야기를 꺼내는 학생, 모범이 되는 학생 — ‘도장 주기’ 탭에서 학번이나 이름으로 찾아 한 개씩 주시면 됩니다. 선생님이 보고 계신다는 것이 학생에게는 가장 큰 상입니다.</div>'+
     '<div class="box">학생 이름이 나오는 기록(새 글·상품권·독서 기록)은 학년 담당과 관리자 선생님만 봅니다.</div>';
 }
 /* 등급 안내(관리자) */
@@ -2659,7 +2664,7 @@ document.addEventListener("click",function(e){
       if(r.tip)setTimeout(function(){toast(r.tip);},3400);
     }).catch(function(){});return;}
   if(id==="nt-add"){
-    act("noticeAdd",{title:$("nt-t").value,body:$("nt-b").value,from:$("nt-f").value,to:$("nt-e").value,who:$("nt-w").value},"공지를 올렸습니다.").catch(function(){});return;}
+    act("noticeAdd",{title:$("nt-t").value,body:$("nt-b").value,from:$("nt-f").value,to:$("nt-e").value,who:$("nt-w").value,pin:!!($("nt-pin")&&$("nt-pin").checked)},"공지를 올렸습니다.").catch(function(){});return;}
   if(id==="news-open"){var nw=$("news");if(nw)nw.scrollIntoView({behavior:"smooth",block:"start"});return;}
   if(d.rlrange){var RR=rlRange();if(d.rlrange==="all"){ui.rlFrom="";ui.rlTo="";}else{ui.rlFrom=RR[d.rlrange][0];ui.rlTo=RR[d.rlrange][1];}saveUI();renderPanel();return;}
   if(id==="join-copy"){

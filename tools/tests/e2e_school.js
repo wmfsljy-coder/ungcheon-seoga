@@ -127,7 +127,7 @@ EMAIL="s1101@x";t=Date.now();for(let i=0;i<50;i++)C().api("state",{});const sMs=
 EMAIL="lib@x";t=Date.now();for(let i=0;i<10;i++)C().api("state",{});const aMs=(Date.now()-t)/10;
 console.log("화면 계산(글 "+T["글"].length+"편): 학생 "+sMs.toFixed(1)+"ms · 관리자 "+aMs.toFixed(1)+"ms");
 must(sMs<300&&aMs<1500,"화면 계산 시간 적당");
-const bad=Object.keys(errs).filter(k=>!/하루에|같은 책으로|이미 눌렀|내 글에는|이미 투표|이미 뽑은|표를 다 썼|이미 풀었|투표할 수 없는|글을 찾을 수|도서부만|관리자\(사서/.test(k));
+const bad=Object.keys(errs).filter(k=>!/하루에|같은 책으로|이미 눌렀|내 글에는|이미 투표|이미 뽑은|표를 다 썼|이미 풀었|투표할 수 없는|글을 찾을 수|라벨과 문장은|만화·웹툰|도서부만|관리자\(사서/.test(k));
 must(!bad.length,"예상 밖 오류 없음"+(bad.length?": "+bad.slice(0,5).join(" | "):""));
 console.log("거절된 요청(정상 규칙):",JSON.stringify(Object.fromEntries(Object.entries(errs).filter(([k])=>!bad.includes(k)).map(([k,v])=>[k.split(":")[1].slice(0,20),v]))));
 /* 이달의 한 줄 포스터·명예의 전당(학급만) */

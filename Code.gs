@@ -27,13 +27,14 @@ function onOpen(){
     .addItem("독서로 소장·대출 지금 확인","libDaily")
     .addItem("이번 달 추천 도서 다시 뽑기","rotateNow")
     .addItem("이번 주 북퀴즈 빈자리 채우기","quizNow")
+    .addItem("시트 고친 것 지금 반영","refreshNow")
     .addItem("시트 쓰는 법 다시 쓰기 (안내 탭)","sheetDocNow")
     .addItem("독서로 연결 시험","libTest")
     .addToUi();
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20260925-093126";
+var CODE_VERSION="20260925-100533";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -168,7 +169,9 @@ function makeEnv_(){
 /* 시트 한 장 = 표 하나. 한 번 읽은 표는 요청이 끝날 때까지 다시 읽지 않고,
    요청 사이에는 CacheService 에 보관한다(시트마다 판 번호: 앱이 쓰거나 사람이 시트를 고치면 판이 올라가 다시 읽음) */
 var DB_CHUNK=25000;
-function dbTtl_(t){return ["설정","교사","명단","공지"].indexOf(t)>=0?900:21600;}
+/* 사람이 손으로 고치는 탭은 짧게(시계가 놓쳐도 곧 따라오도록), 앱이 혼자 쓰는 큰 탭만 길게 */
+var TTL_HAND=["설정","교사","명단","공지","도서","권장도서","주제","이벤트","수령기간","건의","도장","글","문장"];
+function dbTtl_(t){return TTL_HAND.indexOf(t)>=0?300:21600;}
 function bumpSheet_(t){PropertiesService.getScriptProperties().setProperty("sv|"+t,String(Date.now())+String(Math.floor(Math.random()*1000)));}
 function makeDb_(){
   var ssObj=null,cache={},PR=PropertiesService.getScriptProperties(),CS=null,ver=null;
@@ -419,16 +422,28 @@ function backupMonthly_(force){
     if(String(conf["백업월"]||"")===mon)return "";   /* 이미 했으면 그만 */
   }
   var ss=ss_(),name=(conf["프로그램명"]||"웅천 서가")+" 백업 "+(force?Utilities.formatDate(now,tz,"yyyy-MM-dd HHmm"):mon);
-  var it=DriveApp.getFoldersByName("웅천 서가 백업"),folder=it.hasNext()?it.next():DriveApp.createFolder("웅천 서가 백업");
-  var copy=DriveApp.getFileById(ss.getId()).makeCopy(name,folder);
+  /* ① 드라이브 권한이 있으면 '웅천 서가 백업' 폴더 안에 사본을 둔다.
+     ② 권한이 아직이면 스프레드시트 기능만으로 사본을 만든다(내 드라이브 맨 위에 생김).
+        둘 다 같은 사본이고, 권한을 한 번 승인하면 그때부터 폴더로 들어간다. */
+  var url="",where="";
+  try{
+    var it=DriveApp.getFoldersByName("웅천 서가 백업"),folder=it.hasNext()?it.next():DriveApp.createFolder("웅천 서가 백업");
+    var copy=DriveApp.getFileById(ss.getId()).makeCopy(name,folder);
+    url=copy.getUrl();where="웅천 서가 백업 폴더";
+  }catch(e){
+    var cp=SpreadsheetApp.openById(ss.getId()).copy(name);
+    url=cp.getUrl();where="내 드라이브(폴더 권한 승인 전)";
+  }
   db.setConf("백업월",mon);
-  db.setConf("백업",Utilities.formatDate(now,tz,"yyyy-MM-dd HH:mm")+" · "+name+" · "+copy.getUrl());
+  db.setConf("백업",Utilities.formatDate(now,tz,"yyyy-MM-dd HH:mm")+" · "+name+" · "+where+" · "+url);
   return name;
 }
 /* 백업 폴더 주소(없으면 만든다) */
 function backupFolderUrl_(){
-  var it=DriveApp.getFoldersByName("웅천 서가 백업");
-  return (it.hasNext()?it.next():DriveApp.createFolder("웅천 서가 백업")).getUrl();
+  try{
+    var it=DriveApp.getFoldersByName("웅천 서가 백업");
+    return (it.hasNext()?it.next():DriveApp.createFolder("웅천 서가 백업")).getUrl();
+  }catch(e){return "";}
 }
 /* 메뉴·편집기에서 바로 눌러 만드는 백업(권한 확인도 이때 함께 물어봅니다) */
 function backupNow(){
@@ -470,7 +485,9 @@ function installEditTriggers_(){
 /* 시트 정리: 선생님이 볼 탭만 앞에 차례대로, 앱이 혼자 쓰는 탭은 숨김 */
 var SHEET_ORDER=["안내","설정","명단","교사","도서","권장도서","주제","이벤트","글","도장","퀴즈","수령기간","수령대상","지급","공지","건의","문장","장서목록"];
 /* 더 이상 쓰지 않는 탭(옛 메일 인증, 문장을 따로 두던 채집)은 숨겨만 둔다 — 지우지는 않는다 */
-var SHEET_HIDE=["인증","채집","기기","공감","투표","교사신청","퀴즈응답"];
+var SHEET_HIDE=["기기","공감","투표","퀴즈응답"];
+/* 판이 바뀌며 더 쓰지 않게 된 탭: 줄이 거의 없으면 지우고, 자료가 있으면 숨기기만 한다 */
+var SHEET_DEAD=["인증","채집"];
 function tidySheets_(){
   var ss=ss_();
   SHEET_ORDER.forEach(function(n,i){
@@ -481,6 +498,13 @@ function tidySheets_(){
   SHEET_HIDE.forEach(function(n){
     var sh=ss.getSheetByName(n);if(!sh)return;
     try{if(!sh.isSheetHidden())sh.hideSheet();}catch(x){}
+  });
+  SHEET_DEAD.forEach(function(n){
+    var sh=ss.getSheetByName(n);if(!sh)return;
+    try{
+      if(sh.getLastRow()<=2&&ss.getSheets().length>1){ss.deleteSheet(sh);console.log("안 쓰는 탭 정리: "+n);}
+      else if(!sh.isSheetHidden())sh.hideSheet();
+    }catch(x){}
   });
   try{ss.setActiveSheet(ss.getSheetByName("설정")||ss.getSheets()[0]);}catch(x){}
 }
@@ -530,6 +554,12 @@ function writeSheetDoc_(force){
   sh.getRange(1,1,rows.length,5).setVerticalAlignment("top").setWrap(true);
   try{if(key)props.setProperty("docHash",key);}catch(e){}
   return rows.length;
+}
+/* 시트에서 고친 내용을 앱이 바로 읽게 한다(시계가 놓쳤을 때를 위한 손잡이) */
+function refreshNow(){
+  Object.keys(Core.HEAD).forEach(bumpSheet_);
+  try{Core.make(makeDb_(),makeEnv_()).maintain();}catch(e){console.log("정리: "+e.message);}
+  say_("시트에서 고친 내용을 앱에 반영했습니다. 화면을 새로 고치면 바로 보입니다.");
 }
 function sheetDocNow(){var n=writeSheetDoc_(true);say_("‘안내’ 탭에 시트 쓰는 법 "+n+"줄을 적었습니다. 칸 이름 위에 마우스를 올려도 설명이 뜹니다.");}
 function applySheetUi_(){
