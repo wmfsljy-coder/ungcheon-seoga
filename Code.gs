@@ -33,7 +33,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20260923-032350";
+var CODE_VERSION="20260925-093126";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -468,8 +468,9 @@ function installEditTriggers_(){
 /* 시트 모양 정리: 교사 '담당' 칸 드롭다운(관리자·1학년·2학년·3학년·교사), 명단 '도서부' 칸 드롭다운(Y).
    예전 값 '전체'는 '관리자'로, '3-2' 같은 반은 '3학년'으로 바꿔 둔다 */
 /* 시트 정리: 선생님이 볼 탭만 앞에 차례대로, 앱이 혼자 쓰는 탭은 숨김 */
-var SHEET_ORDER=["안내","설정","명단","교사","도서","권장도서","주제","이벤트","글","퀴즈","수령기간","수령대상","지급","공지","건의","문장","장서목록"];
-var SHEET_HIDE=["인증","기기","공감","투표","교사신청","퀴즈응답"];
+var SHEET_ORDER=["안내","설정","명단","교사","도서","권장도서","주제","이벤트","글","도장","퀴즈","수령기간","수령대상","지급","공지","건의","문장","장서목록"];
+/* 더 이상 쓰지 않는 탭(옛 메일 인증, 문장을 따로 두던 채집)은 숨겨만 둔다 — 지우지는 않는다 */
+var SHEET_HIDE=["인증","채집","기기","공감","투표","교사신청","퀴즈응답"];
 function tidySheets_(){
   var ss=ss_();
   SHEET_ORDER.forEach(function(n,i){
