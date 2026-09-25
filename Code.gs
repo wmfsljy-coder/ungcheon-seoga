@@ -34,7 +34,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20260925-111212";
+var CODE_VERSION="20260925-120909";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -93,6 +93,16 @@ function doGet(e){
       }catch(x5){b.scopes=String(x5&&x5.message||x5).slice(0,100);}
     }
     return ContentService.createTextOutput(JSON.stringify(b)).setMimeType(ContentService.MimeType.JSON);
+  }
+  /* 한눈에 보기 자료만 뽑아 보기(읽기만, 열쇠 필요) */
+  if(e&&e.parameter&&e.parameter.overview){
+    var ov={};
+    if(!keyOk_(e.parameter.overview))ov={error:"열쇠가 맞지 않습니다."};
+    else{try{
+      var core1=Core.make(makeDb_(),makeEnv_());
+      ov=core1.overview({role:"admin",kind:"admin",grade:"",name:"점검"},Number(e.parameter.weeks)||8,Number(e.parameter.days)||14);
+    }catch(x){ov={error:String(x&&x.message||x)};}}
+    return ContentService.createTextOutput(JSON.stringify(ov)).setMimeType(ContentService.MimeType.JSON);
   }
   /* 실제 데이터 점검(읽기만). tools/.testkey 의 열쇠가 있어야 열린다 */
   if(e&&e.parameter&&e.parameter.selftest){
