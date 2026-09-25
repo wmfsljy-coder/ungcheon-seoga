@@ -59,3 +59,25 @@ C().maintain();
 const after=as("state");
 must(!after.me||after.me.role==="nologin"||after.need,"핀을 지우면 그 기기도 함께 풀린다 ("+JSON.stringify(after).slice(0,60)+")");
 must(T["기기"].every(r=>r["해제"]==="Y"),"기기 표에 해제로 남는다");
+
+/* ── 옛 공감·투표 탭을 '반응' 한곳으로 ── */
+(function(){
+  const T2={};Object.keys(Core.HEAD).forEach(t=>T2[t]=[]);
+  T2["공감"]=[{"시각":"2026-10-20","글id":"g1","누른이":"h1"}];
+  T2["투표"]=[{"시각":"2026-10-20","주":"2026-10-19","종류":"label","투표자":"v1","글id":"g2"}];
+  const env2={now:()=>new Date("2026-10-21T01:00:00Z"),email:()=>"",uid:()=>Math.random().toString(36).slice(2,9),hmac:s=>"h"+s,http:()=>{throw 1},mail:()=>{}};
+  const db2={replace:(t,l)=>{T2[t]=[];l.forEach(o=>db2.add(t,o));},rows:t=>T2[t],
+    add:(t,o)=>{const r={};(Core.HEAD[t]||Object.keys(o)).forEach(h=>r[h]=o[h]==null?"":String(o[h]));T2[t].push(r)},
+    addMany:(t,l)=>l.forEach(o=>db2.add(t,o)),
+    set:(t,k,v,p)=>T2[t].forEach(r=>{if(String(r[k]).trim()===String(v))Object.keys(p).forEach(c=>r[c]=String(p[c]))}),
+    setMany:(t,k,m)=>T2[t].forEach(r=>{const p=m[String(r[k])];if(p)Object.keys(p).forEach(c=>r[c]=String(p[c]))}),
+    setConf:(k,v)=>{const h=T2["설정"].find(r=>r["항목"]===k);if(h)h["값"]=v;else T2["설정"].push({"항목":k,"값":v})}};
+  Core.make(db2,env2).maintain();
+  const R=T2["반응"]||[];
+  must(R.length===2,"옛 두 탭의 기록이 반응으로 ("+R.length+"줄)");
+  must(R.some(r=>r["갈래"]==="공감"&&r["글id"]==="g1"&&r["누구"]==="h1"),"공감 한 줄이 그대로");
+  must(R.some(r=>r["갈래"]==="투표"&&r["부문"]==="label"&&r["주"]==="2026-10-19"&&r["누구"]==="v1"),"투표 한 줄이 부문·주와 함께");
+  must(!T2["공감"].length&&!T2["투표"].length,"옛 탭은 비워진다(시트 정리가 지움)");
+  const n=T2["반응"].length;Core.make(db2,env2).maintain();
+  must(T2["반응"].length===n,"두 번 돌려도 겹치지 않는다");
+})();

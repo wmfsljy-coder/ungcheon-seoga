@@ -585,10 +585,9 @@ var HEAD={
   "교사":["이름","담당","마지막확인","핀","핀설정","실패","잠금","이메일"],
   "도서":["id","제목","지은이","영역","추천","추천사","소장","청구기호","권수","대출가능","반납예정","확인","수동","출처","월","숨김","표지","확인권수","ISBN","소개","핵심어","추천교사","만화"],
   "글":["id","시각","주","차수","종류","학번","이름","반","도서id","책제목","지은이","머리글","본문","계기","쪽수","상태","메모","인쇄","수상","확인","청구기호","표지","명예","만화"],
-  "투표":["시각","주","종류","투표자","글id"],
+  "반응":["시각","갈래","부문","주","글id","누구"],
   "퀴즈":["id","시각","차수","주","상태","책제목","쪽수","문제","보기1","보기2","보기3","보기4","정답","해설","학번","반","출처","품질","품질근거","월"],
   "퀴즈응답":["주","학번","점수","시각","차수","문항수"],
-  "공감":["시각","글id","누른이"],
   "문장":["문장","출처","종류","숨김"],
   "공지":["id","시작","끝","제목","내용","대상","고정","숨김","시각"],
   "수령기간":["시작","끝","메모"],
@@ -1404,16 +1403,15 @@ var SHEET_DOC={
     c:{"제목":["책 제목",""],"지은이":["지은이",""],"출판사":["출판사",""],"발행년":["펴낸 해",""],
        "청구기호":["서가 번호",""],"권수":["같은 책 권수","3"],"분야":["독서로 대분류","소설"],
        "중분류":["더 자세한 갈래","한국소설"],"ISBN":["책 번호",""],"자료실":["어디에 있는지","자료실"]}},
-  "공감":{d:"‘읽고 싶어요’ 기록(누가 눌렀는지는 알 수 없게 섞어 둡니다).",edit:"보기만 하세요",
-    c:{"시각":["누른 때",""],"글id":["그 글",""],"누른이":["섞어 둔 값",""]}},
   "도장":{d:"선생님이 손으로 찍어 준 도장(수업 발표·독서 토론·도우미 등). 학생 화면에 사유와 선생님 이름이 함께 보입니다. 자리와 상관없는 만능 도장입니다.",edit:"찍기·무르기는 화면에서",
     c:{"id":["번호",""],"시각":["찍은 때",""],"주":["그 주 월요일","2026-10-05"],
        "학번":["받은 학생","1101"],"이름":["이름","김서준"],"반":["학급","1-1"],
        "사유":["왜 주는지(학생에게 보입니다)","점심시간마다 읽는 모습"],"교사":["찍어 준 선생님","박서가"],
        "취소":["Y 면 무효","Y"]}},
-  "투표":{d:"투표 기록. 투표자 칸에는 이름·학번 대신 되돌릴 수 없는 표시만 들어갑니다(중복 투표를 막는 용도).",edit:"보기만 하세요",
-    c:{"시각":["누른 때",""],"주":["투표한 주",""],"종류":["label(라벨) / quote(문장) / review(독후감)",""],
-       "투표자":["섞어 둔 값",""],"글id":["뽑은 글",""]}},
+  "반응":{d:"학생이 남의 글에 남긴 반응 — ‘읽고 싶어요’(공감)와 이달의 투표를 한곳에 모았습니다. 누가 눌렀는지는 알 수 없게 섞어 둡니다(중복만 막는 용도).",edit:"보기만 하세요",
+    c:{"시각":["누른 때","2026-10-20"],"갈래":["공감 / 투표","공감"],
+       "부문":["투표일 때만: label(라벨) / quote(문장) / review(독후감)","label"],
+       "주":["투표일 때 그 주 월요일","2026-10-19"],"글id":["어느 글에","g7x2"],"누구":["섞어 둔 값(되돌릴 수 없음)",""]}},
   "기기":{d:"자동 로그인해 둔 기기 목록. 로그아웃·PIN 초기화를 하면 해제됩니다.",edit:"보기만 하세요",
     c:{"토큰":["섞어 둔 열쇠",""],"계정":["s:학번 또는 t:이름","s:1101"],"만든날":["로그인한 때",""],
        "마지막":["마지막으로 쓴 날",""],"만료":["이 날까지 자동 로그인","2027-01-20"],
@@ -1737,6 +1735,7 @@ function make(db,env){
     try{moveNotice();}catch(e){}    /* 설정 공지사항 → 공지 시트(한곳에서 고치도록) */
     try{takeTeacherOk();}catch(e){} /* 교사신청 시트에서 '승인'으로 고친 것 받아들이기 */
     try{dropPinless();}catch(e){}   /* 명단·교사에서 핀 칸을 비우면 그 기기도 함께 풀기 */
+    try{mergeReacts();}catch(e){}   /* 옛 공감·투표 탭을 '반응' 한곳으로 */
     /* 설정 시트: 새 판에서 늘어난 항목을 채우고, 설명 칸을 붙인다 */
     var have={};db.rows("설정").forEach(function(r){have[S(r["항목"])]=r;});
     CONF0.forEach(function(kv){if(!have[kv[0]]){setConf(kv[0],kv[1]);}});
@@ -2458,7 +2457,7 @@ function make(db,env){
   /* ── 글 ── */
   function posted(r){return S(r["상태"])==="posted";}
   function tally(){
-    var m={};db.rows("투표").forEach(function(v){var k=S(v["글id"]);m[k]=(m[k]||0)+1;});return m;
+    var m={};db.rows("반응").forEach(function(v){if(S(v["갈래"])!=="투표")return;var k=S(v["글id"]);m[k]=(m[k]||0)+1;});return m;
   }
   function pub(r){
     return {id:S(r["id"]),kind:S(r["종류"]),title:S(r["책제목"]),author:S(r["지은이"]),cls:S(r["반"]),
@@ -2466,7 +2465,7 @@ function make(db,env){
       by:S(r["반"])===TEACHER_CLS?S(r["이름"])+" 선생님":""};
   }
   function likeKey(me,id){return env.hmac("like|"+me+"|"+id);}
-  function likeCount(){var m={};db.rows("공감").forEach(function(v){var k=S(v["글id"]);m[k]=(m[k]||0)+1;});return m;}
+  function likeCount(){var m={};db.rows("반응").forEach(function(v){if(S(v["갈래"])!=="공감")return;var k=S(v["글id"]);m[k]=(m[k]||0)+1;});return m;}
   function full(r,votes){
     var o=pub(r);
     o.name=S(r["이름"]);o.hakbun=S(r["학번"]);o.status=S(r["상태"]);o.memo=S(r["메모"]);
@@ -2491,7 +2490,7 @@ function make(db,env){
   /* 이번 주에 내가 뽑은 글들(부문마다 최대 VOTE_PER_WEEK 표) */
   function myVotes(me,wk,kind){
     var vk=voterKey(me,wk,kind);
-    return db.rows("투표").filter(function(x){return S(x["투표자"])===vk;}).map(function(x){return S(x["글id"]);});
+    return db.rows("반응").filter(function(x){return S(x["갈래"])==="투표"&&S(x["누구"])===vk;}).map(function(x){return S(x["글id"]);});
   }
 
   /* ── 도장 ──
@@ -2713,7 +2712,8 @@ function make(db,env){
     if(AWARDS)return AWARDS;
     var c=conf(),per=Number(c["시상별"])||AWARD_STARS,tops=awardTops(c),out={};
     var byMon={};
-    db.rows("투표").forEach(function(v){
+    db.rows("반응").forEach(function(v){
+      if(S(v["갈래"])!=="투표")return;
       var id=S(v["글id"]),m=S(v["시각"]).slice(0,7);if(!id||!m)return;
       var t=(byMon[m]=byMon[m]||{});t[id]=(t[id]||0)+1;});
     var curM=monthKey(env.now()),td=today(env.now());
@@ -2902,6 +2902,23 @@ function make(db,env){
       out.teachers={total:tn,pin:tp,wait:tw.slice(0,80)};
     }
     return out;
+  }
+  /* '읽고 싶어요'(공감)와 투표를 '반응' 한 탭으로 옮긴다(옛 두 탭은 비우고, 시트 정리가 지운다) */
+  function mergeReacts(){
+    if(S(conf()["반응판"])==="1")return 0;
+    var add=[],n=0;
+    try{db.rows("공감").forEach(function(r){
+      if(!S(r["글id"]))return;
+      add.push({"시각":S(r["시각"]),"갈래":"공감","부문":"","주":"","글id":S(r["글id"]),"누구":S(r["누른이"])});});
+    }catch(e){}
+    try{db.rows("투표").forEach(function(r){
+      if(!S(r["글id"]))return;
+      add.push({"시각":S(r["시각"]),"갈래":"투표","부문":S(r["종류"]),"주":S(r["주"]),"글id":S(r["글id"]),"누구":S(r["투표자"])});});
+    }catch(e){}
+    if(add.length){addRows("반응",add);n=add.length;}
+    try{if(db.replace){db.replace("공감",[]);db.replace("투표",[]);}}catch(e){}
+    setConf("반응판","1");
+    return n;
   }
   /* 공지는 '공지' 시트 한곳에서 고친다. 옛 판에서 설정 칸에 적어 둔 글은 그대로 옮기되,
      손대지 않은 옛 기본 문구(규칙이 바뀌어 틀린 글)는 지금 문구로 갈아 준다 */
@@ -3196,7 +3213,7 @@ function make(db,env){
     var c=conf(),now=env.now(),wk=weekKey(now,0);
     var posts=db.rows("글").slice().sort(byNew);
     var likes=likeCount(),myLikes={};
-    db.rows("공감").forEach(function(v){myLikes[S(v["누른이"])]=true;});
+    db.rows("반응").forEach(function(v){if(S(v["갈래"])==="공감")myLikes[S(v["누구"])]=true;});
     var board=posts.filter(posted).slice(0,150).map(function(r){
       var o=pub(r);o.likes=likes[o.id]||0;o.liked=!!myLikes[likeKey(a.id,o.id)];o.mine=S(r["학번"])===a.id;return o;});
     var mine=posts.filter(function(r){return S(r["학번"])===a.id;}).map(function(r){var o=full(r);o.likes=likes[o.id]||0;return o;});
@@ -3322,8 +3339,8 @@ function make(db,env){
     if(!r)fail("글을 찾을 수 없습니다.");
     if(S(r["학번"])===a.id)fail("내 글에는 누를 수 없습니다.");
     var k=likeKey(a.id,S(p.id));
-    if(db.rows("공감").some(function(v){return S(v["누른이"])===k;}))fail("이미 눌렀습니다.");
-    db.add("공감",{"시각":today(env.now()),"글id":S(p.id),"누른이":k});
+    if(db.rows("반응").some(function(v){return S(v["갈래"])==="공감"&&S(v["누구"])===k;}))fail("이미 눌렀습니다.");
+    db.add("반응",{"시각":today(env.now()),"갈래":"공감","부문":"","주":"","글id":S(p.id),"누구":k});
     return {ok:true};
   }
   /* 선생님도 같은 모양의 라벨을 쓴다. 이름이 찍히고, 투표·도장판과는 무관 */
@@ -3349,7 +3366,7 @@ function make(db,env){
     if(row&&posted(row)&&!inVoteWindow(row,now))fail("올라온 지 "+VOTE_DAYS+"일이 지난 글입니다. 새로 올라온 글에 표를 써 주세요.");
     var ok=cands(kind,a.id,now,conf()).some(function(r){return S(r["id"])===S(p.id);});
     if(!ok)fail("투표할 수 없는 글입니다.");
-    db.add("투표",{"시각":today(now),"주":wk,"종류":kind,"투표자":voterKey(a.id,wk,kind),"글id":S(p.id)});
+    db.add("반응",{"시각":today(now),"갈래":"투표","부문":kind,"주":wk,"글id":S(p.id),"누구":voterKey(a.id,wk,kind)});
     return {ok:true};
   }
 
