@@ -35,3 +35,20 @@ const d=as("s3@x","state");console.log("도서부:",d.me.club,"| 배부 대상",
 console.log("  체크:",JSON.stringify(as("s3@x","clubMark",{ids:["30201"],on:true})),"→ 지급",T["지급"].map(r=>r["처리"]+"/"+r["처리자"]).join(","));
 console.log("  대상 아닌 학생:",as("s3@x","clubMark",{ids:["30501"],on:true}).ERR,"| 도서부 아닌 학생:",as("s2@x","clubMark",{ids:["30201"],on:true}).ERR);
 NOW=new Date("2026-10-09T01:00:00Z");console.log("  기간 지난 뒤:",as("s3@x","clubMark",{ids:["30201"],on:false}).ERR,"| 화면",JSON.stringify(as("s3@x","state").giftDesk).slice(0,60));
+
+/* ── 자동 판정(2026-09-25) ── */
+const must=(c,m)=>{if(!c){console.log("✗",m);process.exitCode=1;}else console.log("✓",m);};
+NOW=new Date("2026-10-06T01:00:00Z");
+const S={};[["lib@x","관리자"],["hr@x","담임"],["g2@x","이학년"],["sci@x","최과학"]].forEach(([e,n])=>{S[n]=as(e,"state");});
+must(S["관리자"].me.label==="관리자"&&S["담임"].me.label==="3학년 담당"&&S["이학년"].me.label==="2학년 담당"&&S["최과학"].me.label==="교사","등급 이름이 맞다");
+must([...new Set(S["담임"].posts.map(p=>p.cls))].every(c=>c.indexOf("3-")===0),"학년 담당은 그 학년 글만 본다");
+must([...new Set(S["이학년"].posts.map(p=>p.cls))].every(c=>c.indexOf("2-")===0),"2학년 담당은 2학년만");
+must(S["최과학"].posts.length===0&&S["최과학"].readlog.length===0,"교과 교사에게는 학생 이름이 가지 않는다");
+must(S["관리자"].readlog.length>=S["담임"].readlog.length,"관리자는 전교, 담당은 우리 학년 독서 기록");
+must(!as("hr@x","resetAccount",{hakbun:"30501"}).ERR,"학년 담당은 우리 학년 계정을 푼다");
+must(/우리 학년/.test(as("g2@x","resetAccount",{hakbun:"30201"}).ERR||""),"다른 학년은 못 푼다");
+must(/학년 담당 또는 관리자/.test(as("sci@x","resetAccount",{hakbun:"30201"}).ERR||""),"교과 교사는 계정을 못 푼다");
+must(/분야/.test(as("sci@x","teacherBook",{t:"코스모스"}).ERR||""),"추천 도서는 분야를 골라야 한다");
+must(/찾지 못했습니다/.test(as("sci@x","teacherBook",{subj:"과학",t:"없는책"}).ERR||""),"도서관에 없는 책은 추천 못 한다");
+const S2=as("s3@x","state");
+must(S2.me.club===true,"도서부 학생으로 보인다");

@@ -28,7 +28,7 @@ var HEAD={
   "도장":["id","시각","주","학번","이름","반","사유","교사","취소"]
 };
 var CONF0=[["프로그램명","웅천 서가"],["부제","한 권 읽고, 한 줄 남기기"],["차수","1"],
-  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","2"],["월최대매수","3"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["주간라벨문장글","3"],["만화규칙","라벨만"],["만화청구기호","만, 만화, 657"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
+  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","2"],["월최대매수","3"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["백업주기","주"],["주간라벨문장글","3"],["만화규칙","라벨만"],["만화청구기호","만, 만화, 657"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
   ["학교코드","S100000673"],["교육청코드","S10"],["학교명","웅천고등학교"],
   ["이달의권수","40"],["추천방식","권장"],["추천묶음","2026-09~2026-10"],["퀴즈문항수","5"],["퀴즈책수","3"],["퀴즈품질기준","6"],["보유기간","3학년은 졸업식 날까지, 1·2학년은 학년말(2월)까지"],["개인정보담당","도서관 담당 교사"]];
 /* 설정 시트 '설명' 칸에 들어가는 뜻풀이 */
@@ -74,6 +74,7 @@ var CONF_DESC={
   "장서목록일":"(자동 기록) 장서목록 시트를 마지막으로 받은 날(매달 한 번 새로 받음)",
   "교사등록무인증":"(쓰지 않음) 옛 메일 인증 방식에서 쓰던 값입니다",
   "금칙어":"글 점검에서 거친 말로 볼 낱말(쉼표로 구분). 비워 두면 기본 목록만",
+  "백업주기":"시트 사본을 얼마나 자주 남길지 — 주(한 주에 한 번) / 월(그달 마지막 날). 드라이브 ‘웅천 서가 백업’ 폴더에 쌓이고 스무 개가 넘으면 오래된 것부터 정리합니다",
   "공지사항":"(이제 ‘공지’ 시트에서 고칩니다) 여기 적으면 앱이 공지 시트로 옮겨 담고 이 칸은 비웁니다",
   "상품권배부":"(수령기간 시트로 옮겼습니다 — 날짜는 수령기간 시트에서 고치세요) 예전 설명: 상품권 나눠 주는 기간(날짜). 예) 2026-10-05~2026-10-08 → 그 앞달(9월) 상품권. 여러 달은 쉼표로 이어 적기. 7일 전부터 학생 공지사항·도장판에 안내가 뜨고, 기간이 끝나면 사라짐. 비워 두면 매월 1~10일 안내",
   "상품권배부장소":"배부 장소·시간. 학생 공지사항에 그대로 나옴(예: 도서관 · 점심시간)",
@@ -2399,6 +2400,68 @@ function make(db,env){
       if(live[k]&&!S(r["핀"])){revokeAcc(k);n++;}});
     return n;
   }
+  /* 한눈에 보기: 최근 몇 주의 흐름과, 오래 쉬고 있는 학생.
+     관리자는 전교, 학년 담당은 그 학년만(seeCls 그대로) */
+  function overview(a,weeks,idleDays){
+    weeks=weeks||8;idleDays=idleDays||14;
+    var now=env.now(),td=today(now),wkNow=weekKey(now,0);
+    var mine={},clsOf={},pin={};
+    db.rows("명단").forEach(function(r){
+      var cls=S(r["반"]);if(!cls||!seeCls(a,cls))return;
+      var hb=S(r["학번"]);mine[hb]=1;clsOf[hb]=cls;if(S(r["핀"]))pin[hb]=S(r["핀설정"]).slice(0,10);
+    });
+    /* 주 상자 만들기 */
+    var keys=[],box={};
+    for(var i=weeks-1;i>=0;i--){var k=weekKey(now,-i);keys.push(k);
+      box[k]={wk:k,label:0,quote:0,review:0,quiz:0,stamp:0,wild:0,join:0,writers:{},n:0};}
+    var last={};   /* 학생마다 마지막으로 한 활동 날짜 */
+    function touch(hb,day){if(!mine[hb])return;if(!last[hb]||last[hb]<day)last[hb]=day;}
+    db.rows("글").forEach(function(r){
+      var hb=S(r["학번"]);if(!hb||!mine[hb]||S(r["상태"])==="down")return;
+      var at=S(r["시각"]),day=at.slice(0,10),wk=S(r["주"])||weekOfYmd(at);
+      touch(hb,day);
+      var b=box[wk];if(!b)return;
+      var k2=writeKind(r["종류"]);b[k2]=(b[k2]||0)+1;b.n++;b.writers[hb]=1;
+    });
+    db.rows("퀴즈응답").forEach(function(r){
+      var hb=S(r["학번"]);if(!hb||!mine[hb])return;
+      var at=S(r["시각"]),day=at.slice(0,10);touch(hb,day);
+      var b=box[S(r["주"])||weekOfYmd(at)];if(b){b.quiz++;b.writers[hb]=1;}
+    });
+    db.rows("퀴즈").forEach(function(r){
+      var hb=S(r["학번"]);if(!hb||!mine[hb]||S(r["출처"])==="자동")return;
+      var day=S(r["시각"]).slice(0,10);touch(hb,day);
+    });
+    db.rows("도장").forEach(function(r){
+      if(S(r["취소"])==="Y")return;
+      var hb=S(r["학번"]);if(!hb||!mine[hb])return;
+      var b=box[S(r["주"])||weekOfYmd(r["시각"])];if(b)b.wild++;
+    });
+    /* 도장 수(책갈피 제외)는 학생마다 도장판에서 */
+    Object.keys(mine).forEach(function(hb){
+      var sm=stampMap()[hb];if(!sm)return;
+      sm.stamps.forEach(function(x){var b=box[x.wk];if(b)b.stamp++;});
+      if(pin[hb]){var b2=box[weekOfYmd(pin[hb])];if(b2)b2.join++;}
+    });
+    var rows=keys.map(function(k){var b=box[k];
+      return {wk:k,label:b.label,quote:b.quote,review:b.review,quiz:b.quiz,stamp:b.stamp,wild:b.wild,
+        posts:b.label+b.quote+b.review,people:Object.keys(b.writers).length,join:b.join,now:k===wkNow};});
+    /* 오래 쉬는 학생: 가입은 했는데 idleDays 동안 아무것도 안 한 사람 */
+    var idle=[],never=0;
+    Object.keys(pin).forEach(function(hb){
+      var at=last[hb]||"";
+      if(at&&at>addDays(td,-idleDays))return;
+      if(!at)never++;
+      idle.push({hakbun:hb,cls:clsOf[hb],last:at,days:at?Math.round((Date.parse(td)-Date.parse(at))/86400000):-1});
+    });
+    idle.sort(function(x,y){return x.hakbun<y.hakbun?-1:1;});
+    var nm={};db.rows("명단").forEach(function(r){nm[S(r["학번"])]=S(r["이름"]);});
+    idle.forEach(function(x){x.name=nm[x.hakbun]||"";});
+    var joined=Object.keys(pin).length,people=Object.keys(mine).length;
+    return {scope:a.role==="admin"?"전교":S(a.grade)+"학년",weeks:rows,days:idleDays,
+      sum:{people:people,joined:joined,active:joined-idle.length,idle:idle.length,never:never},
+      idle:idle.slice(0,400),idleN:idle.length};
+  }
   /* 수령 기간 첫날 아침 메일: 관리자는 전체, 학년 담당은 그 학년 대상 명단. from 을 안 주면 오늘 시작하는 기간 */
   function giftMail(from){
     var c=conf();if(S(c["상품권메일"])==="N")return [];
@@ -2876,6 +2939,7 @@ function make(db,env){
       res.teacherReqs=db.rows("교사신청").filter(function(r){return S(r["상태"])==="대기";}).map(function(r){return {id:S(r["id"]),at:S(r["시각"]).slice(0,16),name:S(r["이름"]),email:S(r["이메일"])};});}
     res.readlog=a.kind==="subject"?[]:readLog(a);
     res.join=a.kind==="subject"?null:joinStats(a);
+    res.overview=a.kind==="subject"?null:overview(a,8,14);
     /* 내가 찍어 준 도장(모든 교사) */
     res.given=db.rows("도장").filter(function(r){return S(r["교사"])===a.name;})
       .sort(function(x,y){return S(x["시각"])<S(y["시각"])?1:-1;}).slice(0,40)

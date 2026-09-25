@@ -44,3 +44,13 @@ Object.keys(byWk).sort().forEach(w=>{const q=byWk[w],bk=[...new Set(q.map(x=>x["
 const texts=live.map(q=>q["문제"]);console.log("겹친 문제",texts.length-new Set(texts).size,"| 3권 넘은 주",Object.values(byWk).filter(q=>new Set(q.map(x=>x["책제목"])).size>3).length,"| 학생 문제 출제 주",(T["퀴즈"].find(q=>q.id==="stu1")||{})["주"]);
 const st=C().api("state");console.log("11월 서가",st.books.length,"권 | 이번 주 퀴즈 책(교사 화면)",JSON.stringify(st.weekBooks),"| next",st.next&&st.next.month);
 T["퀴즈"].filter(q=>q["주"]==="2026-10-26").forEach(q=>console.log("DBG",q["책제목"],q["월"],q["상태"],q["시각"],T["도서"].filter(b=>b["제목"]===q["책제목"]).map(b=>b["월"]+"/"+b["숨김"]).join(";")));
+
+/* ── 자동 판정(2026-09-25) ── */
+const must=(c,m)=>{if(!c){console.log("✗",m);process.exitCode=1;}else console.log("✓",m);};
+must(texts.length-new Set(texts).size===0,"같은 문제가 두 번 출제되지 않는다");
+must(Object.values(byWk).filter(q=>new Set(q.map(x=>x["책제목"])).size>3).length===0,"한 주 퀴즈 책은 세 권까지");
+must(Object.keys(byWk).length>=6,"주마다 문제가 나온다("+Object.keys(byWk).length+"주)");
+must(Object.values(byWk).every(q=>q.length===5),"주마다 5문제");
+must(!!(T["퀴즈"].find(q=>q.id==="stu1")||{})["주"],"성의껏 낸 학생 문제는 출제로 뽑힌다");
+must(st.books.length>=20,"달이 바뀌어도 서가가 차 있다("+st.books.length+"권)");
+must(/^\d{4}-\d{2}$/.test(conf("이달")),"이달 형식이 유지된다");

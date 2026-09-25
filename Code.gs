@@ -34,7 +34,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20260925-101319";
+var CODE_VERSION="20260925-103345";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -411,6 +411,7 @@ function libTest(){
   say_(p.ok?"독서로 연결 정상":"독서로 연결 실패: "+p.why);
 }
 /* 달마다 한 번(그달 마지막 날) 시트 사본을 드라이브 '웅천 서가 백업' 폴더에 남긴다 */
+/* 백업: 설정 '백업주기'가 '주'면 한 주에 한 번(그 주 첫 확인 때), '월'이면 그달 마지막 날 */
 function backupMonthly_(force){
   var db=makeDb_(),conf={};
   db.rows("설정").forEach(function(r){conf[String(r["항목"]).trim()]=String(r["값"]);});
@@ -418,11 +419,16 @@ function backupMonthly_(force){
   var mon=Utilities.formatDate(now,tz,"yyyy-MM");
   var last=Utilities.formatDate(new Date(now.getFullYear(),now.getMonth()+1,0),tz,"yyyy-MM-dd");
   var today=Utilities.formatDate(now,tz,"yyyy-MM-dd");
+  var cyc=String(conf["백업주기"]||"주")==="월"?"월":"주";
+  /* 그 주 월요일 */
+  var k9=new Date(now.getTime()+9*3600000),dow=(k9.getUTCDay()+6)%7;
+  var wk=Utilities.formatDate(new Date(now.getTime()-dow*86400000),tz,"yyyy-MM-dd");
+  var key=cyc==="주"?wk:mon;
   if(!force){
-    if(today!==last)return "";                     /* 그달 마지막 날에만 */
-    if(String(conf["백업월"]||"")===mon)return "";   /* 이미 했으면 그만 */
+    if(cyc==="월"&&today!==last)return "";          /* 달마다면 그달 마지막 날에만 */
+    if(String(conf["백업월"]||"")===key)return "";   /* 이번 주(달)에 이미 했으면 그만 */
   }
-  var ss=ss_(),name=(conf["프로그램명"]||"웅천 서가")+" 백업 "+(force?Utilities.formatDate(now,tz,"yyyy-MM-dd HHmm"):mon);
+  var ss=ss_(),name=(conf["프로그램명"]||"웅천 서가")+" 백업 "+(force?Utilities.formatDate(now,tz,"yyyy-MM-dd HHmm"):key);
   /* ① 드라이브 권한이 있으면 '웅천 서가 백업' 폴더 안에 사본을 둔다.
      ② 권한이 아직이면 스프레드시트 기능만으로 사본을 만든다(내 드라이브 맨 위에 생김).
         둘 다 같은 사본이고, 권한을 한 번 승인하면 그때부터 폴더로 들어간다. */
@@ -431,13 +437,35 @@ function backupMonthly_(force){
     var it=DriveApp.getFoldersByName("웅천 서가 백업"),folder=it.hasNext()?it.next():DriveApp.createFolder("웅천 서가 백업");
     var copy=DriveApp.getFileById(ss.getId()).makeCopy(name,folder);
     url=copy.getUrl();where="웅천 서가 백업 폴더";
+    try{tidyBackups_(folder,ss.getId());}catch(e2){}   /* 권한 승인 전에 만든 사본도 폴더로 모은다 */
   }catch(e){
     var cp=SpreadsheetApp.openById(ss.getId()).copy(name);
     url=cp.getUrl();where="내 드라이브(폴더 권한 승인 전)";
   }
-  db.setConf("백업월",mon);
+  db.setConf("백업월",key);
   db.setConf("백업",Utilities.formatDate(now,tz,"yyyy-MM-dd HH:mm")+" · "+name+" · "+where+" · "+url);
   return name;
+}
+/* 권한이 없던 동안 내 드라이브에 흩어져 만들어진 사본을 폴더로 모으고, 오래된 것은 정리한다 */
+function tidyBackups_(folder,selfId){
+  var moved=0,names=[];
+  var it=DriveApp.searchFiles('title contains "백업" and trashed = false');
+  while(it.hasNext()&&moved<50){
+    var f=it.next();
+    if(f.getId()===selfId)continue;
+    if(f.getName().indexOf("백업")<0)continue;
+    var inFolder=false,ps=f.getParents();
+    while(ps.hasNext()){if(ps.next().getId()===folder.getId()){inFolder=true;break;}}
+    if(inFolder)continue;
+    try{f.moveTo(folder);moved++;names.push(f.getName());}catch(e){}
+  }
+  if(moved)console.log("백업 사본 "+moved+"개를 폴더로 옮겼습니다: "+names.join(", "));
+  /* 스무 개가 넘으면 오래된 것부터 버린다(휴지통으로) */
+  var all=[],fi=folder.getFiles();
+  while(fi.hasNext())all.push(fi.next());
+  all.sort(function(x,y){return x.getDateCreated()<y.getDateCreated()?1:-1;});
+  all.slice(20).forEach(function(f){try{f.setTrashed(true);}catch(e){}});
+  return moved;
 }
 /* 백업 폴더 주소(없으면 만든다) */
 function backupFolderUrl_(){
