@@ -34,7 +34,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20260925-120909";
+var CODE_VERSION="20260925-192756";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -93,6 +93,33 @@ function doGet(e){
       }catch(x5){b.scopes=String(x5&&x5.message||x5).slice(0,100);}
     }
     return ContentService.createTextOutput(JSON.stringify(b)).setMimeType(ContentService.MimeType.JSON);
+  }
+  /* 설정 한 칸을 시트에서 바로 읽은 값과, 앱이 캐시로 보는 값을 나란히(읽기만, 열쇠 필요) */
+  if(e&&e.parameter&&e.parameter.peek){
+    var pk={};
+    if(!keyOk_(e.parameter.peek))pk={error:"열쇠가 맞지 않습니다."};
+    else{try{
+      var want=String(e.parameter.k||"백업");
+      var book=e.parameter.id?SpreadsheetApp.openById(String(e.parameter.id)):ss_();
+      pk.book=book.getName();pk.bookId=book.getId();pk.liveId=SHEET_ID;
+      try{var act=SpreadsheetApp.getActiveSpreadsheet();pk.active=act?act.getId():"(없음)";}catch(xa){pk.active="(오류)";}
+      var sh=book.getSheetByName("설정"),v=sh.getDataRange().getValues();
+      for(var i=1;i<v.length;i++)if(String(v[i][0]).trim()===want){pk.sheet=String(v[i][1]);pk.row=i+1;}
+      if(!e.parameter.id){var db8=makeDb_();db8.rows("설정").forEach(function(r){if(String(r["항목"]).trim()===want){pk.cache=String(r["값"]);pk.cacheRow=r._row;}});}
+      pk.ver=PropertiesService.getScriptProperties().getProperty("sv|설정")||"";
+      if(e.parameter.find){var f=String(e.parameter.find);pk.found=[];
+        for(var j=0;j<v.length;j++)for(var c=0;c<v[j].length;c++)if(String(v[j][c]).indexOf(f)>=0)pk.found.push({row:j+1,col:c+1,key:String(v[j][0]),val:String(v[j][c]).slice(0,90)});}
+      pk.rows=v.length;
+      /* 잠근 채 새로 읽어 거르는 길을 실제로 한 번(기기: 풀렸거나 만료된 것만 지운다 — 아침 7시 정리와 같음) */
+      if(e.parameter.prune==="기기"){
+        var db7=makeDb_(),td7=Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd");
+        var before7=db7.rows("기기").length;
+        pk.pruned=db7.prune("기기",function(r){return String(r["해제"]).trim()!=="Y"&&String(r["만료"]).trim()>=td7;});
+        pk.devBefore=before7;pk.devAfter=makeDb_().rows("기기").length;
+        pk.sheetRows=ss_().getSheetByName("기기").getLastRow()-1;
+      }
+    }catch(x){pk={error:String(x&&x.message||x)};}}
+    return ContentService.createTextOutput(JSON.stringify(pk)).setMimeType(ContentService.MimeType.JSON);
   }
   /* 한눈에 보기 자료만 뽑아 보기(읽기만, 열쇠 필요) */
   if(e&&e.parameter&&e.parameter.overview){
@@ -154,12 +181,12 @@ function api(name,json){
   var write=["state","libRefresh","libSearch","rotate","catalogNow"].indexOf(name)<0;
   var lock=write?LockService.getScriptLock():null,db=null,env=null,out,err=null;
   try{
-    if(lock)lock.waitLock(20000);
+    if(lock){lock.waitLock(20000);LOCK_HELD_=true;}
     db=makeDb_();env=makeEnv_();
     var run=function(){return Core.make(db,env).api(name,p);};
     out=["libRefresh","rotate","quizAuto","catalogNow"].indexOf(name)>=0?job_(run):run();
   }catch(e){err=String(e&&e.message||e);}
-  finally{if(lock)try{lock.releaseLock();}catch(e){}}
+  finally{if(lock){LOCK_HELD_=false;try{lock.releaseLock();}catch(e){}}}
   if(err)return JSON.stringify({error:err});
   if(out==null)out={ok:true};
   var st=name==="state"?out:null;
@@ -168,6 +195,8 @@ function api(name,json){
   return JSON.stringify(out);
 }
 
+/* 이 실행이 이미 스크립트 잠금을 쥐고 있는지(잠금 안에서 또 잠그다 20초 멈추지 않게) */
+var LOCK_HELD_=false;
 /* 캐시 키는 250자 제한이 있어 해시로 */
 function key_(k){
   return Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5,k,Utilities.Charset.UTF_8));
@@ -177,6 +206,8 @@ function makeEnv_(){
   if(!key){key=Utilities.getUuid()+Utilities.getUuid();props.setProperty("SECRET",key);}
   return {
     now:function(){return new Date();},
+    /* 마지막 백업 기록: 시트 칸은 사람이 고치거나 되돌릴 수 있어 스크립트 속성에도 둔다 */
+    lastBackup:function(){try{return props.getProperty("lastBackup")||"";}catch(e){return "";}},
     /* 독서로 요청은 4분 30초까지만(Apps Script 한 번 실행은 6분이 한도) */
     deadline:Date.now()+270000,
     email:function(){return Session.getActiveUser().getEmail();},
@@ -237,9 +268,14 @@ function makeDb_(){
     }catch(e){}
   }
   /* 앱이 쓴 뒤: 판을 올리고 지금 내용을 새 판으로 보관 */
+  /* 쓴 뒤에는 판만 올린다. 내 기억 속 표를 캐시에 올리면, 내가 읽은 뒤 다른 실행이 바꾼 칸이
+     묵은 값으로 캐시에 박혀 다음 실행들이 그걸 믿게 된다(2026-09-25 점검). 다음에 읽는 쪽이 시트에서 새로 읽는다 */
   function wrote(t){
-    try{var v=String(Date.now())+String(Math.floor(Math.random()*1000));PR.setProperty("sv|"+t,v);vers()[t]=v;toCache(t,cache[t]);}catch(e){}
+    try{var v=String(Date.now())+String(Math.floor(Math.random()*1000));PR.setProperty("sv|"+t,v);vers()[t]=v;}catch(e){}
   }
+  /* 시트에서 바로 새로 읽는다(캐시·기억 모두 건너뜀) */
+  function fresh(t){delete cache[t];var C0=cs();try{if(C0)C0.remove(ckey(t));}catch(e){}
+    var keep=vers()[t];vers()[t]="fresh"+Date.now();var T=load(t);vers()[t]=keep;return T;}
   function sheetOf(t,T){if(!T.sh)T.sh=ssx().getSheetByName(t);return T.sh;}
   function load(t){
     if(cache[t])return cache[t];
@@ -292,7 +328,24 @@ function makeDb_(){
       list.forEach(function(o,i){var r={_row:start+i};T.head.forEach(function(h){r[h]=o[h]==null?"":String(o[h]);});T.rows.push(r);});
       wrote(t);
     },
-    replace:function(t,list){
+    /* 걸러 내기: 잠근 채 시트에서 새로 읽어 keep 에 맞는 줄만 남긴다.
+       replace 는 부른 쪽이 미리 만든 목록을 쓰므로, 그 사이 새로 붙은 줄(방금 로그인한 기기 등)을 지운다 */
+    prune:function(t,keep){
+      var n=0;this.rewrite(t,function(rows){var list=rows.filter(keep);n=rows.length-list.length;return n?list:null;});return n;
+    },
+    /* 통째로 다시 쓰기는 반드시 이 길로: 잠근 채 시트에서 새로 읽은 줄로 fn 을 돌리고, null 이면 그대로 둔다.
+       (묵은 사본으로 통째로 쓰면 그 사이 들어온 로그인·PIN·제출을 지운다) */
+    rewrite:function(t,fn){
+      /* 이미 잠근 채로 불렸으면(학생 등록 → 명단 정렬 등) 다시 잠그지 않는다 */
+      var mine=!LOCK_HELD_,L=mine?LockService.getScriptLock():null;
+      if(mine){L.waitLock(20000);LOCK_HELD_=true;}
+      try{
+        var T=fresh(t),out=fn(T.rows.slice());
+        if(out)this.replace(t,out);
+        return !!out;
+      }finally{if(mine){LOCK_HELD_=false;try{L.releaseLock();}catch(e){}}}
+    },
+    replace:function(t,list,locked){
       var T=load(t),sh=sheetOf(t,T),last=sh.getLastRow();
       if(last>=2)sh.getRange(2,1,last-1,Math.max(sh.getLastColumn(),T.head.length)).clearContent();
       var vals=list.map(function(o){return T.head.map(function(h){return safe_(o[h]);});});
@@ -327,7 +380,9 @@ function makeDb_(){
         var c=T.head.indexOf(k)+1,vals=[],byRow={};
         T.rows.forEach(function(r){byRow[r._row]=r;});
         var cur=sh.getRange(2,c,last-1,1).getValues();
-        for(var i=0;i<last-1;i++){var r=byRow[i+2];vals.push([r?safe_(r[k]):cur[i][0]]);}
+        /* 이번에 고치는 줄만 새 값, 나머지는 방금 시트에서 읽은 값 그대로(다른 실행이 바꾼 칸을 되돌리지 않게) */
+        for(var i=0;i<last-1;i++){var r=byRow[i+2],hit=r&&map[String(r[keyCol]).trim()]&&(k in map[String(r[keyCol]).trim()]);
+          vals.push([hit?safe_(r[k]):cur[i][0]]);}
         sh.getRange(2,c,last-1,1).setValues(vals);
       });
       wrote(t);
@@ -486,8 +541,10 @@ function backupMonthly_(force){
     url=cp.getUrl();where="내 드라이브(폴더에 못 넣음)";
   }
   db.setConf("백업월",key);
-  db.setConf("백업",Utilities.formatDate(now,tz,"yyyy-MM-dd HH:mm")+" · "+name+" · "+where+" · "+url+
-    (where.indexOf("폴더에 못")>=0?" · 드라이브 ‘모든 파일 보기·수정’ 권한을 허용하면 백업폴더로 들어갑니다":""));
+  var rec=Utilities.formatDate(now,tz,"yyyy-MM-dd HH:mm")+" · "+name+" · "+where+" · "+url+
+    (where.indexOf("폴더에 못")>=0?" · 드라이브 ‘모든 파일 보기·수정’ 권한을 허용하면 백업폴더로 들어갑니다":"");
+  try{PropertiesService.getScriptProperties().setProperty("lastBackup",rec);}catch(e){}
+  db.setConf("백업",rec);
   return name;
 }
 var BACKUP_ERR="";

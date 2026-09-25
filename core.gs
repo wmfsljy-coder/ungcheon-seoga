@@ -1152,11 +1152,16 @@ function make(db,env){
   /* 명단은 늘 학번순으로 */
   function sortRoster(){
     if(!db.replace)return false;
-    var rows=db.rows("명단").slice(),sorted=rows.slice().sort(function(x,y){return S(x["학번"])<S(y["학번"])?-1:S(x["학번"])>S(y["학번"])?1:0;});
-    var same=rows.every(function(r,i){return S(r["학번"])===S(sorted[i]["학번"]);});
-    if(same)return false;
-    db.replace("명단",sorted.map(function(r){var o={};HEAD["명단"].forEach(function(h){o[h]=S(r[h]);});return o;}));
-    return true;
+    function order(rows){
+      var sorted=rows.slice().sort(function(x,y){return S(x["학번"])<S(y["학번"])?-1:S(x["학번"])>S(y["학번"])?1:0;});
+      if(rows.every(function(r,i){return S(r["학번"])===S(sorted[i]["학번"]);}))return null;
+      return sorted.map(function(r){var o={};HEAD["명단"].forEach(function(h){o[h]=S(r[h]);});return o;});
+    }
+    if(!order(db.rows("명단").slice()))return false;    /* 이미 학번순이면 잠그지도 않는다 */
+    /* 명단에는 PIN 이 들어 있다: 잠근 채 새로 읽어 정렬한다(묵은 사본으로 쓰면 방금 정한 PIN 이 지워진다) */
+    if(db.rewrite)return db.rewrite("명단",order);
+    var out=order(db.rows("명단").slice());if(!out)return false;
+    db.replace("명단",out);return true;
   }
   function maintain(){
     try{dropPreMade();}catch(e){}   /* 미리 만들어 둔 문제 정리 */
@@ -1244,11 +1249,15 @@ function make(db,env){
     if(db.replace&&S(conf()["정리일"])!==today(env.now())){
       try{
         var now0=env.now().getTime(),td=today(env.now());
-        var dv=db.rows("기기").filter(function(r){return S(r["해제"])!=="Y"&&S(r["만료"])>=td;});
-        if(dv.length!==db.rows("기기").length)db.replace("기기",dv);
+        var liveDev=function(r){return S(r["해제"])!=="Y"&&S(r["만료"])>=td;};
         var monNow=monthKey(env.now());
-        var bk=db.rows("도서").filter(function(r){return S(r["숨김"])!=="Y"||!S(r["월"])||monthsBetween(S(r["월"]),monNow)<6;});
-        if(bk.length!==db.rows("도서").length)db.replace("도서",bk);
+        var keepBook=function(r){return S(r["숨김"])!=="Y"||!S(r["월"])||monthsBetween(S(r["월"]),monNow)<6;};
+        /* 잠근 채 새로 읽어 거른다(아침 7시에 막 로그인한 기기를 지우지 않게) */
+        if(db.prune){db.prune("기기",liveDev);db.prune("도서",keepBook);}
+        else{
+          var dv=db.rows("기기").filter(liveDev);if(dv.length!==db.rows("기기").length)db.replace("기기",dv);
+          var bk=db.rows("도서").filter(keepBook);if(bk.length!==db.rows("도서").length)db.replace("도서",bk);
+        }
         setConf("정리일",td);
       }catch(e){}
     }
@@ -1423,13 +1432,16 @@ function make(db,env){
      - 아직 오지 않은 주에 걸린 출제 문제
      학생이 낸 문제(대기)와 지난 기록은 건드리지 않는다. */
   function dropPreMade(){
-    var mon=S(conf()["이달"]),wk=weekKey(env.now(),0),n=0;
-    var keep=db.rows("퀴즈").filter(function(q){
+    var mon=S(conf()["이달"]);
+    var ok=function(q){
       var st=S(q["상태"]);
-      if(st==="예비"&&S(q["출처"])==="자동"&&mon&&S(q["월"])&&S(q["월"])>mon){n++;return false;}
-      return true;
-    });
-    if(n)db.replace("퀴즈",keep);
+      return !(st==="예비"&&S(q["출처"])==="자동"&&mon&&S(q["월"])&&S(q["월"])>mon);
+    };
+    var n=db.rows("퀴즈").filter(function(q){return !ok(q);}).length;
+    if(!n)return 0;                                  /* 지울 것이 없으면 잠그지도 않는다 */
+    /* 학생이 방금 낸 문제를 지우지 않도록 잠근 채 새로 읽어 거른다 */
+    if(db.prune)return db.prune("퀴즈",ok);
+    db.replace("퀴즈",db.rows("퀴즈").filter(ok));
     return n;
   }
   function ensureWeeklyQuiz(){
@@ -3508,7 +3520,9 @@ function make(db,env){
       {name:"추천 도서 표지",v:(function(){var t=0,cv=0;db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y"){t++;if(S(b["표지"])&&S(b["표지"])!=="-")cv++;}});return cv+"/"+t+"권";})(),note:"표지를 못 찾은 책은 영역 색으로 보입니다"},
       {name:"장서 목록",v:S(c["장서종"])+"종 · "+S(c["장서"])+"권",note:S(c["장서변화"])||S(c["장서목록일"])},
       {name:"로그인 방식",v:S(c["로그인방식"]),note:"핀 = 학번(교사는 이름)+PIN 여섯 자리 · 메일은 쓰지 않습니다"},
-      {name:"백업",v:S(c["백업"])||"아직 없음",note:"그달 마지막 날 자동. 편집기에서 backupNow 로 지금 만들 수 있습니다"},
+      {name:"백업",v:(env.lastBackup&&env.lastBackup())||S(c["백업"])||"아직 없음",
+        note:"한 주에 한 번 자동(설정 백업주기). 시트 메뉴 ‘지금 백업하기’로 바로 만들 수 있습니다"+
+          ((env.lastBackup&&env.lastBackup()&&S(c["백업"])&&env.lastBackup()!==S(c["백업"]))?" · 설정 시트의 백업 칸이 실제 기록과 다릅니다(칸만 옛 값)":"")},
       {name:"글 쓴 학생",v:(function(){var m={};db.rows("글").forEach(function(r){if(S(r["학번"])&&S(r["상태"])!=="down")m[S(r["학번"])]=1;});return Object.keys(m).length+"명";})(),note:"문을 연 뒤 늘어나야 합니다"}
     ];
 
