@@ -34,7 +34,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20260928-094508";
+var CODE_VERSION="20260928-102008";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -110,6 +110,8 @@ function doGet(e){
       if(e.parameter.find){var f=String(e.parameter.find);pk.found=[];
         for(var j=0;j<v.length;j++)for(var c=0;c<v[j].length;c++)if(String(v[j][c]).indexOf(f)>=0)pk.found.push({row:j+1,col:c+1,key:String(v[j][0]),val:String(v[j][c]).slice(0,90)});}
       pk.rows=v.length;
+      /* 글 종류별 수(이름·학번 없이 숫자만): 문장이 다른 종류로 보이는지 살필 때 */
+      if(e.parameter.kinds){var km={};makeDb_().rows("글").forEach(function(r){var k=JSON.stringify(String(r["종류"]))+"|"+String(r["상태"])+"|"+(String(r["반"])==="선생님"?"교사":"학생");km[k]=(km[k]||0)+1;});pk.kinds=km;}
       /* 잠근 채 새로 읽어 거르는 길을 실제로 한 번(기기: 풀렸거나 만료된 것만 지운다 — 아침 7시 정리와 같음) */
       if(e.parameter.prune==="기기"){
         var db7=makeDb_(),td7=Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd");

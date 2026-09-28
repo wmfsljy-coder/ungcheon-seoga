@@ -1,7 +1,7 @@
 /* 투표 묶음과 선생님 투표(2026-09-28 회장님 지시)
    - 9월은 시험 운영: 9·10월을 한 투표 기간으로 묶어 표를 새로 세지 않고 이어 모은 뒤 10월 말에 한 번 시상
    - 묶음 안에서는 9월에 올라온 글도 계속 투표 후보, 묶음이 끝나면 다시 이레 창
-   - 선생님도 투표한다: 학생 한 표와 똑같이 세고, 한 주 부문마다 2표 */
+   - 선생님도 투표한다: 학생 한 표와 똑같이 세고, 한 주 부문마다 5표(2026-09-28) */
 const fs=require("fs");eval(fs.readFileSync(__dirname+"/../../core.gs","utf8")+";global.Core=Core;");
 let NOW=new Date("2026-10-20T03:00:00Z");
 const T={};Object.keys(Core.HEAD).forEach(t=>T[t]=[]);
@@ -38,14 +38,16 @@ must(s.conf.voteGroup&&s.conf.voteGroup.to==="2026-10","학생 화면에 묶음�
 
 /* ── 선생님도 투표 ── */
 const t=as("과학","state");
-must(t.voteL&&t.voteL.per===2&&t.voteL.list.length>=1,"선생님 화면에도 투표 후보와 한 주 2표");
+must(t.voteL&&t.voteL.per===5&&t.voteL.list.length>=1,"선생님 화면에도 투표 후보와 한 주 5표");
 must(!as("과학","vote",{kind:"label",id:sep}).ERR,"선생님이 학생 글에 투표한다");
 must(/이미 뽑은/.test(as("과학","vote",{kind:"label",id:sep}).ERR||""),"선생님도 같은 글에는 한 번만");
 must(!as("과학","vote",{kind:"label",id:oct}).ERR,"선생님 두 번째 표");
+const more=["3104","3102","3104"].map(h=>post(h,"label","2026-10-19"));
+must(more.every(id=>!as("과학","vote",{kind:"label",id:id}).ERR),"선생님 셋째~다섯째 표");
 const oct2=post("3104","label","2026-10-19");
-must(/2표를 다 썼습니다/.test(as("과학","vote",{kind:"label",id:oct2}).ERR||""),"선생님도 한 주 부문마다 2표까지");
+must(/5표를 다 썼습니다/.test(as("과학","vote",{kind:"label",id:oct2}).ERR||""),"선생님도 한 주 부문마다 5표까지");
 const tv=T["반응"].filter(r=>r["갈래"]==="투표"&&r["누구"].indexOf("t:과학")>=0);
-must(tv.length===2,"선생님 표는 't:이름' 열쇠로 따로 남는다(학번과 겹치지 않게)");
+must(tv.length===5,"선생님 표는 't:이름' 열쇠로 따로 남는다(학번과 겹치지 않게)");
 const tpost=(function(){T["글"].push({"id":"tg","시각":"2026-10-19 10:00:00","주":"2026-10-19","종류":"label","학번":"","이름":"사서","반":"선생님","책제목":"선생님 책","본문":"선생님 라벨","상태":"posted"});return "tg";})();
 must(!as("과학","state").voteL.list.some(x=>x.id===tpost),"선생님 글은 투표 후보가 아니다");
 must(as("과학","state").board.length>=3,"선생님 화면에도 게시판 글이 온다");

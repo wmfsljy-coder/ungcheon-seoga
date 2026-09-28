@@ -68,6 +68,14 @@ a{color:var(--red)}
 .tabs .s{display:none}
 .tabs button{padding:10px 13px;font-size:14px;color:var(--muted);white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px}
 .tabs button[aria-selected="true"]{color:var(--ink);font-weight:500;border-bottom-color:var(--gold)}
+/* 메뉴가 길면 잘리지 않고 줄을 바꿔 모두 보이게(2026-09-28) */
+.tabs:not(.dock){flex-wrap:wrap;overflow:visible;row-gap:0}
+body.role-staff .tabs button{padding:9px 11px}
+@media (max-width:760px){
+  body.role-staff .tabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:0;position:static}
+  body.role-staff .tabs .l{display:none}body.role-staff .tabs .s{display:inline}
+  body.role-staff .tabs button{padding:9px 1px;font-size:13.5px;text-align:center;letter-spacing:-.02em}
+}
 .tabs .n{display:inline-block;min-width:18px;padding:0 5px;margin-left:5px;border-radius:999px;background:var(--red);color:#fff;font-size:11px;line-height:18px;text-align:center}
 .panel{padding-top:22px}
 h3.sec{font-family:var(--serif);font-size:19px;font-weight:400;margin:0 0 4px}
@@ -248,7 +256,8 @@ th{font-size:12px;color:var(--muted);font-weight:500}
 .desk-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .desk-row .nm{flex:1;font-size:15px}
 .desk-row .nm small{display:block;color:var(--muted);font-size:12.5px}
-.desk-row .btn{min-width:108px}
+.desk-row .btn{min-width:78px}
+.desk-row .who1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .desk-sum{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 10px;font-size:14px}
 .desk-sum b{font-size:18px}
 .bk .tag.qz{margin-left:6px;background:#2F6B3A;color:#fff;border-radius:999px;padding:1px 8px;font-weight:600}
@@ -481,6 +490,12 @@ body.role-staff .news{background:#FFFBF0}
 @keyframes stampIn{0%{transform:scale(2) rotate(-24deg);opacity:0}55%{transform:scale(.9) rotate(-5deg);opacity:1}100%{transform:scale(1) rotate(-7deg);opacity:1}}
 @keyframes slotGlow{0%{box-shadow:0 0 0 0 rgba(217,169,58,.55)}100%{box-shadow:0 0 0 12px rgba(217,169,58,0)}}
 /* 화면 어디서든 보이게 잠깐 떠오르는 웅이 */
+.ackpop{position:fixed;inset:0;z-index:90;background:rgba(30,24,20,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.ackbox{background:#FFFDF8;border-radius:16px;max-width:380px;width:100%;padding:22px 20px 18px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.25)}
+.ackbox .wface{display:block;width:64px;height:64px;margin:0 auto 6px}
+.ackbox h3{margin:4px 0 8px;font-size:19px}
+.ackbox p{margin:6px 0;font-size:15px}
+.ackbox .btn{margin-top:10px;min-width:140px}
 .wpop{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:65;width:min(380px,calc(100vw - 32px));animation:popin .4s cubic-bezier(.2,1.3,.4,1) both}
 .wpop .woong{margin:0;filter:drop-shadow(0 8px 22px rgba(43,35,32,.22))}
 .wpop .bubble{background:#FFFDF8}
@@ -959,6 +974,20 @@ function poke(bear){
   setTimeout(function(){bear.classList.remove("m-"+mv);},1500);
   bub.innerHTML='<b class="who">웅이</b>'+esc(pool[i]);
 }
+/* 상품권 배부 완료 확인 창(도서부가 '배부'를 누른 뒤 학생이 '확인'을 누를 때까지) */
+function ackPop(){
+  var old=document.querySelector(".ackpop");if(old)old.remove();
+  var L=(D&&D.me&&D.me.role==="student"&&!D.preview&&D.giftAck)||[];if(!L.length)return;
+  var x=L[0],n=L.reduce(function(s,y){return s+(y.n||0);},0);
+  var el=document.createElement("div");el.className="ackpop";el.setAttribute("role","dialog");el.setAttribute("aria-modal","true");
+  el.innerHTML='<div class="ackbox"><span class="wface">'+bearSVG("yay")+'</span>'+
+    '<h3>문화상품권 배부가 완료되었어요 🎉</h3>'+
+    '<p><b>'+esc(x.label)+'</b> 문화상품권 <b>'+n+'매</b>를 받았어요.'+(x.at?'<br><small>'+esc(x.at.slice(5).replace("-","/"))+(x.who?' · '+esc(x.who):'')+'</small>':'')+'</p>'+
+    '<p class="hint">받은 만큼 별이 줄었어요. 상품권을 잘 받았으면 아래 <b>확인</b>을 눌러 주세요.</p>'+
+    '<button class="btn" data-giftack="'+esc(L.length>1?"":x.from)+'">확인</button></div>';
+  document.body.appendChild(el);
+}
+function placeTalk(p){p=String(p||"");if(/도서관/.test(p)&&/점심/.test(p))return "점심시간에 도서관에서";return p?p.replace(/\s*·\s*/g," ")+"에서":"도서관에서";}
 /* 도장이 새로 찍혔을 때: 화면 어디에 있든 보이게 웅이가 잠깐 떠오른다 */
 var popTimer=null;
 function woongPop(pose,msg){
@@ -1072,19 +1101,21 @@ function renderBoard(){
     :n>=cap?woong("read","이번 주 도장 "+cap+"개 꽉 찼어! 월요일에 새 칸이 열려.")
     :n===0?woong("hi","이번 주 첫 칸은 <b>문장</b>이 제일 쉬워. 책에서 마음에 남은 한 줄만 옮겨 적으면 돼!")
     :woong("read","이번 주 "+(cap-n)+"칸 남았어. 다음 별까지 도장 "+ST.toNext+"개.");
-  /* 수령 알림: 수령 기간 7일 전부터 끝날 때까지(닫으면 그 기간엔 다시 안 뜸) */
+  /* 수령 알림(2026-09-28): 수령 기간 7일 전부터 대상 학생이 들어올 때마다 '그 기간 점심시간에 도서관에서'.
+     '알겠어요'는 이번에만 닫는다(다음에 들어오면 다시 뜬다). 받은 뒤에는 '수령했어요' */
   var gb="",GN=D.giftNotice;
-  if(GO&&GN&&GN.mine&&(GN.mine.vouchers>0||GN.mine.paid)&&get("ungcheon-seoga-gift2|"+D.me.id+"|"+GN.from)!=="1"){
-    var me=GN.mine;
+  if(GO&&GN&&GN.mine&&(GN.mine.vouchers>0||GN.mine.paid)&&ui.giftHide!==GN.from&&!(GN.mine.paid&&get("ungcheon-seoga-gift2|"+D.me.id+"|"+GN.from)==="1")){
+    var me=GN.mine,where='<b>'+rangeLabel(GN.from,GN.to)+' '+placeTalk(GN.place)+'</b>';
     gb='<div class="giftbar">'+starSVG()+'<span>'+(me.paid?'<b>'+esc(GN.label)+' — 수령했어요 ✓</b> 문화상품권 '+(me.paidN||me.vouchers)+'매. 받은 별은 사라졌어요.'
-        :GN.open?'<b>'+esc(GN.label)+': 문화상품권 '+me.vouchers+'매를 받을 수 있어요!</b> '+rangeLabel(GN.from,GN.to)+(GN.place?' · '+esc(GN.place):'')+'. <b>이 기간에만 받을 수 있어요.</b>'
-        :'<b>곧 '+esc(GN.label)+'</b> '+rangeLabel(GN.from,GN.to)+' · 지금 별 '+me.stars+'개면 문화상품권 '+me.vouchers+'매.')+
-      '</span><button class="btn ghost sm end" data-giftok="'+esc(GN.from)+'">알겠어요</button></div>';
+        :GN.open?'<b>'+esc(GN.label)+': 문화상품권 '+me.vouchers+'매를 받을 수 있어요!</b> '+where+' 받아 가세요. <b>이 기간에만 받을 수 있어요.</b>'
+        :'<b>'+esc(GN.label)+' 대상이에요!</b> 지금 별 '+me.stars+'개 → 문화상품권 <b>'+me.vouchers+'매</b>. 수령 기간 '+where+' 받을 수 있어요.')+
+      '</span><button class="btn ghost sm end" data-giftok="'+esc(GN.from)+'" data-paid="'+(me.paid?1:0)+'">알겠어요</button></div>';
     if(GN.open&&!me.paid&&get("ungcheon-seoga-giftpop2|"+D.me.id+"|"+GN.from)!=="1"&&!D.preview){
       put("ungcheon-seoga-giftpop2|"+D.me.id+"|"+GN.from,"1");
       setTimeout(function(){woongPop("yay",'<span class="fresh-msg">문화상품권 '+me.vouchers+'매 받을 차례!</span>'+rangeLabel(GN.from,GN.to)+'에 도서관에서 받아 가. 이 기간에만 받을 수 있어.');},600);
     }
   }
+  ackPop();
   var gbn='<div class="guidebanner"><span>📌 <b>도장 '+R.per+'개 = 별 1개'+(GO&&!gb?', 별 '+R.pair+'개 = 문화상품권 '+won(R.won)+' 1매':'')+'</b></span><button class="btn sm" id="guide-open3" type="button">이용 안내 보기</button></div>';
   var cf="";
   /* 처음 들어온 학생: 아직 아무것도 안 했으면 환영 인사(닫으면 이 기기에서는 다시 안 뜸) */
@@ -1120,9 +1151,9 @@ function renderBoard(){
 
 var TS=[["shelf","서가"],["write","글 쓰기","쓰기"],["wall","게시판"],["quiz","북퀴즈","퀴즈"],["mine","내 서재"]];
 var TJ=[["shelf","서가"],["wall","게시판"],["quiz","북퀴즈","퀴즈"],["mine","내 서재"]];
-var TT=[["shelf","서가"],["wall","게시판"],["check","새 글"],["over","한눈에 보기","한눈"],["give","도장 주기","도장"],["finish","상품권"],["readlog","독서 기록","독서"],["accounts","가입 현황·계정","가입"],["tlabel","선생님 라벨","내 라벨"],["suggest","추천 도서","추천"],["guide","교사 안내","안내"]];
-var TSUB=[["shelf","서가"],["wall","게시판"],["give","도장 주기","도장"],["suggest","추천 도서","추천"],["tlabel","선생님 라벨","내 라벨"],["guide","교사 안내","안내"]];
-var TA=[["shelf","서가"],["wall","게시판"],["check","새 글"],["over","한눈에 보기"],["books","도서 관리"],["quizadm","퀴즈 관리"],["print","시상"],["finish","상품권"],["readlog","독서 기록"],["accounts","가입 현황·계정"],["give","도장 주기"],["tlabel","선생님 라벨"],["suggest","추천 도서","추천"],["guide","교사 안내"]];
+var TT=[["shelf","서가"],["wall","게시판"],["check","새 글"],["over","한눈에 보기","한눈"],["give","도장 주기","도장"],["finish","상품권"],["readlog","독서 기록","독서"],["accounts","가입 현황·계정","가입"],["tlabel","라벨·문장 쓰기","글쓰기"],["suggest","추천 도서","추천"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
+var TSUB=[["shelf","서가"],["wall","게시판"],["give","도장 주기","도장"],["suggest","추천 도서","추천"],["tlabel","라벨·문장 쓰기","글쓰기"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
+var TA=[["shelf","서가"],["wall","게시판"],["check","새 글"],["over","한눈에 보기","한눈"],["books","도서 관리","도서"],["quizadm","퀴즈 관리","퀴즈"],["print","시상"],["finish","상품권"],["readlog","독서 기록","독서"],["accounts","가입 현황·계정","가입"],["give","도장 주기","도장"],["tlabel","라벨·문장 쓰기","글쓰기"],["suggest","추천 도서","추천"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
 function tabList(){
   if(D.me.role==="student")return (D.canWrite?TS:TJ)
     .concat(D.me.club&&!D.preview?[["desk","배부 확인","배부"]]:[])
@@ -1392,7 +1423,7 @@ function pMine(){
           (q.score!==""?'<span class="pill grey">품질 '+esc(q.score)+'/10</span>':'')+'<span>'+esc(q.date)+'</span></div></div>';}).join("")+
       (D.canWrite?'<div class="row" style="margin-top:14px"><button class="btn ghost sm" data-mwrite="'+esc(open.k)+'">이 책으로 또 쓰기</button></div>':'')+'</div>';
   }
-  var chips=[["all","전체"],["label","라벨"],["review","독후감"],["quiz","낸 문제"]].map(function(x){
+  var chips=[["all","전체"],["label","라벨"],["quote","문장"],["review","독후감"],["quiz","낸 문제"]].map(function(x){
     return '<button class="chip" data-mkind="'+x[0]+'" aria-pressed="'+(kind===x[0])+'">'+x[1]+'</button>';}).join("");
   var MS=D.months||[];
   var AW=(D.awards||[]);
@@ -1414,7 +1445,7 @@ function pMine(){
     (books.length?'<div class="filters">'+chips+'</div>'+(shown.length?'<div class="bookshelf">'+grid+'</div>':'<div class="empty">해당하는 책이 없습니다.</div>')+detail:'')+
     hist+log+loginBox();
 }
-function pIdea(){return '<h3 class="sec">건의함</h3>'+ideaBox(true);}
+function pIdea(){return D.me.role==="admin"?ideaAdmin():'<h3 class="sec">건의함</h3>'+ideaBox(true);}
 /* 내 서재 맨 아래: 이 기기에서 들어오는 방법 */
 function loginBox(){
   if(D&&D.conf&&D.conf.loginMode==="google")return "";   /* 학교 구글 계정으로 들어오는 방식이면 필요 없다 */
@@ -1438,7 +1469,8 @@ function loginBox(){
 function ideaBox(solo){
   var L=D.ideas||[];
   return (solo?'':'<h3 class="sec gap">건의함</h3>')+
-    '<p class="sub">서가에 들여 줬으면 하는 책, 프로그램에 바라는 점을 적어 주세요. <b>관리자(사서) 선생님만</b> 읽고, 답이 오면 여기에 보입니다. 다른 학생에게는 보이지 않아요. 하루 3개까지.</p>'+
+    (D.me.role==="student"?'<p class="sub">서가에 들여 줬으면 하는 책, 프로그램에 바라는 점을 적어 주세요. <b>관리자(사서) 선생님만</b> 읽고, 답이 오면 여기에 보입니다. 다른 학생에게는 보이지 않아요. 하루 3개까지.</p>'
+      :'<p class="sub">들여 줬으면 하는 책, 운영에 바라는 점, 불편한 점을 <b>관리자(사서) 선생님</b>께 보냅니다. 답이 오면 여기에 보입니다. 하루 3개까지.</p>')+
     '<div class="form" style="max-width:560px"><div class="field"><label for="idea-t">하고 싶은 말</label><textarea id="idea-t" rows="3" maxlength="500" placeholder="예) 『아몬드』 같은 청소년 소설을 더 들여 주세요"></textarea></div>'+
     '<button class="btn" id="idea-go">보내기</button></div>'+
     (L.length?'<div class="stack" style="margin-top:14px">'+L.map(function(x){
@@ -1602,7 +1634,7 @@ function guideHTML(){
       '<li><b>도장이 취소되는 경우</b>: 인터넷 서평·다른 사람 글·AI가 쓴 글을 옮겨 적었을 때, 읽지 않고 썼을 때, 누군가를 겨냥하거나 거친 말이 있을 때, 같은 글을 되풀이해 냈을 때. 선생님이 글을 내리면 <b>그 도장과 그 도장으로 만들어진 별도 함께 사라져요.</b></li>'+
       '<li>맞춤법·글솜씨는 보지 않아요. <b>내 경험 한 줄</b>이면 충분해요.</li></ul>')+
     sec("3. 이름은 안 나와요",'<ul><li>게시판에는 학급만 보여요. 이름은 담임·담당 선생님만 봐요.</li>'+
-      '<li><b>투표</b>: <b>올라온 지 '+(D.voteDays||7)+'일 안</b>의 글 가운데 무작위 '+c.voteN+'편이 보여요(사람마다 달라요). 라벨·문장·독후감에 <b>주마다 2표씩</b> 쓸 수 있고, 월요일에 새 표가 생겨요. <b>매달 말일</b>에 부문별로 뽑아 <b>독후감은 '+((D.awardTops||{}).review||10)+'위까지 별 '+(D.awardStars||1)+'개</b>, <b>라벨·문장은 '+((D.awardTops||{}).label||10)+'위까지 만능 도장 1개</b>를 드려요(표는 매달 1일에 처음부터 다시). 누가 누구를 뽑았는지는 <b>다른 사람에게 보이지 않아요</b>.</li>'+
+      '<li><b>투표</b>: <b>올라온 지 '+(D.voteDays||7)+'일 안</b>의 글 가운데 무작위 '+c.voteN+'편이 보여요(사람마다 달라요). 라벨·문장·독후감에 <b>주마다 '+((D.voteL&&D.voteL.per)||5)+'표씩</b> 쓸 수 있고, 월요일에 새 표가 생겨요. <b>매달 말일</b>에 부문별로 뽑아 <b>독후감은 '+((D.awardTops||{}).review||10)+'위까지 별 '+(D.awardStars||1)+'개</b>, <b>라벨·문장은 '+((D.awardTops||{}).label||10)+'위까지 만능 도장 1개</b>를 드려요(표는 매달 1일에 처음부터 다시). 누가 누구를 뽑았는지는 <b>다른 사람에게 보이지 않아요</b>.</li>'+
       '<li>친구 글에 <b>읽고 싶어요</b>를 누르면 글쓴이에게 숫자로 전해져요.</li></ul>')+
     sec("4. 책 찾기",'<ul><li><b>서가</b>: 이번 달 추천 도서(모두 학교 도서관에 있는 책, 매달 1일에 바뀜). 초록 <b>대출 가능</b>이면 지금 빌릴 수 있어요.</li>'+
       '<li><b>도서 검색</b>: 학교 도서관 책을 제목·지은이로 찾아요. 옆 번호(청구기호)대로 서가에서 찾으면 돼요.</li>'+
@@ -1642,22 +1674,26 @@ function feedItem(l,i,list){
     '<span class="fm"><span>'+esc(md(l.date))+'</span>'+(l.likes?'<span>읽고 싶어요 '+l.likes+'</span>':'')+'</span></button>';
 }
 var LISTS={};
-/* ── 도서부: 상품권 배부 확인 ── */
+/* ── 도서부: 상품권 배부 확인(2026-09-28) — 대상자 명단은 늘 보이고, 배부 단추는 수령 기간에만 ── */
 function pDesk(){
   var K=D.giftDesk||{rows:[]},R=rule();
-  if(K.none)return '<h3 class="sec">상품권 배부 확인</h3>'+woong("read","지금은 수령 기간이 아니야."+(K.next?" 다음 수령은 <b>"+rangeLabel(K.next.from,K.next.to)+"</b>.":"")+" 대상 학생 명단은 <b>수령 기간에만</b> 보이고, 기간이 끝나면 사라져.");
+  if(K.none)return '<h3 class="sec">상품권 배부 확인</h3>'+woong("read","아직 정해진 수령 기간이 없어. 사서 선생님이 기간을 정하면 대상 학생 명단이 여기 나와.");
   var q=(ui.deskQ||"").trim(),rows=K.rows.filter(function(x){return !q||x.hakbun.indexOf(q)>=0||x.name.indexOf(q)>=0;});
-  var done=K.rows.filter(function(x){return x.paid;}),total=K.rows.reduce(function(a,x){return a+x.vouchers;},0),given=done.reduce(function(a,x){return a+(x.paidN||x.vouchers);},0);
-  return '<h3 class="sec">'+esc(K.label)+' 상품권 배부 확인</h3>'+
-    '<p class="sub">대상 학생 <b>전원</b>이 학번순으로 나옵니다. 이 명단은 <b>수령 기간에만</b> 보이고 기간이 끝나면 사라집니다. '+rangeLabel(K.from,K.to)+(K.place?' · '+esc(K.place):'')+'. 학번·이름을 확인하고 매수만큼 문화상품권을 준 뒤 <b>배부 완료</b>를 누르세요. 그 학생 화면에 ‘수령했어요’가 뜨고 받은 별은 사라집니다. 잘못 눌렀으면 다시 눌러 되돌립니다. 누가 눌렀는지 기록됩니다.</p>'+
-
-    '<div class="desk-sum"><span>대상 <b>'+K.rows.length+'</b>명</span><span>필요한 상품권 <b>'+total+'</b>매</span><span>배부 <b>'+done.length+'</b>명 · '+given+'매</span></div>'+
+  var done=K.rows.filter(function(x){return x.paid;}),acked=done.filter(function(x){return x.ack;}),total=K.rows.reduce(function(a,x){return a+x.vouchers;},0),given=done.reduce(function(a,x){return a+(x.paidN||x.vouchers);},0);
+  var tag=K.open?'<span class="pill gold">배부 중</span>':K.state==="soon"?'<span class="pill">예정</span>':'<span class="pill grey">지난 기간</span>';
+  return '<h3 class="sec">'+esc(K.label)+' 상품권 배부 확인 '+tag+'</h3>'+
+    (K.open?'<p class="sub">수령 기간 '+rangeLabel(K.from,K.to)+(K.place?' · '+esc(K.place):'')+'. 대상 학생이 <b>학번 순</b>으로 나옵니다. 학번·이름을 확인하고 매수만큼 문화상품권을 준 뒤 이름 옆 <b>배부</b>를 누르세요. 그 학생 화면에 ‘배부 완료’ 안내가 뜨고, 학생이 <b>확인</b>을 누르면 ‘수령 확인 ✓’가 붙습니다. 잘못 눌렀으면 다시 눌러 되돌립니다. 누가 눌렀는지 기록됩니다.</p>'
+      :K.state==="soon"?'<p class="sub">다음 수령 기간은 <b>'+rangeLabel(K.from,K.to)+'</b>'+(K.place?' · '+esc(K.place):'')+'입니다. 아래는 <b>지금까지 모은 별 기준</b> 예정 명단이라 기간 전까지 조금 바뀔 수 있어요. <b>배부 단추는 수령 기간에만</b> 생깁니다.</p>'
+      :'<p class="sub">지난 수령 기간('+rangeLabel(K.from,K.to)+') 명단입니다. 배부 단추는 다음 수령 기간에 생깁니다.</p>')+
+    '<div class="desk-sum"><span>대상 <b>'+K.rows.length+'</b>명</span><span>필요한 상품권 <b>'+total+'</b>매</span><span>배부 <b>'+done.length+'</b>명 · '+given+'매</span><span>수령 확인 <b>'+acked.length+'</b>명</span></div>'+
     '<div class="row" style="align-items:flex-end;gap:8px;max-width:460px"><div class="field" style="flex:1;margin:0"><label for="desk-q">학번이나 이름으로 조회</label><input type="search" id="desk-q" value="'+esc(ui.deskQ||"")+'" placeholder="예) 30201 또는 김서준"></div><button class="btn" id="desk-go">조회</button></div>'+
     lookHTML(K)+
     (rows.length?rows.map(function(x){
-      return '<div class="desk-row"><div class="nm"><b>'+esc(x.hakbun)+' '+esc(x.name)+'</b><small>'+esc(clsName(x.cls))+' · 별 '+x.stars+'개 → <b>'+x.vouchers+'매</b>'+(x.paid&&x.who?' · '+esc(x.who)+' 배부':'')+'</small></div>'+
-        (K.open?'<button class="btn '+(x.paid?'':'ghost ')+'sm" data-desk="'+esc(x.hakbun)+'" data-on="'+(x.paid?0:1)+'">'+(x.paid?'배부 완료 ✓':'배부 완료')+'</button>'
-          :(x.paid?'<span class="pill">배부 완료</span>':''))+'</div>';}).join("")
+      var btn=K.open?'<button class="btn '+(x.paid?'':'ghost ')+'sm" data-desk="'+esc(x.hakbun)+'" data-on="'+(x.paid?0:1)+'">'+(x.paid?'배부 ✓':'배부')+'</button>'
+          :(x.paid?'<span class="pill">배부 완료</span>':'');
+      return '<div class="desk-row"><div class="nm"><div class="who1"><b>'+esc(x.hakbun)+' '+esc(x.name)+'</b>'+btn+
+          (x.paid?(x.ack?'<span class="pill gold">수령 확인 ✓</span>':'<span class="hint">학생 확인 전</span>'):'')+'</div>'+
+        '<small>'+esc(clsName(x.cls))+' · 별 '+x.stars+'개 → <b>'+x.vouchers+'매</b>'+(x.paid&&x.who?' · '+esc(x.who)+' 배부':'')+'</small></div></div>';}).join("")
       :'<div class="empty">'+(q?'찾는 학생이 이번 대상 명단에 없어요(별 '+R.pair+'개부터 대상).':'이번 수령 대상 학생이 없어요.')+'</div>');
 }
 /* 도서부 학번 조회 결과: 이번 달 도장·별, 지금 별, 이번 수령 대상 여부 */
@@ -1666,9 +1702,9 @@ function lookHTML(K){
   if(Lk.error)return '<div class="lookcard"><span class="no">'+esc(Lk.error)+'</span></div>';
   var R=rule();
   return Lk.list.map(function(x){
-    var cl=x.claim,st=cl?(cl.paid?'<span class="ok">수령 완료 ✓ ('+(cl.paidN||cl.vouchers)+'매'+(cl.who?' · '+esc(cl.who):'')+')</span>'
+    var cl=x.claim,st=cl?(cl.paid?'<span class="ok">배부 완료 ✓ ('+(cl.paidN||cl.vouchers)+'매'+(cl.who?' · '+esc(cl.who):'')+')</span>'
         :cl.vouchers?'<span class="ok">수령 대상 · 문화상품권 '+cl.vouchers+'매</span> (별 '+cl.stars+'개)'
-        :'<span class="no">수령 대상 아님</span> (별 '+cl.stars+'개 · 별 '+R.pair+'개부터)'):'<span class="hint">지금은 수령 기간이 아니에요</span>';
+        :'<span class="no">수령 대상 아님</span> (별 '+cl.stars+'개 · 별 '+R.pair+'개부터)'):'<span class="hint">수령 기간 7일 전부터 대상 여부가 보여요</span>';
     return '<div class="lookcard"><div class="big">'+esc(x.hakbun)+' '+esc(x.name)+' <small class="hint">'+esc(clsName(x.cls))+'</small></div>'+
       '<div>이번 달 도장 <b>'+x.mStamps+'</b>개 · 이번 달 별 <b>'+x.mStars+'</b>개 · 지금 가진 별 <b>'+x.stars+'</b>개 · 누적 도장 '+x.stamps+'개</div>'+
       '<div style="margin-top:6px">'+(cl?esc(cl.label)+': ':'')+st+'</div>'+
@@ -1828,7 +1864,7 @@ function eventBar(){
   return L.map(function(E){
     var tag=E.way==="배수"?'×'+E.mul:E.way==="추첨"?'뽑기':E.way==="대항"?'대항':'미션';
     var body="";
-    if(E.way==="배수")body=(E.kind?({label:"라벨",review:"독후감",quiz:"퀴즈"}[E.kind.split(",")[0]]||E.kind)+'만 ':'')+'도장이 <b>'+E.mul+'배</b>로 찍혀요';
+    if(E.way==="배수")body=(E.kind?({label:"라벨",quote:"문장",review:"독후감",quiz:"퀴즈"}[E.kind.split(",")[0]]||E.kind)+'만 ':'')+'도장이 <b>'+E.mul+'배</b>로 찍혀요';
     else if(E.way==="추첨")body='이 기간에 글을 내면 <b>추첨권</b>이 쌓여요. 지금 내 표 <b>'+(E.tickets||0)+'장</b> · '+E.val+'명에게 문화상품권 '+E.prize+'매';
     else if(E.way==="대항")body='우리 반 <b>'+(E.rank?E.rank+'등':'—')+'</b> / '+(E.of||0)+'반 · 참여율 '+(E.pct||0)+'% · '+E.val+'개 반까지 상 받아요';
     else body='<b>'+(E.done||0)+' / '+E.need+'</b> 채우면 도장 <b>'+E.prize+'개</b>'+(E.ok?' · <b>다 했어요!</b>':'');
@@ -1866,7 +1902,7 @@ function hallHTML(){
   var i=0;
   return '<section class="hall"><h3>🏆 명예의 전당 <span>달마다 뽑힌 우수 독후감과 이달의 한 줄</span></h3>'+H.slice(0,6).map(function(g){
     return '<div class="hmon">'+Number(g.mon.slice(5))+'월</div><div class="hrow">'+g.list.map(function(l){var k=i++;
-      return '<button class="hcard" data-read="'+k+'" data-list="hall"><b>'+esc(l.kind==="label"?l.text:(l.head||l.title))+'</b><span>『'+esc(l.title)+'』 · '+(l.kind==="label"?'이달의 한 줄':'우수 독후감')+'</span><em>'+esc(clsName(l.cls))+'</em></button>';}).join("")+'</div>';}).join("")+'</section>';
+      return '<button class="hcard" data-read="'+k+'" data-list="hall"><b>'+esc(l.kind!=="review"?l.text:(l.head||l.title))+'</b><span>『'+esc(l.title)+'』 · '+(l.kind==="label"?'이달의 한 줄':l.kind==="quote"?'이달의 문장':'우수 독후감')+'</span><em>'+esc(clsName(l.cls))+'</em></button>';}).join("")+'</div>';}).join("")+'</section>';
 }
 function monName(m){return m?Number(String(m).slice(5))+"월":"지난달";}
 /* ── 학생: 투표 ── */
@@ -1970,7 +2006,7 @@ function pCheck(){
     return '<div class="card">'+postHTML(l)+
       (fg?'<div class="meta"><span class="pill" style="background:#FDECEA;color:#B0301E;border-color:#E9B4AA">검토 필요'+(fg.sim?' · 겹침 '+fg.sim+'%':'')+'</span><span>'+esc(fg.why.join(" · "))+'</span></div>':'')+
       '<div class="meta"><span class="pill grey">'+esc(l.cls)+' '+esc(l.name)+'</span>'+
-      '<span class="pill gold">'+(l.kind==="label"?"라벨":"독후감")+'</span>'+st+'<span>'+esc(l.date)+'</span></div>'+
+      '<span class="pill gold">'+kindName(l.kind)+'</span>'+st+'<span>'+esc(l.date)+'</span></div>'+
       '<div class="meta"><span>읽은 계기: '+esc(l.why)+(l.page?' · 기억나는 곳: '+esc(l.page):'')+'</span></div>'+
       '<div class="row">'+btns+'</div></div>';
   }
@@ -2088,33 +2124,37 @@ function pAccounts(){
       :(ui.accQ?'<div class="empty">찾는 학생이 없습니다. 학년 담당 선생님은 그 학년만 찾을 수 있습니다.</div>':''));
 }
 
-/* ── 교사: 선생님 라벨 ── */
+/* ── 교사: 선생님 라벨·문장(2026-09-28 문장 추가) ── */
 function pTLabel(){
-  var lim=D.conf.limit.label;
-  var my=(D.myLabels||[]).map(function(l){return '<div class="stack" style="gap:6px">'+labelHTML(l)+
-    '<div class="meta">'+(l.status==="posted"?'<span class="pill">게시 중</span>':'<span class="pill grey">내림</span>')+'</div></div>';}).join("");
-  return '<h3 class="sec">선생님 라벨</h3>'+
-    '<p class="sub">학생 라벨과 똑같은 모양으로 게시판에 올라가고, 학생 화면에서 네 장에 한 장꼴로 앞자리에 보입니다. 선생님 라벨에는 이름이 찍힙니다(“○○○ 선생님”). 학생들이 가장 먼저 찾아 읽는 라벨입니다. 한 권, 두 문장이면 됩니다.</p>'+
+  var isQ=ui.tKind==="quote",lim=D.conf.limit[isQ?"quote":"label"];
+  var my=(D.myLabels||[]).map(function(l){return '<div class="stack" style="gap:6px">'+postHTML(l)+
+    '<div class="meta"><span class="pill grey">'+(l.kind==="quote"?"문장":"라벨")+'</span>'+(l.status==="posted"?'<span class="pill">게시 중</span>':'<span class="pill grey">내림</span>')+'</div></div>';}).join("");
+  return '<h3 class="sec">선생님 라벨·문장</h3>'+
+    '<p class="sub">학생 글과 똑같은 모양으로 게시판에 올라가고, 학생 화면에서 앞자리에 자주 보입니다. 선생님 글에는 이름이 찍힙니다(“○○○ 선생님”). 학생들이 가장 먼저 찾아 읽는 글입니다. <b>라벨</b>은 책을 권하는 한두 문장, <b>문장</b>은 책에서 마음에 남은 한 줄입니다.</p>'+
+    '<div class="row" style="margin:0 0 12px"><button class="btn'+(isQ?' ghost':'')+' sm" data-tkind="label">라벨</button><button class="btn'+(isQ?'':' ghost')+' sm" data-tkind="quote">문장</button></div>'+
     '<div class="two"><div><div class="form">'+
-    '<div class="field"><label for="t-t">책 제목</label><input type="text" id="t-t"></div>'+
-    '<div class="field"><label for="t-a">지은이</label><input type="text" id="t-a"></div>'+
-    '<div class="field"><label for="t-x">학생이 이 책을 집어들게 만드는 한 줄 ('+lim.join("~")+'자)</label><textarea id="t-x" placeholder="예) 스무 살에 이 책을 읽고 전공을 바꿨다. 첫 장만 읽어 보고 덮어도 된다."></textarea>'+
+    '<div class="field"><label for="t-t">책 제목</label><input type="text" id="t-t" value="'+esc(ui.tT||"")+'"></div>'+
+    '<div class="field"><label for="t-a">지은이</label><input type="text" id="t-a" value="'+esc(ui.tA||"")+'"></div>'+
+    (isQ?'<div class="field"><label for="t-x">책에서 옮겨 적은 문장 ('+lim.join("~")+'자)</label><textarea id="t-x" placeholder="예) 우리는 모두 누군가의 기적이었다."></textarea>'
+        :'<div class="field"><label for="t-x">학생이 이 책을 집어들게 만드는 한 줄 ('+lim.join("~")+'자)</label><textarea id="t-x" placeholder="예) 스무 살에 이 책을 읽고 전공을 바꿨다. 첫 장만 읽어 보고 덮어도 된다."></textarea>')+
     '<div class="counter" id="t-c">0자 / '+lim.join("~")+'</div></div>'+
-    '<button class="btn" id="t-send" disabled>라벨 올리기</button></div></div>'+
+    (isQ?'<div class="field"><label for="t-pg">몇 쪽(선택)</label><input type="text" id="t-pg" placeholder="예) 132쪽"></div>':'')+
+    '<button class="btn" id="t-send" disabled>'+(isQ?'문장 올리기':'라벨 올리기')+'</button></div></div>'+
     '<div><label>게시될 모습</label><div id="t-prev"></div></div></div>'+
-    (my?'<h3 class="sec gap">내가 쓴 라벨</h3><div class="grid2">'+my+'</div>':'');
+    (my?'<h3 class="sec gap">내가 쓴 글</h3><div class="grid2">'+my+'</div>':'');
 }
 function wireTLabel(){
-  var t=$("t-t"),a=$("t-a"),x=$("t-x"),c=$("t-c"),b=$("t-send"),pv=$("t-prev"),lim=D.conf.limit.label;
+  var t=$("t-t"),a=$("t-a"),x=$("t-x"),c=$("t-c"),b=$("t-send"),pv=$("t-prev"),pg=$("t-pg"),kind=ui.tKind==="quote"?"quote":"label",lim=D.conf.limit[kind];
   function upd(){
-    var n=x.value.trim().length;
+    var n=x.value.trim().length;ui.tT=t.value;ui.tA=a.value;
     c.textContent=n+"자 / "+lim.join("~");c.className="counter"+(n>lim[1]?" over":"");
     b.disabled=n<lim[0]||n>lim[1]||!t.value.trim();
-    pv.innerHTML=labelHTML({title:t.value.trim(),author:a.value.trim(),by:D.me.name+" 선생님",text:x.value.trim()||"여기에 쓴 글이 게시판에 올라갑니다."});
+    pv.innerHTML=postHTML({kind:kind,title:t.value.trim(),author:a.value.trim(),by:D.me.name+" 선생님",page:pg?pg.value.trim():"",text:x.value.trim()||"여기에 쓴 글이 게시판에 올라갑니다."});
   }
-  [t,a,x].forEach(function(e){e.addEventListener("input",upd);});upd();
+  [t,a,x].concat(pg?[pg]:[]).forEach(function(e){e.addEventListener("input",upd);});upd();
   b.addEventListener("click",function(){b.disabled=true;
-    act("staffLabel",{title:t.value.trim(),author:a.value.trim(),text:x.value.trim()},"라벨을 올렸습니다. 게시판에 바로 보입니다.").catch(function(){b.disabled=false;});});
+    act("staffLabel",{kind:kind,title:t.value.trim(),author:a.value.trim(),text:x.value.trim(),page:pg?pg.value.trim():""},(kind==="quote"?"문장":"라벨")+"을 올렸습니다. 게시판에 바로 보입니다.")
+      .then(function(){ui.tT="";ui.tA="";renderPanel();}).catch(function(){b.disabled=false;});});
 }
 
 /* ── 담당: 인쇄 ── */
@@ -2374,7 +2414,8 @@ function pGift(){
   var body=rows.map(function(x){
     return '<tr><td>'+esc(x.hakbun)+'</td><td>'+esc(x.name)+'</td><td>'+esc(x.cls)+'</td><td>'+x.stars+'개</td><td><b>'+x.vouchers+'매</b></td>'+
       '<td>'+(adm?'<button class="btn '+(x.paid?'':'ghost ')+'sm" data-gm="'+esc(x.hakbun)+'" data-on="'+(x.paid?0:1)+'">'+(x.paid?'배부 완료 ✓':'배부 완료')+'</button>'
-        :(x.paid?'배부 완료':'<span class="hint">대기</span>'))+(x.paid&&x.who?'<div class="hint">'+esc(x.who)+'</div>':'')+'</td></tr>';}).join("");
+        :(x.paid?'배부 완료':'<span class="hint">대기</span>'))+(x.paid&&x.who?'<div class="hint">'+esc(x.who)+'</div>':'')+'</td>'+
+      '<td>'+(x.paid?(x.ack?'<span class="pill gold">확인 ✓</span><div class="hint">'+esc(String(x.ackAt||"").slice(5,16))+'</div>':'<span class="hint">확인 전</span>'):'')+'</td></tr>';}).join("");
   var auto=!c.recvSheet&&!(c.giftWins||[]).length;
   return '<h3 class="sec">상품권</h3>'+
     '<div class="box" style="margin:0 0 12px;font-size:13.5px">누적 도장 <b>'+R.per+'개 = 별 1개</b>, <b>별 '+R.pair+'개 = 문화상품권 '+won(R.won)+' 1매</b>, 한 번 수령에 최대 <b>'+R.max+'매</b>. 별 1개는 대상이 아닙니다. '+
@@ -2385,7 +2426,7 @@ function pGift(){
       (adm&&rows.length>paid.length?'<button class="btn sm" id="gift-all">대상 모두 배부 완료</button>':'')+
       '<button class="btn ghost sm" id="gift-csv">CSV(수령 대장)</button></div>'+
     '<p class="libsum" style="margin:0 0 10px">'+esc(w.label||"")+(w.future?'(예정 — 지금까지 모은 별 기준)':'')+' · 대상 <b>'+rows.length+'명</b> · 필요한 상품권 <b>'+need+'매</b> · 배부 완료 '+paid.length+'명</p>'+
-    (rows.length?'<div class="scrollx"><table class="gtable"><tr><th>학번</th><th>이름</th><th>학급</th><th>별</th><th>상품권</th><th>배부</th></tr>'+body+'</table></div>'
+    (rows.length?'<div class="scrollx"><table class="gtable"><tr><th>학번</th><th>이름</th><th>학급</th><th>별</th><th>상품권</th><th>배부</th><th>수령 확인</th></tr>'+body+'</table></div>'
       :'<div class="empty">이 수령 기간에는 대상 학생이 없습니다(별 '+R.pair+'개부터).</div>');
 }
 
@@ -2400,7 +2441,7 @@ function eventAdmin(){
   if(!D.me||D.me.role!=="admin")return "";
   var L=D.events||[];
   function detail(e){
-    if(e.way==="배수")return '×'+e.val+(e.kind?' · '+({label:"라벨",review:"독후감",quiz:"퀴즈"}[e.kind.split(",")[0]]||e.kind)+'만':'');
+    if(e.way==="배수")return '×'+e.val+(e.kind?' · '+({label:"라벨",quote:"문장",review:"독후감",quiz:"퀴즈"}[e.kind.split(",")[0]]||e.kind)+'만':'');
     if(e.way==="추첨")return e.val+'명 · 상품권 '+e.prize+'매'+(e.joined?' · 참여 '+e.joined+'명':'');
     if(e.way==="대항")return '상위 '+e.val+'개 반';
     return '목표 '+e.val+'건 → 도장 '+e.prize+'개';
@@ -2575,7 +2616,7 @@ function guideLibrarian(){
     ["매달 1일 · 자동","0시에 <b>이번 달 추천 도서</b>를 청소년 권장도서 가운데 우리 학교에 있는 책에서 12개 영역으로 나눠 40권 새로 뽑습니다(시트 <b>권장도서</b> 탭). 첫 주에 <b>도서 관리</b>에서 훑어보고 어울리지 않는 책은 <b>빼기</b>."],
     ["월요일 · 자동","0시에 이번 주 퀴즈 책("+(D.conf.quizBooks||3)+"권 이하)을 정하고 북퀴즈 "+D.conf.quizTarget+"문제를 채웁니다(품질 좋은 학생 문제 먼저, 모자라면 문제 은행). 아침에 <b>퀴즈 관리</b>에서 출제된 학생 문제만 훑어보세요."],
     ["매달 말 · 자동","다음 달 추천 도서를 <b>7일 전에 미리</b> 뽑고 그 책들로 문제 은행을 만들어 둡니다. <b>도서 관리</b>의 ‘다음 달 추천 도서’에서 미리 보고 어울리지 않는 책은 빼기."],
-    ["매달 8일쯤","<b>월간 집계</b>에서 지난달 글 수상 처리와 참여 추첨 → 조회 때 발표. 투표는 상시(글이 올라온 날부터 7일 · 주마다 부문별 2표)이고, <b>부문별 3위 안에는 만능 도장 1개가 자동</b>으로 갑니다."],
+    ["매달 8일쯤","<b>월간 집계</b>에서 지난달 글 수상 처리와 참여 추첨 → 조회 때 발표. 투표는 상시(글이 올라온 날부터 7일 · 학생·선생님 모두 주마다 부문별 5표)이고, <b>부문별 3위 안에는 만능 도장 1개가 자동</b>으로 갑니다."],
     ["매달 첫 주","<b>시상</b> 탭에서 <b>이달의 한 줄</b> 시상과 포스터·상장 인쇄."],
     ["학생이 올 때","도장판 화면을 보여 주면 새로 찬 칸만큼 스티커."],
     ["수령 기간","설정 <b>상품권배부</b>에 적은 날짜(비우면 매달 첫 월~목). 도서부가 ‘배부 확인’에서 <b>배부 완료</b>를 누르면 학생 화면에 ‘수령했어요’. ‘상품권’ 탭에서 확인·CSV(수령 대장)."],
@@ -2596,9 +2637,9 @@ function ideaAdmin(){
   var L=D.ideas||[];if(!D.me||D.me.role!=="admin")return "";
   var wait=L.filter(function(x){return !x.reply;}).length;
   return '<h3 class="sec">건의함 <span class="hint">('+L.length+'건'+(wait?' · 답변 기다리는 중 '+wait:'')+')</span></h3>'+
-    '<p class="sub">학생이 보낸 건의입니다. <b>이름은 관리자만</b> 보이고, 답변을 적으면 그 학생 ‘내 서재’에 보입니다.</p>'+
+    '<p class="sub">학생·선생님이 보낸 건의입니다. <b>이름은 관리자만</b> 보이고, 답변을 적으면 보낸 사람의 건의함에 보입니다. 구글 시트 <b>건의</b> 탭에도 같이 쌓입니다.</p>'+
     (L.length?'<div class="stack">'+L.map(function(x){
-      return '<div class="card"><div class="meta"><span class="pill grey">'+esc(x.hakbun)+' '+esc(x.name)+' · '+esc(clsName(x.cls))+'</span><span>'+esc(x.at)+'</span>'+
+      return '<div class="card"><div class="meta"><span class="pill grey">'+(x.cls==="선생님"?esc(x.name)+' 선생님':esc(x.hakbun)+' '+esc(x.name)+' · '+esc(clsName(x.cls)))+'</span><span>'+esc(x.at)+'</span>'+
         (x.reply?'<span class="pill gold">답변함</span>':'')+'</div>'+
         '<p style="white-space:pre-wrap;margin:6px 0">'+esc(x.text)+'</p>'+
         '<div class="field"><label for="ir-'+esc(x.id)+'">답변</label><textarea id="ir-'+esc(x.id)+'" rows="2" maxlength="500">'+esc(x.reply||"")+'</textarea></div>'+
@@ -2651,7 +2692,7 @@ function guideRoles(){
 function pGuide(){
   var adm=D.me.role==="admin";
   if(D.me.kind==="subject")return '<div class="guide"><h3 class="sec">교사 안내</h3>'+woong("hi","선생님, 안녕하세요! 권하고 싶은 책이 있으면 ‘추천 도서’에 넣어 주세요. 학생들이 제일 먼저 보는 곳이에요.")+guideSubject()+'</div>';
-  return '<div class="guide"><h3 class="sec">교사 안내</h3>'+loginBox()+(adm?ideaAdmin()+teacherReqHTML()+noticeAdmin():'')+
+  return '<div class="guide"><h3 class="sec">교사 안내</h3>'+loginBox()+(adm?teacherReqHTML()+noticeAdmin():'')+
     woong("hi","선생님, 안녕하세요! 도장 찍기·집계·도서관 확인은 제가 할게요. 선생님은 아래 할 일만 챙겨 주세요. 처음이시면 오른쪽 위 <b>학생 화면</b>부터 둘러보세요.")+
     (adm?guideRoles()+guideLibrarian()+'<details style="margin-top:22px"><summary style="cursor:pointer;font-weight:600">학년 담당 선생님 안내 보기</summary>'+guideHomeroom()+'</details>'
         :guideHomeroom()+'<details style="margin-top:22px"><summary style="cursor:pointer;font-weight:600">관리자(사서) 선생님이 하는 일 보기</summary>'+guideLibrarian()+'</details>')+
@@ -2723,7 +2764,9 @@ document.addEventListener("click",function(e){
     call("logout",{}).catch(function(){}).then(function(){setTok("");D=null;GATE={kind:"login",step:"choose"};renderAll();refresh();});return;}
   if(id==="g-agree"){call("consent",{agree:true}).then(function(){toast("동의했습니다.");return refresh();}).catch(function(e){toast(e.message);});return;}
   if(id==="s-go"){doSearch(val("s-q"));return;}
-  if(d.giftok){put("ungcheon-seoga-gift2|"+D.me.id+"|"+d.giftok,"1");renderBoard();return;}
+  if(d.giftok){if(d.paid==="1")put("ungcheon-seoga-gift2|"+D.me.id+"|"+d.giftok,"1");else ui.giftHide=d.giftok;renderBoard();return;}
+  if(d.tkind){ui.tKind=d.tkind;renderPanel();return;}
+  if(d.giftack){act("giftAck",{from:d.giftack},"확인했어요. 즐겁게 읽어!").then(function(){var o=document.querySelector(".ackpop");if(o)o.remove();}).catch(function(){});return;}
   if(d.hellook){put("ungcheon-seoga-hello|"+D.me.id,"1");renderBoard();return;}
   if(d.fullok){put("ungcheon-seoga-full|"+D.me.id+"|"+d.fullok,"1");renderBoard();return;}
   if(id==="news-ok"){act("newsSeen",{},"확인했어요. 다음 소식부터 다시 모아 드릴게요.").catch(function(){});return;}
@@ -2756,7 +2799,7 @@ document.addEventListener("click",function(e){
   if(id==="rl-csv1"){var c1=[["학번","이름","학급","권수","읽은 책(제목(지은이))"]];rlRows().forEach(function(x){c1.push([x.hakbun,x.name,x.cls,x.books.length,x.text]);});
     csvDown("독서기록_학생별"+(ui.rlFrom?"_"+ui.rlFrom:"")+".csv",c1);return;}
   if(id==="rl-csv2"){var c2=[["학번","이름","학급","책 제목","지은이","쓴 글","처음 쓴 날"]];rlRows().forEach(function(x){x.books.forEach(function(b){
-      c2.push([x.hakbun,x.name,x.cls,b.t,b.a,b.kinds.map(function(k){return k==="review"?"독후감":"라벨";}).join("·"),b.dates[0]]);});});
+      c2.push([x.hakbun,x.name,x.cls,b.t,b.a,b.kinds.map(kindName).join("·"),b.dates[0]]);});});
     csvDown("독서기록_책별"+(ui.rlFrom?"_"+ui.rlFrom:"")+".csv",c2);return;}
   if(d.mkind){ui.mineKind=d.mkind;saveUI();renderPanel();return;}
   if(d.mbook!=null){ui.mineOpen=ui.mineOpen===d.mbook?"":d.mbook;saveUI();renderPanel();var md=$("mdetail");if(md)md.scrollIntoView({behavior:"smooth",block:"nearest"});return;}
@@ -2848,8 +2891,8 @@ document.addEventListener("click",function(e){
     if(!ids.length){toast("모두 배부 완료 상태입니다.");return;}
     if(!window.confirm("대상 "+ids.length+"명을 모두 배부 완료로 표시할까요?"))return;
     act("giftMark",{from:gw,ids:ids,on:true},ids.length+"명을 배부 완료로 표시했습니다.").catch(function(){});return;}
-  if(id==="gift-csv"){var gw2=giftWin(),gr=[["학번","이름","학급","별","상품권(매)","배부","처리","수령 서명"]];
-    (D.gifts.rows[gw2]||[]).forEach(function(x){gr.push([x.hakbun,x.name,x.cls,x.stars,x.vouchers,x.paid?"완료":"",x.who||"",""]);});
+  if(id==="gift-csv"){var gw2=giftWin(),gr=[["학번","이름","학급","별","상품권(매)","배부","처리","수령 확인","확인 시각","수령 서명"]];
+    (D.gifts.rows[gw2]||[]).forEach(function(x){gr.push([x.hakbun,x.name,x.cls,x.stars,x.vouchers,x.paid?"완료":"",x.who||"",x.paid?(x.ack?"확인":"확인 전"):"",x.ack?x.ackAt||"":"",""]);});
     csvDown("상품권_"+gw2+".csv",gr);return;}
   if(id==="gv-go"){ui.giveQ=val("gv-q");saveUI();call("stampFind",{q:ui.giveQ}).then(function(r){ui.giveOut=r;renderPanel();}).catch(function(e){toast(e.message);});return;}
   if(d.givewhy){ui.giveWhy=ui.giveWhy===d.givewhy?"":d.givewhy;saveUI();renderPanel();return;}

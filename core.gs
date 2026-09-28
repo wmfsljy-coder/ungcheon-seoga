@@ -21,16 +21,16 @@ var HEAD={
   "건의":["id","시각","학번","이름","반","내용","답변","답변자","답변시각","상태"],
   "권장도서":["제목","지은이","영역","출처","권수","청구기호","ISBN","출판사","발행년","뺌"],
   "장서목록":["제목","지은이","출판사","발행년","청구기호","권수","분야","중분류","ISBN","자료실"],
-  "수령대상":["수령","시작","끝","학번","이름","반","별","상품권","배부","처리자","처리시각"],
+  "수령대상":["수령","시작","끝","학번","이름","반","별","상품권","배부","처리자","처리시각","수령확인","확인시각"],
   "교사신청":["id","시각","이름","이메일","상태"],
   "기기":["토큰","계정","만든날","마지막","만료","해제","기기","이메일"],
-  "지급":["키","월","학번","이름","반","도장","처리","시각","처리자","매수","별"],
+  "지급":["키","월","학번","이름","반","도장","처리","시각","처리자","매수","별","수령확인","확인시각"],
   "도장":["id","시각","주","학번","이름","반","사유","교사","취소"]
 };
 var CONF0=[["프로그램명","웅천 서가"],["부제","한 권 읽고, 한 줄 남기기"],["차수","1"],
-  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","2"],["월최대매수","3"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["투표묶음","2026-09~2026-10"],["백업주기","주"],["백업보관","12"],["백업폴더","https://drive.google.com/drive/folders/1Nw-1moQpxXHkeuHYo0kMJjNVtvueqF_a"],["주간라벨문장글","3"],["만화규칙","라벨만"],["만화청구기호","만, 만화, 657"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
+  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","2"],["월최대매수","3"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["투표묶음","2026-09~2026-10"],["주간투표","5"],["백업주기","주"],["백업보관","12"],["백업폴더","https://drive.google.com/drive/folders/1Nw-1moQpxXHkeuHYo0kMJjNVtvueqF_a"],["주간라벨문장글","3"],["만화규칙","라벨만"],["만화청구기호","만, 만화, 657"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
   ["학교코드","S100000673"],["교육청코드","S10"],["학교명","웅천고등학교"],
-  ["이달의권수","40"],["추천방식","권장"],["추천묶음","2026-09~2026-10"],["퀴즈문항수","5"],["퀴즈책수","3"],["퀴즈품질기준","6"],["보유기간","3학년은 졸업식 날까지, 1·2학년은 학년말(2월)까지"],["개인정보담당","도서관 담당 교사"]];
+  ["이달의권수","40"],["추천방식","권장"],["추천묶음","2026-09~2026-10"],["퀴즈문항수","5"],["퀴즈책수","2"],["퀴즈품질기준","6"],["보유기간","3학년은 졸업식 날까지, 1·2학년은 학년말(2월)까지"],["개인정보담당","도서관 담당 교사"]];
 /* 설정 시트 '설명' 칸에 들어가는 뜻풀이 */
 var CONF_DESC={
   "프로그램명":"화면 맨 위와 라벨에 찍히는 이름. 겨울엔 '웅천 겨울 서가'처럼 바꿔도 됨",
@@ -64,6 +64,8 @@ var CONF_DESC={
   "상품권금액":"상품권 1매 금액(원). 학생 화면 안내에 쓰임",
   "수령시작월":"상품권배부를 비워 둘 때: 이 달부터 매달 첫 월요일~목요일을 수령 기간으로",
   "수령기간판":"(자동 기록) 손대지 마세요",
+  "퀴즈책판":"(자동 기록) 손대지 마세요",
+  "주간투표":"한 사람이 한 주에 부문(라벨·문장·독후감)마다 줄 수 있는 표 수. 학생·선생님 같음(기본 5)",
   "무인증판":"(자동 기록) 손대지 마세요",
   "상품권판":"(자동 기록) 손대지 마세요",
   "첫안내판":"(자동 기록) 손대지 마세요",
@@ -595,8 +597,8 @@ function weekKey(d,shift){
   var k=kst(d),dow=(k.getUTCDay()+6)%7;
   return ymd(new Date(k.getTime()-dow*86400000+(shift||0)*7*86400000));
 }
-/* 투표: 늘 열려 있고 올라온 지 7일 안의 글이 대상. 주마다 라벨·문장·독후감 2표씩, 같은 글에 두 번은 안 된다 */
-var VOTE_PER_WEEK=2;      /* 부문마다 한 주에 두 표 */
+/* 투표: 늘 열려 있고 올라온 지 7일 안의 글이 대상. 학생·선생님 모두 주마다 라벨·문장·독후감 5표씩(2026-09-28), 같은 글에 두 번은 안 된다 */
+var VOTE_PER_WEEK=5;      /* 부문마다 한 주에 다섯 표(설정 주간투표로 바꿀 수 있음) */
 var VOTE_DAYS=7;          /* 글은 올라온 날부터 이레 동안만 투표 대상 */
 var VOTE_TOP={label:10,quote:10,review:10};   /* 달마다 부문별 몇 위까지 시상하는지 */
 var AWARD_STARS=1;        /* 이달의 독후감에 뽑히면 별 몇 개(라벨·문장은 만능 도장) */
@@ -812,22 +814,24 @@ var SHEET_DOC={
        "제목":["공지 제목","도서관 점심시간 개방"],"내용":["내용","이번 주는 점심에도 엽니다"],
        "대상":["학생 / 교사 / 모두","학생"],"고정":["Y 면 기간과 상관없이 늘 맨 위(규칙 안내처럼)","Y"],
        "숨김":["Y 면 안 보입니다","Y"],"시각":["올린 때",""]}},
-  "건의":{d:"학생이 보낸 건의와 관리자 답변. 이름은 관리자만 봅니다.",edit:"답변은 화면에서 다세요",
+  "건의":{d:"학생·선생님이 보낸 건의와 관리자 답변(선생님 건의는 반이 '선생님'). 이름은 관리자만 봅니다.",edit:"답변은 화면에서 다세요",
     c:{"id":["번호",""],"시각":["보낸 때",""],"학번":["보낸 학생","1101"],"이름":["이름","김서준"],"반":["학급","1-1"],
        "내용":["건의 내용","청소년 소설을 더 들여 주세요"],"답변":["관리자 답변","곧 들여놓을게요"],
        "답변자":["답한 사람","박서가 선생님"],"답변시각":["답한 때",""],"상태":["대기 / 답변 / 삭제","답변"]}},
   "수령기간":{d:"문화상품권을 나눠 주는 기간. 여기 날짜에만 도서부 배부 화면이 열립니다.",edit:"날짜를 고치세요",
     c:{"시작":["첫날","2026-10-05"],"끝":["마지막 날","2026-10-08"],"메모":["안내용 이름","10월 수령"]}},
-  "수령대상":{d:"그 기간에 받을 학생 명단(앱이 자동으로 채웁니다). 배부 대장으로 인쇄해 쓰세요.",edit:"보기만 하세요",
+  "수령대상":{d:"그 기간에 받을 학생 명단과 배부·수령 확인(앱이 자동으로 채웁니다). 도서부가 배부를 누르면 '배부 완료', 학생이 앱에서 확인을 누르면 '수령확인'에 '확인'. 배부 대장으로 인쇄해 쓰세요.",edit:"보기만 하세요",
     c:{"수령":["기간 이름","10월 수령"],"시작":["기간 첫날",""],"끝":["기간 마지막 날",""],
        "학번":["학생","1101"],"이름":["이름","김서준"],"반":["학급","1-1"],
        "별":["그때 가진 별","4"],"상품권":["받을 매수","2"],"배부":["배부 완료 여부","배부 완료"],
-       "처리자":["체크한 사람","도서부 이도윤"],"처리시각":["체크한 때",""]}},
+       "처리자":["배부한 사람","도서부 이도윤"],"처리시각":["배부한 때",""],
+       "수령확인":["학생이 앱에서 '확인'을 눌렀는지","확인"],"확인시각":["학생이 확인한 때",""]}},
   "지급":{d:"상품권을 실제로 준 기록. 별은 여기 적힌 만큼만 줄어듭니다.",edit:"보기만 하세요(화면에서 체크)",
     c:{"키":["기간+학번","2026-10-05|1101"],"월":["기간 첫날","2026-10-05"],"학번":["학생","1101"],
        "이름":["이름","김서준"],"반":["학급","1-1"],"도장":["그때까지 도장 수","23"],
        "처리":["지급이면 '지급'","지급"],"시각":["준 때",""],"처리자":["준 사람","도서부 이도윤"],
-       "매수":["준 상품권 매수","2"],"별":["그때 쓴 별(매수×2)","4"]}},
+       "매수":["준 상품권 매수","2"],"별":["그때 쓴 별(매수×2)","4"],
+       "수령확인":["학생이 앱에서 '확인'을 누르면 '확인'","확인"],"확인시각":["학생이 확인한 때",""]}},
   "장서목록":{d:"학교 도서관 전체 장서(독서로에서 매달 받아 옵니다). 찾아보기용입니다.",edit:"보기만 하세요",
     c:{"제목":["책 제목",""],"지은이":["지은이",""],"출판사":["출판사",""],"발행년":["펴낸 해",""],
        "청구기호":["서가 번호",""],"권수":["같은 책 권수","3"],"분야":["독서로 대분류","소설"],
@@ -918,7 +922,7 @@ function make(db,env){
   function pubConf(c){
     return {name:c["프로그램명"],sub:c["부제"],round:c["차수"],approve:approveMode(c),
       goal:Number(c["주간도장"])||5,weekCap:Number(c["주간도장"])||5,monthCap:Number(c["월간도장"])||0,
-      quote:todayQuote(),giftOn:S(c["상품권공개"])==="Y",giftNote:S(c["상품권안내"]),dayCap:Number(c["하루제출상한"])||2,writeWeek:Number(c["주간라벨문장글"])||0,voteGroup:(function(){var m=/(\d{4}-\d{2})\s*~\s*(\d{4}-\d{2})/.exec(S(c["투표묶음"]));return m?{from:m[1],to:m[2]}:null;})(),voteN:Number(c["투표후보수"])||8,giftMin:Number(c["상품권기준"])||5,giftTypes:S(c["상품권세종류"])!=="N",limit:LIMIT,areas:S(c["추천방식"])==="장르"?GENRE_NAMES:TEEN_NAMES,lib:libConf(c),libChecked:S(c["도서확인"]),libResult:S(c["도서확인결과"]),loginMode:S(c["로그인방식"])==="구글"?"google":"pin",subjects:S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean),giftWins:giftWindows(c),recvSheet:(function(){try{return db.rows("수령기간").length>0;}catch(e){return false;}})(),giftPlace:S(c["상품권배부장소"]),selVer:S(c["선별판"]),upToDate:S(c["선별판"])==="3"&&S(c["퀴즈판"])==="4"&&S(c["문장판"])==="2",quizBooks:Number(c["퀴즈책수"])||3,leafWeek:Number(c["주간책갈피"])||5,comicRule:comicRule(c),comicKeys:comicKeys(c),monthN:Number(c["이달의권수"])||40,holdings:S(c["장서"]),month:S(c["이달"]),
+      quote:todayQuote(),giftOn:S(c["상품권공개"])==="Y",giftNote:S(c["상품권안내"]),dayCap:Number(c["하루제출상한"])||2,writeWeek:Number(c["주간라벨문장글"])||0,voteGroup:(function(){var m=/(\d{4}-\d{2})\s*~\s*(\d{4}-\d{2})/.exec(S(c["투표묶음"]));return m?{from:m[1],to:m[2]}:null;})(),voteN:Number(c["투표후보수"])||8,giftMin:Number(c["상품권기준"])||5,giftTypes:S(c["상품권세종류"])!=="N",limit:LIMIT,areas:S(c["추천방식"])==="장르"?GENRE_NAMES:TEEN_NAMES,lib:libConf(c),libChecked:S(c["도서확인"]),libResult:S(c["도서확인결과"]),loginMode:S(c["로그인방식"])==="구글"?"google":"pin",subjects:S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean),giftWins:giftWindows(c),recvSheet:(function(){try{return db.rows("수령기간").length>0;}catch(e){return false;}})(),giftPlace:S(c["상품권배부장소"]),selVer:S(c["선별판"]),upToDate:S(c["선별판"])==="3"&&S(c["퀴즈판"])==="4"&&S(c["문장판"])==="2",quizBooks:Number(c["퀴즈책수"])||2,leafWeek:Number(c["주간책갈피"])||5,comicRule:comicRule(c),comicKeys:comicKeys(c),monthN:Number(c["이달의권수"])||40,holdings:S(c["장서"]),month:S(c["이달"]),
       period:S(c["이달"])?periodOf(S(c["이달"]),c["추천묶음"]):null,
       privacy:{keep:S(c["보유기간"]),owner:S(c["개인정보담당"])},quizBar:Number(c["퀴즈품질기준"])||6,quizTarget:Number(c["퀴즈문항수"])||5};
   }
@@ -1217,6 +1221,8 @@ function make(db,env){
     if(S(conf()["로그인방식"])==="메일")setConf("로그인방식","핀");
     /* 교사 등록 학생도 첫 인증은 거치게(2026-09-20 회장님 지시). 관리자가 나중에 Y 로 바꾸면 그대로 둔다 */
     if(S(conf()["무인증판"])!=="1"){setConf("교사등록무인증","N");setConf("무인증판","1");}
+    /* 북퀴즈는 2권 이내(2026-09-28 회장님 지시): 옛 기본값 3 → 2 를 한 번만(나중에 시트에서 고치면 그대로) */
+    if(S(conf()["퀴즈책판"])!=="2"){if(S(conf()["퀴즈책수"])==="3"||!S(conf()["퀴즈책수"]))setConf("퀴즈책수","2");setConf("퀴즈책판","2");}
     /* 별 규칙(2026-09-20)부터 한 달 도장 상한은 없음: 옛 기본값 20 → 0 을 한 번만 */
     if(S(conf()["별규칙판"])!=="1"){if(S(conf()["월간도장"])==="20")setConf("월간도장","0");setConf("별규칙판","1");}
     /* 시상 규칙(2026-09-22): 독후감 10위까지 별 1개, 라벨·문장 10위까지 만능 도장 */
@@ -1287,7 +1293,7 @@ function make(db,env){
        about   : 책 소개글(제목·지은이는 ○○로 가림) → 어느 책인가
        keyword : 그 책이 다루는 낱말(소개글에 실제로 나오는 핵심어만)
        author  : 지은이 / call·kdc : 청구기호·분야
-     매주 월요일: 이번 주 퀴즈 책을 퀴즈책수(3)권 이하로 정하고, ① 그 책들의 품질 좋은 학생 문제 ② 모자라면 은행 문제로 채운다.
+     매주 월요일: 이번 주 퀴즈 책을 퀴즈책수(2)권 이하로 정하고, ① 그 책들의 품질 좋은 학생 문제 ② 모자라면 은행 문제로 채운다.
      선생님이 먼저 골라 둔 문제는 그대로 둔다 */
   var QSTOP=/^(소설|문학|한국소설|장편소설|단편소설|청소년|청소년소설|청소년문학|성장|성장소설|에세이|산문|시|시집|일반|교양|인문|인문학|책|이야기|삶|인생|한국|외국|세계|현대|번역|고등학생|학생|어린이|소년|소녀|국내|해외|과학|사회|역사|예술|만화|웹툰|그림|사진|경제|경영|자기계발|건강|여행|종교|컴퓨터|지금|요즘|오늘|우리|사람|세상|시대|사회|마음|생각|이유|방법|시간|자신|작가|저자|독자|작품|문제|세계|미래|이번|처음)$/;
   /* 글 안에 w 가 낱말로 나오는가: 앞은 한글이 아니고, 뒤는 한글이 아니거나 조사 */
@@ -1448,7 +1454,7 @@ function make(db,env){
   function ensureWeeklyQuiz(){
     try{dropPreMade();}catch(e){}
     var c=conf(),now=env.now(),wk=weekKey(now,0),target=Number(c["퀴즈문항수"])||5,bar=Number(c["퀴즈품질기준"])||6;
-    var maxB=Number(c["퀴즈책수"])||3,mon=S(c["이달"]);
+    var maxB=Number(c["퀴즈책수"])||2,mon=S(c["이달"]);
     /* 같은 주에 같은 문제가 두 번 이상 출제돼 있으면 하나만 남긴다 */
     var rows=db.rows("퀴즈"),seenQ={},dup={};
     rows.forEach(function(q){
@@ -2215,13 +2221,13 @@ function make(db,env){
   }
   var PAIDW=null;
   function paidInfo(from,hb){
-    if(!PAIDW){PAIDW={};db.rows("지급").forEach(function(r){PAIDW[S(r["키"])]={paid:S(r["처리"])==="지급",n:Number(r["매수"])||0,stars:Number(r["별"])||0,who:S(r["처리자"]),at:S(r["시각"])};});}
-    return PAIDW[from+"|"+hb]||{paid:false,n:0,stars:0,who:"",at:""};
+    if(!PAIDW){PAIDW={};db.rows("지급").forEach(function(r){PAIDW[S(r["키"])]={paid:S(r["처리"])==="지급",n:Number(r["매수"])||0,stars:Number(r["별"])||0,who:S(r["처리자"]),at:S(r["시각"]),ack:S(r["수령확인"])==="확인",ackAt:S(r["확인시각"])};});}
+    return PAIDW[from+"|"+hb]||{paid:false,n:0,stars:0,who:"",at:"",ack:false,ackAt:""};
   }
   /* 그 수령 기간에 받을 수 있는 매수. 이미 받았으면 그때 기록을 그대로 보여 준다 */
   function claimOf(hb,wins,i){
     var R=giftRule(),w=wins[i],p=paidInfo(w.from,hb);
-    if(p.paid)return {from:w.from,to:w.to,label:winLabel(w),stars:p.stars||p.n*R.pair,vouchers:p.n,paid:true,paidN:p.n,who:p.who,at:p.at};
+    if(p.paid)return {from:w.from,to:w.to,label:winLabel(w),stars:p.stars||p.n*R.pair,vouchers:p.n,paid:true,paidN:p.n,who:p.who,at:p.at,ack:p.ack,ackAt:p.ackAt};
     var have=starsNow(hb);
     return {from:w.from,to:w.to,label:winLabel(w),stars:have,vouchers:Math.min(R.max,Math.floor(have/R.pair)),paid:false,paidN:0,who:"",at:""};
   }
@@ -2265,7 +2271,7 @@ function make(db,env){
     db.rows("지급").forEach(function(r){have[S(r["키"])]=true;});
     ids.forEach(function(hb){
       hb=S(hb);var key=from+"|"+hb,cl=claimOf(hb,wins,i);
-      if(have[key])db.set("지급","키",key,{"처리":on?"지급":"","시각":now,"처리자":by,"매수":on?cl.vouchers:0,"별":on?cl.vouchers*giftRule().pair:0});
+      if(have[key])db.set("지급","키",key,{"처리":on?"지급":"","시각":now,"처리자":by,"매수":on?cl.vouchers:0,"별":on?cl.vouchers*giftRule().pair:0,"수령확인":"","확인시각":""});
       else if(on){var s0=stu[hb];have[key]=true;
         add.push({"키":key,"월":from,"학번":hb,"이름":s0?S(s0["이름"]):"","반":s0?S(s0["반"]):"","도장":(stampMap()[hb]||{stamps:[]}).stamps.length,"처리":"지급","시각":now,"처리자":by,"매수":cl.vouchers,"별":cl.vouchers*giftRule().pair});}
     });
@@ -2283,7 +2289,8 @@ function make(db,env){
       var w=wins[i];
       giftRows(ALL_CLS,w.from).forEach(function(x){   /* 관리자만 보는 수령대상 시트 — 전교생 기록 */
         out.push({"수령":winLabel(w),"시작":w.from,"끝":w.to,"학번":x.hakbun,"이름":x.name,"반":x.cls,"별":x.stars,"상품권":x.vouchers,
-          "배부":x.paid?"배부 완료":(t>w.to?"기간 지남":t<w.from?"예정":"대기"),"처리자":x.who||"","처리시각":x.at||""});
+          "배부":x.paid?"배부 완료":(t>w.to?"기간 지남":t<w.from?"예정":"대기"),"처리자":x.who||"","처리시각":x.at||"",
+          "수령확인":x.paid?(x.ack?"확인":"확인 전"):"","확인시각":x.ack?x.ackAt:""});
       });
     });
     db.replace("수령대상",out);
@@ -2294,7 +2301,7 @@ function make(db,env){
     var wins=recvWindows(),i=winIndex(wins,from);if(i<0)return [];
     return db.rows("명단").filter(function(r){return seeCls(a,S(r["반"]));}).map(function(r){
       var hb=S(r["학번"]),x=claimOf(hb,wins,i);
-      return {hakbun:hb,name:S(r["이름"]),cls:S(r["반"]),stars:x.stars,vouchers:x.vouchers,paid:x.paid,paidN:x.paidN,who:x.who,at:x.at,eligible:x.vouchers>0};
+      return {hakbun:hb,name:S(r["이름"]),cls:S(r["반"]),stars:x.stars,vouchers:x.vouchers,paid:x.paid,paidN:x.paidN,who:x.who,at:x.at,ack:!!x.ack,ackAt:x.ackAt||"",eligible:x.vouchers>0};
     }).filter(function(x){return x.vouchers>0||x.paid;}).sort(function(x,y){return x.hakbun<y.hakbun?-1:1;});
   }
   /* 도서부 배부 화면: 수령 기간에만 대상 학생의 학번·이름이 나간다(기간 전·후에는 명단 자체를 주지 않는다) */
@@ -2306,6 +2313,24 @@ function make(db,env){
     if(!w)return {none:true,open:false,next:wins.filter(function(x){return x.from>t;})[0]||null,rows:[]};
     return {from:w.from,to:w.to,label:winLabel(w),open:t>=w.from&&t<=w.to,place:S(c["상품권배부장소"]),
       rows:who?giftRows(who,w.from):[]};
+  }
+  /* 도서부 '배부 확인' 화면(2026-09-28 회장님 지시): 대상자 명단은 늘 보이고, 배부 단추는 수령 기간에만.
+     기간 중이면 그 기간, 아니면 다음 기간(지금까지 모은 별 기준 예정), 다음이 없으면 지난 기간 */
+  function deskView(c,who){
+    var wins=recvWindows(c),t=today(env.now()),w=null,st="";
+    wins.forEach(function(x){if(t>=x.from&&t<=x.to){w=x;st="open";}});
+    if(!w){w=wins.filter(function(x){return x.from>t;})[0]||null;if(w)st="soon";}
+    if(!w&&wins.length){w=wins[wins.length-1];st="past";}
+    if(!w)return {none:true,open:false,rows:[]};
+    return {from:w.from,to:w.to,label:winLabel(w),open:st==="open",state:st,place:S(c["상품권배부장소"]),
+      rows:giftRows(who,w.from).filter(function(x){return x.vouchers>0||x.paid;})};
+  }
+  /* 학생: 도서부가 배부를 눌렀는데 아직 '확인'을 누르지 않은 수령(최근 40일) */
+  function ackWaiting(hb){
+    var since=addDays(today(env.now()),-40),wins=recvWindows(),out=[];
+    wins.forEach(function(w){if(w.to<since)return;var x=paidInfo(w.from,hb);
+      if(x.paid&&!x.ack)out.push({from:w.from,to:w.to,label:winLabel(w),n:x.n,who:x.who,at:S(x.at).slice(0,16)});});
+    return out;
   }
   /* 도장이 한 번이라도 있었던 달(최근 달 먼저) */
   function stampMonths(){
@@ -2563,8 +2588,9 @@ function make(db,env){
     return out;
   }
   /* 건의함: 학생이 남긴 한마디와 관리자 답변. 이름은 관리자만 본다 */
-  function myIdeas(hb){
-    return db.rows("건의").filter(function(r){return S(r["학번"])===hb&&S(r["상태"])!=="삭제";})
+  function ideaMine(a,r){return a.role==="student"?S(r["학번"])===a.id:S(r["반"])===TEACHER_CLS&&S(r["이름"])===S(a.name);}
+  function myIdeas(a){
+    return db.rows("건의").filter(function(r){return ideaMine(a,r)&&S(r["상태"])!=="삭제";})
       .sort(function(x,y){return S(y["시각"])<S(x["시각"])?-1:1;})
       .map(function(r){return {id:S(r["id"]),at:S(r["시각"]).slice(0,16),text:S(r["내용"]),reply:S(r["답변"]),who:S(r["답변자"]),replyAt:S(r["답변시각"]).slice(0,16)};});
   }
@@ -2756,7 +2782,7 @@ function make(db,env){
     var stars=starState(a.id,c),claims=claimHist(a.id,c),months=monthStats(a.id);
     function vb(kind){
       var mine=myVotes(a.id,wkNow,kind);
-      return {voted:mine,left:Math.max(0,VOTE_PER_WEEK-mine.length),per:VOTE_PER_WEEK,list:cands(kind,a.id,now,c).map(pub)};
+      return {voted:mine,left:Math.max(0,votePer(c)-mine.length),per:votePer(c),list:cands(kind,a.id,now,c).map(pub)};
     }
     var done=db.rows("퀴즈응답").filter(function(r){return S(r["주"])===wk&&S(r["학번"])===a.id;})[0];
     var quiz=db.rows("퀴즈").filter(function(q){return S(q["상태"])==="출제"&&S(q["주"])===wk;}).map(function(q){
@@ -2788,7 +2814,7 @@ function make(db,env){
       voteL:vb("label"),voteQ:vb("quote"),voteR:vb("review"),
       quiz:{items:quiz,done:done?Number(done["점수"]):null,books:weekBooksOf(wk),bookInfo:(function(){var bl={};bookList().forEach(function(b){bl[tkey(b.t)]=b;});
         return weekBooksOf(wk).map(function(t){var b=bl[tkey(t)]||{};return {t:t,total:b.total||0,avail:b.avail,call:b.call||""};});})()},myQuiz:myQuiz,
-      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a.id),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftDesk:a.club?deskFor(c,ALL_CLS):null};
+      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftAck:ackWaiting(a.id),giftDesk:a.club?deskView(c,ALL_CLS):null};
   }
 
   function bookList(){
@@ -2858,19 +2884,21 @@ function make(db,env){
     db.add("반응",{"시각":today(env.now()),"갈래":"공감","부문":"","주":"","글id":S(p.id),"누구":k});
     return {ok:true};
   }
-  /* 선생님도 같은 모양의 라벨을 쓴다. 이름이 찍히고, 투표·도장판과는 무관 */
+  /* 선생님도 학생과 같은 모양의 라벨·문장을 쓴다(2026-09-28 문장 추가). 이름이 찍히고, 투표·도장판과는 무관 */
   function staffLabel(a,p){
     staff(a);
-    var now=env.now(),text=S(p.text),title=S(p.title),lim=LIMIT.label;
+    var kind=S(p.kind)==="quote"?"quote":"label";
+    var now=env.now(),text=S(p.text),title=S(p.title),lim=LIMIT[kind];
     if(!title)fail("책 제목을 적어 주세요.");
     if(text.length<lim[0]||text.length>lim[1])fail("글자 수는 "+lim[0]+"~"+lim[1]+"자입니다.");
-    db.add("글",{"id":"g"+env.uid(),"시각":stamp(now),"주":weekKey(now,0),"차수":conf()["차수"],"종류":"label",
-      "학번":"","이름":a.name,"반":TEACHER_CLS,"도서id":"free","책제목":title,"지은이":S(p.author),
-      "본문":text,"계기":"교사 라벨","상태":"posted","확인":"Y","청구기호":""});
+    db.add("글",{"id":"g"+env.uid(),"시각":stamp(now),"주":weekKey(now,0),"차수":conf()["차수"],"종류":kind,
+      "학번":"","이름":a.name,"반":TEACHER_CLS,"도서id":"free","책제목":title,"지은이":S(p.author),"쪽수":kind==="quote"?S(p.page).slice(0,40):"",
+      "본문":text,"계기":kind==="quote"?"교사 문장":"교사 라벨","상태":"posted","확인":"Y","청구기호":""});
     return {ok:true};
   }
 
   /* 투표하는 사람의 열쇠: 학생은 학번, 선생님은 't:이름'(학번과 겹치지 않게) */
+  function votePer(c){var n=Number((c||conf())["주간투표"]);return n>0?Math.min(20,Math.floor(n)):VOTE_PER_WEEK;}
   function voterOf(a){return a.role==="student"?a.id:"t:"+S(a.name||a.id);}
   function vote(a,p){
     if(a.role!=="student")staff(a);   /* 학생과 선생님 모두 투표한다 */
@@ -2878,7 +2906,8 @@ function make(db,env){
     var mine=myVotes(me,wk,kind);
     /* 이레짜리 후보라 지난주에 뽑은 글이 이번 주에도 보일 수 있다. 같은 글에는 한 번만 */
     if(mine.indexOf(S(p.id))>=0||myVotes(me,weekKey(now,-1),kind).indexOf(S(p.id))>=0)fail("이미 뽑은 글입니다.");
-    if(mine.length>=VOTE_PER_WEEK)fail("이번 주 "+kName(kind)+" 투표권 "+VOTE_PER_WEEK+"표를 다 썼습니다. 다음 주 월요일에 새 표가 생겨요.");
+    var per=votePer();
+    if(mine.length>=per)fail("이번 주 "+kName(kind)+" 투표권 "+per+"표를 다 썼습니다. 다음 주 월요일에 새 표가 생겨요.");
     var row=db.rows("글").filter(function(r){return S(r["id"])===S(p.id);})[0];
     if(row&&posted(row)&&!inVoteWindow(row,now))fail("올라온 지 "+VOTE_DAYS+"일이 지난 글입니다. 새로 올라온 글에 표를 써 주세요.");
     var ok=cands(kind,me,now,conf()).some(function(r){return S(r["id"])===S(p.id);});
@@ -2964,6 +2993,7 @@ function make(db,env){
     res.myLabels=all.filter(function(r){return S(r["반"])===TEACHER_CLS&&S(r["이름"])===a.name;}).map(function(r){return full(r);});
     res.news=teacherNews(a,c,scope,fin,now);
     res.giftNow=deskFor(c,a);res.notices=noticesFor("staff");   /* 명단은 그 선생님이 볼 수 있는 학급만 */
+    res.ideas=myIdeas(a);   /* 선생님도 건의함(2026-09-28) — 관리자는 아래에서 전체로 */
     if(a.role==="admin"){res.allNotices=noticesFor("staff",true);res.ideas=allIdeas();
       res.teacherReqs=db.rows("교사신청").filter(function(r){return S(r["상태"])==="대기";}).map(function(r){return {id:S(r["id"]),at:S(r["시각"]).slice(0,16),name:S(r["이름"]),email:S(r["이메일"])};});}
     res.readlog=a.kind==="subject"?[]:readLog(a);
@@ -2974,7 +3004,7 @@ function make(db,env){
       res.books=res.books||bookList();
       res.board=all.filter(posted).slice(0,150).map(function(r){var o=pub(r);o.likes=likesT[o.id]||0;o.liked=false;o.mine=false;o.staff=true;return o;});
       var vbT=function(kind){var mv=myVotes(meV,wkV,kind);
-        return {voted:mv,left:Math.max(0,VOTE_PER_WEEK-mv.length),per:VOTE_PER_WEEK,list:cands(kind,meV,now,c).map(pub)};};
+        return {voted:mv,left:Math.max(0,votePer(c)-mv.length),per:votePer(c),list:cands(kind,meV,now,c).map(pub)};};
       res.voteL=vbT("label");res.voteQ=vbT("quote");res.voteR=vbT("review");
       res.voteOpen=voteOpen(now);res.voteMon=votePeriod(now);res.voteDays=VOTE_DAYS;res.voteTop=VOTE_TOP;
       res.awardTops=awardTops(c);res.awardStars=Number(c["시상별"])||AWARD_STARS;
@@ -3082,8 +3112,7 @@ function make(db,env){
     /* 도서부: 배부 기간에만, 그 달 대상 학생만 */
     deskLookup:function(a,p){
       if(!(a.role==="admin"||(a.role==="student"&&a.club)))fail("도서부만 할 수 있습니다.");
-      /* 도서부는 수령 기간에만 남의 학번·이름을 볼 수 있다 */
-      if(a.role!=="admin"&&!deskFor(conf()).open)fail("지금은 상품권 배부 기간이 아닙니다.");
+      /* 대상자 명단이 늘 보이므로 조회도 기간과 상관없이(배부 단추는 기간에만) */
       var q=S(p.q).replace(/\s/g,""),r=db.rows("명단").filter(function(x){return S(x["학번"])===q||S(x["이름"]).replace(/\s/g,"")===q;});
       if(!r.length)fail("명단에 없는 학번·이름입니다. 관리자(사서) 선생님의 확인이 필요합니다.");
       var c=conf();
@@ -3100,6 +3129,15 @@ function make(db,env){
       if(!ids.length)fail("이번 배부 대상이 아닌 학생입니다.");
       markPaid(dk.from,ids,!!p.on,"도서부 "+a.name);
       return {ok:true};},
+    /* 학생: 도서부가 배부를 누른 뒤 '확인'을 누른다. 수령대상 시트 '수령확인'에 남는다 */
+    giftAck:function(a,p){
+      student(a);var now=stamp(env.now()),up={},n=0;
+      db.rows("지급").forEach(function(r){
+        if(S(r["학번"])!==a.id||S(r["처리"])!=="지급"||S(r["수령확인"])==="확인")return;
+        if(p.from&&S(r["월"])!==S(p.from))return;
+        up[S(r["키"])]={"수령확인":"확인","확인시각":now};n++;});
+      if(n){db.setMany("지급","키",up);PAIDW=null;try{syncRecvSheet();}catch(e){}}
+      return {ok:true,n:n};},
     newsSeen:function(a){staff(a);if(S(a.name))db.set("교사","이름",S(a.name),{"마지막확인":stamp(env.now())});},
     /* 계정 관리(관리자·학년 담당): 조회 → 등록 풀기(다시 등록하게) */
     rosterFind:function(a,p){staff(a);
@@ -3285,15 +3323,16 @@ function make(db,env){
       return {ok:true,week:wk};},
     award:function(a,p){admin(a);db.set("글","id",S(p.id),{"수상":p.off?"":"Y"});},
     catalogNow:function(a){admin(a);var r=crawlCatalog();if(!r||r.failed)fail("독서로에서 목록을 다 받지 못했습니다. 잠시 뒤 다시 해 주세요.");return r;},
-    /* 학생: 건의 한마디(관리자만 이름을 본다) */
+    /* 학생·선생님: 건의 한마디(관리자만 이름을 본다). 선생님 건의는 반 '선생님' */
     ideaAdd:function(a,p){
-      student(a);var t=S(p.text).trim();
+      var tch=a.role!=="student";if(tch)staff(a);else student(a);
+      var t=S(p.text).trim();
       if(t.length<5)fail("건의 내용을 조금만 더 자세히 적어 주세요.");
       if(t.length>500)fail("500자까지 적을 수 있어요.");
       var today0=today(env.now());
-      var n=db.rows("건의").filter(function(r){return S(r["학번"])===a.id&&S(r["시각"]).slice(0,10)===today0;}).length;
+      var n=db.rows("건의").filter(function(r){return ideaMine(a,r)&&S(r["시각"]).slice(0,10)===today0;}).length;
       if(n>=3)fail("하루에 3개까지 보낼 수 있어요.");
-      db.add("건의",{"id":"i"+env.uid(),"시각":stamp(env.now()),"학번":a.id,"이름":a.name,"반":a.cls,"내용":t,"상태":"대기"});
+      db.add("건의",{"id":"i"+env.uid(),"시각":stamp(env.now()),"학번":tch?"":a.id,"이름":a.name,"반":tch?TEACHER_CLS:a.cls,"내용":t,"상태":"대기"});
       return {ok:true};},
     ideaReply:function(a,p){admin(a);
       var r=db.rows("건의").filter(function(x){return S(x["id"])===S(p.id);})[0];if(!r)fail("건의를 찾지 못했습니다.");
@@ -3497,7 +3536,7 @@ function make(db,env){
       bk[tkey(q["책제목"])]=1;
     });
     chk("이번 주 퀴즈 문항",live.length===(Number(c["퀴즈문항수"])||5),live.length+"문제");
-    chk("이번 주 퀴즈 책 3권 이하",Object.keys(bk).length<=(Number(c["퀴즈책수"])||3),Object.keys(bk).length+"권");
+    chk("이번 주 퀴즈 책 "+(Number(c["퀴즈책수"])||2)+"권 이하",Object.keys(bk).length<=(Number(c["퀴즈책수"])||2),Object.keys(bk).length+"권");
     chk("퀴즈 보기·정답 정상",!bad.length,bad.join(","));
     var bank=db.rows("퀴즈").filter(function(q){return S(q["상태"])==="예비"&&S(q["월"])===mon;}).length;
     chk("문제 은행",bank>=10,bank+"문제");
@@ -3523,7 +3562,7 @@ function make(db,env){
     }
     out.timing.studentAvgMs=Math.round((Date.now()-t2)/Math.max(n,1));out.timing.studentMaxMs=sMax;
     chk("학생 화면 열림",!sErr.length&&n>0,n+"/"+st.length+"명 확인"+(sErr.length?" · "+sErr.slice(0,5).join(" / "):""));
-    try{var dk=deskFor(c,ALL_CLS);chk("도서부 배부 화면",!!dk,dk.none?"배부 기간 아님":dk.rows.length+"명 대상");}catch(e){chk("도서부 배부 화면",false,e.message);}
+    try{var dk=deskView(c,ALL_CLS);chk("도서부 배부 화면",!!dk,dk.none?"수령 기간 없음":(dk.open?"배부 중 ":dk.state==="soon"?"예정 ":"지난 ")+dk.label+" "+dk.rows.length+"명");}catch(e){chk("도서부 배부 화면",false,e.message);}
     /* ── 문 열기 전 준비(못 하면 경고만, 막지는 않음) ── */
     var reg=st.filter(function(r){return S(r["핀"]);}).length;
     var tch=db.rows("교사"),tReg=tch.filter(function(r){return S(r["핀"]);}).length;
@@ -3536,8 +3575,8 @@ function make(db,env){
       {name:"교사 승인 대기",v:(function(){var n=db.rows("교사신청").filter(function(r){return S(r["상태"])==="대기";});
         return n.length+"건"+(n.length?" · "+n.slice(0,5).map(function(r){return S(r["이름"]);}).join(", "):"");})(),
         note:"교사 안내 화면 맨 위에서 승인·반려합니다. 두면 그 선생님은 들어오지 못합니다"},
-      {name:"학생 건의 대기",v:(function(){return db.rows("건의").filter(function(r){return S(r["상태"])==="대기";}).length+"건";})(),
-        note:"교사 안내 화면의 건의함에서 답을 답니다"},
+      {name:"건의 대기",v:(function(){return db.rows("건의").filter(function(r){return S(r["상태"])==="대기";}).length+"건";})(),
+        note:"교사 화면 '건의함' 탭에서 답을 답니다(학생·선생님 건의)"},
       {name:"상품권 공개",v:S(c["상품권공개"])==="Y"?"켜짐":"꺼짐(별만 쌓임)",note:S(c["상품권공개"])==="Y"?"학생 화면에 상품권 안내가 나옵니다":"규정이 정해지면 설정에서 Y 로"},
       {name:"첫 수령 기간",v:(db.rows("수령기간")[0]?S(db.rows("수령기간")[0]["시작"])+"~"+S(db.rows("수령기간")[0]["끝"]):"없음"),note:"수령기간 시트에서 조정"},
       {name:"학생 공지사항",v:(function(){

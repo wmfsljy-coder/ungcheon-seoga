@@ -41,7 +41,7 @@ const live=T["퀴즈"].filter(q=>q["상태"]==="출제");
 const byWk={};live.forEach(q=>(byWk[q["주"]]=byWk[q["주"]]||[]).push(q));
 Object.keys(byWk).sort().forEach(w=>{const q=byWk[w],bk=[...new Set(q.map(x=>x["책제목"]))];
   console.log(w,q.length+"문제",bk.length+"권",q.map(x=>(x["출처"]==="학생"?"학생":x["품질근거"].replace("자동:",""))).join(","),"| 월",[...new Set(q.map(x=>x["월"]||"-"))].join(","));});
-const texts=live.map(q=>q["문제"]);console.log("겹친 문제",texts.length-new Set(texts).size,"| 3권 넘은 주",Object.values(byWk).filter(q=>new Set(q.map(x=>x["책제목"])).size>3).length,"| 학생 문제 출제 주",(T["퀴즈"].find(q=>q.id==="stu1")||{})["주"]);
+const texts=live.map(q=>q["문제"]);console.log("겹친 문제",texts.length-new Set(texts).size,"| 2권 넘은 주",Object.values(byWk).filter(q=>new Set(q.map(x=>x["책제목"])).size>2).length,"| 학생 문제 출제 주",(T["퀴즈"].find(q=>q.id==="stu1")||{})["주"]);
 const st=C().api("state");console.log("11월 서가",st.books.length,"권 | 이번 주 퀴즈 책(교사 화면)",JSON.stringify(st.weekBooks),"| next",st.next&&st.next.month);
 T["퀴즈"].filter(q=>q["주"]==="2026-10-26").forEach(q=>console.log("DBG",q["책제목"],q["월"],q["상태"],q["시각"],T["도서"].filter(b=>b["제목"]===q["책제목"]).map(b=>b["월"]+"/"+b["숨김"]).join(";")));
 

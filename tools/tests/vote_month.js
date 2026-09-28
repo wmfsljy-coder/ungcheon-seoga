@@ -9,6 +9,7 @@ const db={replace:(t,l)=>{T[t]=[];l.forEach(o=>db.add(t,o));},rows:t=>T[t],add:(
   setMany:(t,k,m)=>T[t].forEach(r=>{const p=m[String(r[k])];if(p)Object.keys(p).forEach(c=>r[c]=String(p[c]))}),
   setConf:(k,v)=>{const h=T["설정"].find(r=>r["항목"]===k);if(h)h["값"]=v;else T["설정"].push({"항목":k,"값":v})}};
 const C=()=>Core.make(db,env);C().maintain();T["주제"].length=0;db.setConf("로그인방식","구글");
+db.setConf("주간투표","2");   /* 실제 기본은 5표(2026-09-28). 이 시험은 시상 계산을 작게 보려고 2표로 — 5표는 e2e_school·vote_group 에서 잰다 */
 db.setConf("투표묶음","");   /* 이 시험은 묶음 없는 평소 달(이레 창·달마다 시상). 묶음은 vote_group.js */
 const must=(c,m)=>{if(!c){console.log("✗",m);process.exitCode=1;}else console.log("✓",m);};
 const err=f=>{try{f();return "";}catch(e){return e.message;}};
@@ -28,7 +29,7 @@ const gR=post("3104","review","2026-10-19","새 독후감");
 let a=st("3101");
 must(a.voteL.list.length===1&&a.voteQ.list.length===1&&a.voteR.list.length===1,"세 부문 모두 후보가 따로 나온다");
 must(!a.voteL.list.some(x=>x.id===oldOne),"올라온 지 7일이 지난 글은 후보에서 빠진다");
-must(a.voteL.per===2&&a.voteQ.per===2&&a.voteR.per===2,"부문마다 한 주 2표");
+must(a.voteL.per===2&&a.voteQ.per===2&&a.voteR.per===2,"부문마다 한 주 정해진 표 수(이 시험은 2표로 줄여 잰다 · 실제는 5표)");
 EMAIL="s3101@x";
 must(/7일이 지난 글/.test(err(()=>C().api("vote",{kind:"label",id:oldOne}))),"7일 지난 글에는 표를 못 준다");
 C().api("vote",{kind:"label",id:gL});C().api("vote",{kind:"quote",id:gQ});C().api("vote",{kind:"review",id:gR});

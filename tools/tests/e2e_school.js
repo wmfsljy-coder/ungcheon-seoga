@@ -35,7 +35,7 @@ for(let w=0;w<4;w++){
   NOW=new Date(Date.parse("2026-10-05T00:30:00Z")+w*7*864e5);
   C().ensureWeeklyQuiz();
   const st=call("s"+STU[0]+"@x","state");
-  must(st.quiz&&st.quiz.items.length===5&&st.quiz.books.length<=3,w+1+"주차 북퀴즈 5문제 · 책 "+(st.quiz&&st.quiz.books.length)+"권");
+  must(st.quiz&&st.quiz.items.length===5&&st.quiz.books.length<=2,w+1+"주차 북퀴즈 5문제 · 책 2권 이내 "+(st.quiz&&st.quiz.books.length)+"권");
   for(let d=0;d<5;d++){
     NOW=new Date(Date.parse("2026-10-05T01:00:00Z")+(w*7+d)*864e5);
     for(let k=0;k<70;k++){const hb=pick(STU),rev=rnd()<0.3;
@@ -65,15 +65,16 @@ for(let k=0;k<200;k++){const hb=pick(STU);if(hb===QHB)continue;const s2=call("s"
 console.log("글",posts,"편 · 공감",likes,"· 퀴즈 응답",answered,"· 투표",votes);
 must(votes>50,"이달의 투표(11월 3일): "+votes+"표");
 {const s3=call("s"+STU[5]+"@x","state");must(s3.voteL.list.every(l=>l.date.slice(0,7)==="2026-10"),"후보는 지난달(10월) 글");}
-/* 주마다 라벨 2표·독후감 2표, 같은 글에 두 번은 안 됨 */
+/* 주마다 라벨 5표·독후감 5표(2026-09-28), 같은 글에 두 번은 안 됨 */
 {const hb=QHB;let s5=call("s"+hb+"@x","state");
- const ids=s5.voteL.list.slice(0,3).map(x=>x.id);
- const r1=call("s"+hb+"@x","vote",{kind:"label",id:ids[0]}),r2=call("s"+hb+"@x","vote",{kind:"label",id:ids[1]});
- const dup=call("s"+hb+"@x","vote",{kind:"label",id:ids[1]}),over=call("s"+hb+"@x","vote",{kind:"label",id:ids[2]});
- must(!r1.ERR&&!r2.ERR&&/이미 뽑은/.test(dup.ERR||"")&&/2표/.test(over.ERR||""),"한 주 라벨 2표까지, 같은 글 중복 금지");
- s5=call("s"+hb+"@x","state");must(s5.voteL.left===0&&s5.voteR.left===2,"독후감 표는 따로 2표 남음");
+ const ids=s5.voteL.list.slice(0,6).map(x=>x.id);
+ must(ids.length===6,"라벨 후보가 6편 이상");
+ const rs=ids.slice(0,5).map(id=>call("s"+hb+"@x","vote",{kind:"label",id:id}));
+ const dup=call("s"+hb+"@x","vote",{kind:"label",id:ids[1]}),over=call("s"+hb+"@x","vote",{kind:"label",id:ids[5]});
+ must(rs.every(r=>!r.ERR)&&/이미 뽑은/.test(dup.ERR||"")&&/5표/.test(over.ERR||""),"한 주 라벨 5표까지, 같은 글 중복 금지");
+ s5=call("s"+hb+"@x","state");must(s5.voteL.left===0&&s5.voteR.left===5,"독후감 표는 따로 5표 남음");
  NOW=new Date("2026-11-10T02:00:00Z");   /* 다음 주 */
- s5=call("s"+hb+"@x","state");must(s5.voteL.left===2,"다음 주가 되면 표가 새로 생김");}
+ s5=call("s"+hb+"@x","state");must(s5.voteL.left===5,"다음 주가 되면 표가 새로 생김");}
 NOW=new Date("2026-11-09T02:00:00Z");
 {
  const rk=call("lib@x","state").result;must(rk.mon==="2026-10"&&rk.voting.label.length&&rk.voting.label[0].votes>0,"월간 집계: 10월 글 득표 순위 1위 "+(rk.voting.label[0]||{}).votes+"표");
