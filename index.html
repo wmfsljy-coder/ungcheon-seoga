@@ -435,7 +435,8 @@ body.role-staff .news{background:#FFFBF0}
 .qcard{position:relative;background:#FFFDF6;border:1px solid var(--line);border-left:4px solid #9E3B24;border-radius:12px;padding:14px 18px 13px}
 .qcard .qmk{font-family:var(--serif);font-size:32px;line-height:.7;color:#C9A227}
 .qcard .qtx{font-family:var(--serif);font-size:17px;line-height:1.75;margin:6px 0 10px;white-space:pre-wrap}
-.qcard .qft{font-size:12.5px;color:var(--muted)}
+.qcard .qft{font-size:12.5px;color:var(--muted);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid rgba(43,35,32,.12);padding-top:7px}
+.qcard .qft em{font-style:normal;color:#9E3B24;white-space:nowrap}
 .bcomic{font-size:12.5px;padding:3px 6px}
 .ckline{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:13.5px;color:var(--ink)}
 .ckline input{width:16px;height:16px}
@@ -565,8 +566,6 @@ body.role-staff .news{background:#FFFBF0}
   .board{margin-top:14px}
   .panel{padding-top:18px}
   .scrollx{overflow-x:auto}
-  /* 폰에서는 '방금 붙은 라벨'을 서가 탭에서만: 다른 탭은 바로 본문이 보이게 */
-  body:not([data-tab="shelf"]) .fresh{display:none}
 }
 /* 태블릿: 글이 한 줄에 너무 길어지지 않게, 여백은 넉넉히 */
 @media (min-width:761px) and (max-width:1100px){
@@ -1020,11 +1019,14 @@ function sealSVG(k,ev){
    '<text x="50" y="69" text-anchor="middle" font-family="Jua,sans-serif" font-size="12.5" fill="'+c+'">'+S_.sub+'</text>'+
    (ev?'<text x="78" y="26" text-anchor="middle" font-family="Jua,sans-serif" font-size="20" fill="#B0301E">×'+ev+'</text>':'')+'</svg>';
 }
-function foot(l){return [l.author,l.by||clsName(l.cls)].filter(Boolean).join(" · ");}
+/* 라벨·문장 아랫줄. 지은이만 있으면 학생 이름처럼 읽혀서 '작가-'를 붙이고,
+   누가 쓴 글인지(학반, 선생님이면 이름)는 오른쪽 청구기호 옆으로 보낸다 */
+function foot(l){return l.author?"작가-"+l.author:"";}
+function footRight(l){return [l.by||clsName(l.cls),l.call||D.conf.name].filter(Boolean).join(" · ");}
 function labelHTML(l){
   return '<div class="label'+(l.text.length<=60?" short":"")+'"><div class="lt">'+esc(l.title||"책 제목")+'</div>'+
     '<div class="q">'+esc(l.text)+'</div>'+
-    '<div class="bt2"><span>'+esc(foot(l))+'</span><em>'+esc(l.call||D.conf.name)+'</em></div></div>';
+    '<div class="bt2"><span>'+esc(foot(l))+'</span><em>'+esc(footRight(l))+'</em></div></div>';
 }
 function reviewHTML(l){
   return '<div class="rvh">'+esc(l.head||l.title)+'</div>'+
@@ -1032,7 +1034,7 @@ function reviewHTML(l){
 }
 function quoteHTML(l){
   return '<div class="qcard"><div class="qmk">“</div><div class="qtx">'+esc(l.text)+'</div>'+
-    '<div class="qft">『'+esc(l.title)+'』'+(l.author?' · '+esc(l.author):'')+(l.page?' · '+esc(l.page):'')+' · '+esc(l.by||clsName(l.cls))+'</div></div>';
+    '<div class="qft"><span>『'+esc(l.title)+'』'+(l.author?' · '+esc(foot(l)):'')+(l.page?' · '+esc(l.page):'')+'</span><em>'+esc(footRight(l))+'</em></div></div>';
 }
 function postHTML(l){return l.kind==="label"?labelHTML(l):l.kind==="quote"?quoteHTML(l):reviewHTML(l);}
 
@@ -1093,7 +1095,6 @@ function renderBoard(){
       setTimeout(function(){woongPop("yay",'<span class="fresh-msg">문화상품권 '+me.vouchers+'매 받을 차례!</span>'+rangeLabel(GN.from,GN.to)+'에 도서관에서 받아 가. 이 기간에만 받을 수 있어.');},600);
     }
   }
-  var freshL=D.board.filter(function(l){return l.kind==="label";}).slice(0,3).map(labelHTML).join("");
   var gbn='<div class="guidebanner"><span>📌 <b>도장 '+R.per+'개 = 별 1개'+(GO&&!gb?', 별 '+R.pair+'개 = 문화상품권 '+won(R.won)+' 1매':'')+'</b></span><button class="btn sm" id="guide-open3" type="button">이용 안내 보기</button></div>';
   var cf="";
   if(D.classFull&&get("ungcheon-seoga-full|"+D.me.id+"|"+D.classFull.at)!=="1"){
@@ -1114,8 +1115,7 @@ function renderBoard(){
     '<div class="mbar"><div class="lab"><span><b>'+Number(String(ST.mon||"").slice(5))+'월 도장판</b> 도장 <b>'+(ST.mStamps||0)+'</b>개 · 이번 달 별 <b>'+(ST.mStars||0)+'</b>개</span><span class="hint">다음 별까지 도장 '+ST.toNext+'개</span></div>'+
       '<div class="track" style="--cap:'+R.per+'">'+track+'</div>'+leafHTML()+
       '<div class="reset">🔄 도장과 별은 <b>계속 쌓여요.</b> 달이 바뀌어도 사라지지 않고, 별은 <b>문화상품권으로 바꿀 때만</b> 줄어들어요.</div></div>'+
-    talk+
-    (freshL?'<div class="fresh"><h3>방금 붙은 라벨</h3><div class="fresh-row">'+freshL+'</div></div>':'');
+    talk;
   if(newStar)woongPop("yay",'<span class="fresh-msg">'+esc(pick(PRAISE.star))+'</span>지금 별 '+stars+'개 · 누적 도장 '+ST.stamps+'개');
   else if(fresh)woongPop(last&&last.bonus?"read":"yay",'<span class="fresh-msg">'+esc(praise)+'</span>'+
     (last&&last.bonus?'이번 주 도장 '+n+'/'+cap+' · 책갈피 '+W.bonus+'장':'이번 주 도장 '+n+'/'+cap+' · 다음 별까지 '+ST.toNext+'개'));
@@ -2122,7 +2122,7 @@ function sheetHTML(list,ox,oy){
     for(var j=i;j<Math.min(i+per,list.length);j++){
       var l=list[j];
       cells+='<div class="cell'+(l.text.length<=60?" short":"")+'"><div class="ct">'+esc(l.title)+'</div><div class="cq">'+esc(l.text)+'</div>'+
-        '<div class="cb"><span>'+esc(foot(l))+'</span><em>'+esc(l.call||D.conf.name)+'</em></div></div>';
+        '<div class="cb"><span>'+esc(foot(l))+'</span><em>'+esc(footRight(l))+'</em></div></div>';
     }
     pages+='<div class="sheet" style="padding:'+(9.3+oy)+'mm 0 0 '+(5+ox)+'mm"><div class="sheet-grid">'+cells+'</div></div>';
   }
@@ -2233,7 +2233,7 @@ function doPoster(){
       (url?'<div class="qr"><div class="qrc"></div>앱에서 더 읽기</div>':'')+'</div>'+
       '<div class="grid g'+per+'">'+pg.map(function(l){
         return '<div class="pc">'+(l.cover?'<img src="'+esc(l.cover)+'" referrerpolicy="no-referrer">':'')+'<div class="pt">'+esc(l.title)+'</div>'+
-          '<div class="pa">'+esc(l.author||"")+(l.call?' · '+esc(l.call):'')+'</div><div class="pq">'+esc(l.text)+'</div>'+
+          '<div class="pa">'+esc(foot(l))+(l.call?' · '+esc(l.call):'')+'</div><div class="pq">'+esc(l.text)+'</div>'+
           '<div class="pf">'+esc(clsName(l.cls))+'<span>♥ '+l.likes+'</span></div></div>';}).join("")+'</div>'+
       '<div class="ft">웅천고등학교 도서관 · 책은 청구기호대로 서가에서 찾을 수 있어요</div></section>';}).join("");
   var big=per<=4;
