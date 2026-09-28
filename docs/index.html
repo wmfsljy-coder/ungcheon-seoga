@@ -3685,6 +3685,8 @@ function make(db,env){
     res.myBooks=db.rows("도서").filter(function(r){return S(r["추천교사"])===(S(a.name)||lower(a.email))&&(S(r["월"])===monT||S(r["월"])===monN)&&S(r["숨김"])!=="Y";})
       .map(function(r){return {id:S(r["id"]),t:S(r["제목"]),a:S(r["지은이"]),rec:S(r["추천"]),q:S(r["추천사"]),call:S(r["청구기호"]),
         mon:S(r["월"]),next:S(r["월"])===monN};});
+    /* 교사 서가에도 이번 주(초록)·다음 주(보라) 퀴즈 책 표시(2026-09-28) */
+    res.thisWeek=weekKey(now,0);res.weekBooks=weekBooksOf(res.thisWeek);res.nextQuiz=nextQuizBooks();
     if(a.role!=="admin")return res;
 
     res.books=bookList();
@@ -5080,7 +5082,7 @@ function libBadge(b){
   if(b.lib===false)return '<span class="st none">학교 도서관에 없음</span>';
   return '';
 }
-function inQuiz(t){return ((D.quiz&&D.quiz.books)||[]).some(function(x){return x===t;});}
+function inQuiz(t){return ((D.quiz&&D.quiz.books)||D.weekBooks||[]).some(function(x){return x===t;});}   /* 교사 화면은 weekBooks */
 function inQuizNext(t){var N=(D.quiz&&D.quiz.next)||D.nextQuiz;return !!N&&(N.books||[]).some(function(x){return x===t;});}
 var AREA_C={"소설":"#8C4A3C","청소년":"#3C6E52","시·에세이":"#7A5C8E","인문":"#2B4C7E","철학":"#4A4A66","역사":"#7A5A2E",
   "사회·정치":"#2F6B6B","경제·경영":"#8A6A1F","과학":"#2F6B3A","기술·IT":"#3A5A7A","예술":"#9E3B5E","자기계발":"#9E6B24"};

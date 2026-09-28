@@ -3086,6 +3086,8 @@ function make(db,env){
     res.myBooks=db.rows("도서").filter(function(r){return S(r["추천교사"])===(S(a.name)||lower(a.email))&&(S(r["월"])===monT||S(r["월"])===monN)&&S(r["숨김"])!=="Y";})
       .map(function(r){return {id:S(r["id"]),t:S(r["제목"]),a:S(r["지은이"]),rec:S(r["추천"]),q:S(r["추천사"]),call:S(r["청구기호"]),
         mon:S(r["월"]),next:S(r["월"])===monN};});
+    /* 교사 서가에도 이번 주(초록)·다음 주(보라) 퀴즈 책 표시(2026-09-28) */
+    res.thisWeek=weekKey(now,0);res.weekBooks=weekBooksOf(res.thisWeek);res.nextQuiz=nextQuizBooks();
     if(a.role!=="admin")return res;
 
     res.books=bookList();

@@ -63,3 +63,8 @@ must(/이미 풀었습니다/.test(err),"재시험은 한 번만");
 q=C().api("state").quiz;must(q.done===5&&!q.retake,"더 좋은 점수(5점)가 남는다");
 const log=(C().api("state").quizLog||[]).filter(x=>x.week==="2026-10-05");
 must(log.length<=1,"퀴즈 기록은 한 주 한 줄: "+log.length);
+
+/* 교사 서가에도 이번 주·다음 주 퀴즈 책(관리자가 아닌 선생님도) */
+T["교사"].push({"이메일":"sci@x","이름":"과학","담당":"교사"});
+EMAIL="sci@x";const ts=C().api("state");EMAIL="lib@x";
+must((ts.weekBooks||[]).length===2&&ts.nextQuiz&&ts.nextQuiz.books.length>=1,"교과 선생님 화면에도 이번 주·다음 주 퀴즈 책");
