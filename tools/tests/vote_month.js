@@ -9,6 +9,7 @@ const db={replace:(t,l)=>{T[t]=[];l.forEach(o=>db.add(t,o));},rows:t=>T[t],add:(
   setMany:(t,k,m)=>T[t].forEach(r=>{const p=m[String(r[k])];if(p)Object.keys(p).forEach(c=>r[c]=String(p[c]))}),
   setConf:(k,v)=>{const h=T["설정"].find(r=>r["항목"]===k);if(h)h["값"]=v;else T["설정"].push({"항목":k,"값":v})}};
 const C=()=>Core.make(db,env);C().maintain();T["주제"].length=0;db.setConf("로그인방식","구글");
+db.setConf("투표묶음","");   /* 이 시험은 묶음 없는 평소 달(이레 창·달마다 시상). 묶음은 vote_group.js */
 const must=(c,m)=>{if(!c){console.log("✗",m);process.exitCode=1;}else console.log("✓",m);};
 const err=f=>{try{f();return "";}catch(e){return e.message;}};
 T["교사"].push({"이름":"사서","담당":"관리자","이메일":"lib@x"});
