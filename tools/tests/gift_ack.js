@@ -102,3 +102,11 @@ must(cf("퀴즈책수")==="2","설정: 북퀴즈는 2권 이내");
 must(cf("주간투표")==="5"&&as("3101","state").voteL.per===5&&as("과학","state").voteL.per===5,"설정: 학생·선생님 모두 부문마다 한 주 5표");
 db.setConf("퀴즈책수","3");C().maintain();
 must(cf("퀴즈책수")==="3","관리자가 시트에서 다시 3으로 바꾸면 그대로 둔다");
+
+/* ── 관리자도 배부 확인(2026-09-28) ── */
+NOW=new Date("2026-10-07T03:00:00Z");
+const adk=as("사서","state").giftDesk;
+must(adk&&adk.open&&adk.rows.some(r=>r.hakbun==="3102"),"관리자 화면에도 배부 확인 명단");
+must(!as("사서","clubMark",{ids:["3102"],on:true}).ERR,"관리자가 배부를 누른다");
+must(/관리자 사서/.test(T["지급"].find(r=>r["학번"]==="3102")["처리자"]),"누가 배부했는지 '관리자 사서'로 남는다");
+must(!!as("과학","clubMark",{ids:["3102"],on:false}).ERR,"교과 선생님은 배부를 누를 수 없다");

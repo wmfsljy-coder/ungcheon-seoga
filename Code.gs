@@ -34,7 +34,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20260928-102008";
+var CODE_VERSION="20260928-103833";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -57,6 +57,10 @@ function doGet(e){
       try{applySheetUi_();}catch(x){m.시트모양=x.message;}
       try{Core.make(makeDb_(),makeEnv_()).maintain();}catch(x){m.정리=x.message;}
       try{tidySheets_();}catch(x){}   /* 옮기고 비운 옛 탭을 그 자리에서 정리 */
+      /* &quiz=1: 이번 주 북퀴즈 채우기·다음 주 책 정하기를 지금(시계를 기다리지 않고). 쓰기라 잠그고 */
+      if(e.parameter.quiz){var lkq=LockService.getScriptLock();
+        try{lkq.waitLock(20000);LOCK_HELD_=true;m.퀴즈=Core.make(makeDb_(),makeEnv_()).ensureWeeklyQuiz();}catch(x){m.퀴즈=x.message;}
+        finally{LOCK_HELD_=false;try{lkq.releaseLock();}catch(x){}}}
       try{PropertiesService.getScriptProperties().setProperty("codeVer",CODE_VERSION);}catch(x){}
       m.codeVer=CODE_VERSION;m.ms=Date.now()-t0;
     }
