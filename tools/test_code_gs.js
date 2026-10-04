@@ -17,22 +17,26 @@ Sheet.prototype.appendRow=function(v){this.cells[this.getLastRow()]=v.slice();SH
 Sheet.prototype.insertRowsAfter=function(){};Sheet.prototype.getMaxColumns=function(){return 30;};
 Sheet.prototype.setFrozenRows=function(n){this.frozen=n;};
 Sheet.prototype.setColumnWidth=function(){};
+Sheet.prototype.clear=function(){this.cells=[];return this;};
+Sheet.prototype.clearConditionalFormatRules=function(){return this;};
 function Range(sh,r,c,nr,nc){this.sh=sh;this.r=r;this.c=c;this.nr=nr;this.nc=nc;}
 Range.prototype.getValues=function(){var o=[];for(var i=0;i<this.nr;i++){var row=[];for(var j=0;j<this.nc;j++){var v=(this.sh.cells[this.r-1+i]||[])[this.c-1+j];row.push(v==null?"":v);}o.push(row);}return o;};
 Range.prototype.setValues=function(v){SHEET_WRITES++;for(var i=0;i<this.nr;i++){this.sh.cells[this.r-1+i]=this.sh.cells[this.r-1+i]||[];for(var j=0;j<this.nc;j++)this.sh.cells[this.r-1+i][this.c-1+j]=v[i][j];}return this;};
 Range.prototype.setValue=function(v){return this.setValues([[v]]);};
 Range.prototype.clearContent=function(){for(var i=0;i<this.nr;i++){var row=this.sh.cells[this.r-1+i];if(row)for(var j=0;j<this.nc;j++)row[this.c-1+j]="";}return this;};
-["setNumberFormat","setFontWeight","setBackground","setDataValidation","setNote"].forEach(m=>Range.prototype[m]=function(){return this;});
+Range.prototype.setFormula=function(f){return this.setValues([[f]]);};
+["setNumberFormat","setFontWeight","setBackground","setDataValidation","setNote","setNotes","setFontSize",
+ "setVerticalAlignment","setWrap","merge","activate"].forEach(m=>Range.prototype[m]=function(){return this;});
 const BOOK={sheets:{},toasts:[]};
 let SHEET_WRITES=0,FETCHES=0;
 const SS={getSheetByName:n=>BOOK.sheets[n]||null,insertSheet:n=>(BOOK.sheets[n]=new Sheet(n)),getSheets:()=>Object.values(BOOK.sheets),
-  toast:(m)=>BOOK.toasts.push(m)};
+  setActiveSheet:s=>s,moveActiveSheet:()=>{},toast:(m)=>BOOK.toasts.push(m)};
 let ACTIVE_EMAIL="teacher@school.kr",UI_ALERTS=0;
 const triggers=[];
 global.SpreadsheetApp={newDataValidation:()=>{const b={requireDate(){return b;},requireValueInList(){return b;},setAllowInvalid(){return b;},setHelpText(){return b;},build(){return {};}};return b;},getActiveSpreadsheet:()=>SS,openById:()=>SS,getUi:()=>({alert:()=>{UI_ALERTS++;throw new Error("alert 는 실행을 붙잡는다");},
   createMenu:()=>({addItem(){return this;},addToUi(){}}),ButtonSet:{},Button:{}})};
 global.Session={getActiveUser:()=>({getEmail:()=>ACTIVE_EMAIL}),getEffectiveUser:()=>({getEmail:()=>"teacher@school.kr"})};
-global.ScriptApp={getProjectTriggers:()=>triggers.slice(),deleteTrigger:t=>{triggers.splice(triggers.indexOf(t),1);},
+global.ScriptApp={getService:()=>({getUrl:()=>"https://script.google.com/macros/s/TESTDEPLOY/exec"}),getProjectTriggers:()=>triggers.slice(),deleteTrigger:t=>{triggers.splice(triggers.indexOf(t),1);},
   newTrigger:fn=>{const t={fn,kind:"",getHandlerFunction(){return fn;}};const b={forSpreadsheet(){return b;},onEdit(){t.kind="onEdit";return b;},onChange(){t.kind="onChange";return b;},timeBased(){return b;},after(ms){t.kind="after "+ms;return b;},everyDays(){return b;},atHour(h){t.kind="daily "+h;return b;},inTimezone(){return b;},create(){triggers.push(t);return t;}};return b;}};
 const props={};global.PropertiesService={getScriptProperties:()=>({getProperty:k=>props[k]||null,setProperty:(k,v)=>{props[k]=v;},getProperties:()=>Object.assign({},props),deleteProperty:k=>{delete props[k];}})};
 const cache={};global.CacheService={getScriptCache:()=>({get:k=>cache[k]||null,put:(k,v)=>{cache[k]=v;},
@@ -157,3 +161,25 @@ if(process.env.RECV){
   console.log("\n[수령] 수령기간 시트:",rv?rv.getDataRange().getValues().slice(1).map(r=>r[0]+"~"+r[1]).join(", "):"없음");
   console.log("  수령대상 시트:",rt?"있음, 머리글 "+rt.getDataRange().getValues()[0].join("|"):"없음");
 }
+
+/* ── '시작' 탭: 시트를 연 선생님이 가장 먼저 볼 들어가는 주소 ── */
+(function(){
+  var bad=0;
+  function must(c,m){if(!c){console.log("✗",m);process.exitCode=1;bad++;}else console.log("✓",m);}
+  try{
+    var url=writeStartTab_();
+    var sh=BOOK.sheets["시작"];
+    must(!!sh,"‘시작’ 탭이 만들어진다");
+    var rows=sh.getDataRange().getValues().map(function(r){return r.map(String).join(" | ");}).join("\n");
+    must(/들어가는 주소/.test(rows),"제목에 ‘들어가는 주소’");
+    must(rows.indexOf("TESTDEPLOY")>=0,"배포 주소(/exec)가 적힌다");
+    must(/PIN 여섯 자리/.test(rows),"처음 들어가는 법이 적힌다");
+    must(/교실 게시용 안내문/.test(rows),"QR 안내문 찾는 길이 적힌다");
+    must(/github\.io/.test(rows),"둘러보기(시연본) 주소가 적힌다");
+    must(/학생에게 공유하지 마세요/.test(rows),"시트를 학생에게 주지 말라는 경고");
+    must(url.indexOf("TESTDEPLOY")>=0,"함수가 주소를 돌려준다");
+    /* 두 번 불러도 줄이 늘지 않는다 */
+    var n1=sh.getLastRow();writeStartTab_();
+    must(BOOK.sheets["시작"].getLastRow()===n1,"다시 불러도 줄이 늘지 않는다");
+  }catch(e){console.log("✗ 시작 탭에서 오류:",e.message);process.exitCode=1;}
+})();

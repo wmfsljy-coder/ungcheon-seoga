@@ -28,6 +28,7 @@ function onOpen(){
     .addItem("이번 달 추천 도서 다시 뽑기","rotateNow")
     .addItem("이번 주 북퀴즈 빈자리 채우기","quizNow")
     .addItem("시트 고친 것 지금 반영","refreshNow")
+    .addItem("들어가는 주소 보기 (시작 탭)","appUrlShow")
     .addItem("시트 쓰는 법 다시 쓰기 (안내 탭)","sheetDocNow")
     .addItem("독서로 연결 시험","libTest")
     .addToUi();
@@ -641,7 +642,7 @@ function installEditTriggers_(){
 /* 시트 모양 정리: 교사 '담당' 칸 드롭다운(관리자·1학년·2학년·3학년·교사), 명단 '도서부' 칸 드롭다운(Y).
    예전 값 '전체'는 '관리자'로, '3-2' 같은 반은 '3학년'으로 바꿔 둔다 */
 /* 시트 정리: 선생님이 볼 탭만 앞에 차례대로, 앱이 혼자 쓰는 탭은 숨김 */
-var SHEET_ORDER=["안내","설정","명단","교사","도서","권장도서","주제","이벤트","글","도장","퀴즈","수령기간","수령대상","지급","공지","건의","문장","장서목록"];
+var SHEET_ORDER=["시작","안내","설정","명단","교사","도서","권장도서","주제","이벤트","글","도장","퀴즈","수령기간","수령대상","지급","공지","건의","문장","장서목록"];
 /* 더 이상 쓰지 않는 탭(옛 메일 인증, 문장을 따로 두던 채집)은 숨겨만 둔다 — 지우지는 않는다 */
 var SHEET_HIDE=["기기","반응","퀴즈응답"];
 /* 판이 바뀌며 더 쓰지 않게 된 탭: 줄이 거의 없으면 지우고, 자료가 있으면 숨기기만 한다 */
@@ -664,7 +665,7 @@ function tidySheets_(){
       else if(!sh.isSheetHidden())sh.hideSheet();
     }catch(x){}
   });
-  try{ss.setActiveSheet(ss.getSheetByName("설정")||ss.getSheets()[0]);}catch(x){}
+  try{ss.setActiveSheet(ss.getSheetByName("시작")||ss.getSheetByName("설정")||ss.getSheets()[0]);}catch(x){}
 }
 /* 시트 쓰는 법을 '안내' 탭과 머리줄 메모에 적어 둔다(판이 바뀌면 다시 씀) */
 function writeSheetDoc_(force){
@@ -719,9 +720,48 @@ function refreshNow(){
   try{Core.make(makeDb_(),makeEnv_()).maintain();}catch(e){console.log("정리: "+e.message);}
   say_("시트에서 고친 내용을 앱에 반영했습니다. 화면을 새로 고치면 바로 보입니다.");
 }
-function sheetDocNow(){var n=writeSheetDoc_(true);say_("‘안내’ 탭에 시트 쓰는 법 "+n+"줄을 적었습니다. 칸 이름 위에 마우스를 올려도 설명이 뜹니다.");}
+function sheetDocNow(){var n=writeSheetDoc_(true);writeStartTab_();say_("‘안내’ 탭에 시트 쓰는 법 "+n+"줄을 적었습니다. ‘시작’ 탭에는 들어가는 주소를 적었습니다.");}
+/* 웹앱 주소. 배포한 주소(/exec)를 그대로 돌려준다 */
+function appUrl_(){try{return ScriptApp.getService().getUrl()||"";}catch(e){return "";}}
+/* ‘시작’ 탭: 이 시트를 연 선생님이 가장 먼저 볼 것 — 학생·선생님이 들어가는 주소 */
+function writeStartTab_(){
+  var ss=ss_(),url=appUrl_(),demo="https://wmfsljy-coder.github.io/ungcheon-seoga/";
+  var sh=ss.getSheetByName("시작");
+  if(!sh){sh=ss.insertSheet("시작",0);}else{try{ss.setActiveSheet(sh);ss.moveActiveSheet(1);}catch(e){}}
+  sh.clear();
+  try{sh.clearConditionalFormatRules();}catch(e){}
+  var name=(function(){try{var r=ss.getSheetByName("설정").getDataRange().getValues().filter(function(x){return String(x[0])==="프로그램명";})[0];return r?String(r[1]):"웅천 서가";}catch(e){return "웅천 서가";}})();
+  var rows=[
+    [name+" — 들어가는 주소",""],
+    ["",""],
+    ["학생·선생님 모두 이 주소",url||"(아직 웹앱으로 배포하지 않았습니다. 확장 프로그램 → Apps Script → 배포 → 새 배포 → 웹 앱)"],
+    ["처음 들어갈 때","학생은 학번·이름, 선생님은 이름을 넣고 PIN 여섯 자리를 정합니다. 그 뒤로는 학번(이름)과 PIN 으로 들어갑니다."],
+    ["휴대폰으로 알려 줄 때","위 주소를 복사해 학급 알림장에 올리거나, 아래 ‘교실 게시용 안내문’을 뽑아 교실에 붙이세요."],
+    ["교실 게시용 안내문(QR)","앱에 관리자로 들어가 시상·인쇄 탭 → ‘교실 게시용 안내문’을 A4 로 인쇄하면 QR 이 함께 나옵니다."],
+    ["관리자·담임 화면","같은 주소로 들어가면 교사 시트에 이름이 있는 선생님에게는 교사 화면이 보입니다."],
+    ["둘러보기(가짜 자료)",demo],
+    ["",""],
+    ["이 시트는","학생 이름·학번이 들어 있습니다. 학생에게 공유하지 마세요. 공유는 위 주소(웹앱)로만 하세요."],
+    ["판 표시",CODE_VERSION]
+  ];
+  sh.getRange(1,1,rows.length,2).setValues(rows);
+  sh.getRange(1,1,1,2).merge().setFontSize(16).setFontWeight("bold").setBackground("#F0E9D9");
+  sh.getRange(3,1,rows.length-2,1).setFontWeight("bold");
+  sh.getRange(1,1,rows.length,2).setVerticalAlignment("top").setWrap(true);
+  sh.setColumnWidth(1,190);sh.setColumnWidth(2,620);
+  if(url)sh.getRange(3,2).setFormula('=HYPERLINK("'+url+'";"'+url+'")').setFontSize(12);
+  sh.getRange(8,2).setFormula('=HYPERLINK("'+demo+'";"'+demo+'")');
+  sh.getRange(3,1,1,2).setBackground("#FBF6EA");
+  try{sh.setFrozenRows(1);sh.getRange(1,3,1,1).activate();}catch(e){}
+  return url;
+}
+function appUrlShow(){
+  var url=writeStartTab_();
+  say_(url?("들어가는 주소를 ‘시작’ 탭에 적었습니다.\n\n"+url):"아직 웹앱으로 배포하지 않았습니다. 확장 프로그램 → Apps Script → 배포 → 새 배포 → 웹 앱 으로 배포한 뒤 다시 눌러 주세요.");
+}
 function applySheetUi_(){
   try{writeSheetDoc_();}catch(x){console.log("안내 탭: "+x.message);}
+  try{writeStartTab_();}catch(x){console.log("시작 탭: "+x.message);}
   try{tidySheets_();}catch(x){}
   var ss=ss_(),t=ss.getSheetByName("교사");
   if(t&&t.getLastRow()>=1){
