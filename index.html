@@ -264,6 +264,29 @@ th{font-size:12px;color:var(--muted);font-weight:500}
 .bk .tag.qzn{margin-left:6px;background:#6A4C9C;color:#fff;border-radius:999px;padding:1px 8px;font-weight:600}
 .qbooks.next b{background:#F1ECF8;border-color:#CDBFE3;color:#4B3375}
 .qbooks.next>span{color:#6A4C9C;font-weight:600}
+/* 도서 검색 탭: 이주의 인물 · 권장도서 · 작가 이야기(2026-10-09) */
+.person,.acard{display:flex;gap:16px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 16px;background:#FFFDF6}
+.person{background:linear-gradient(135deg,#FFF8E6,#FFFDF6);border-color:#E9D39A}
+.person.loading{display:block;padding:12px 16px}
+.pph{width:92px;height:116px;object-fit:cover;border-radius:10px;flex:none;background:var(--paper-2)}
+.pph.none{display:flex;align-items:center;justify-content:center;font-size:34px}
+.pbody{flex:1;min-width:0}
+.pbody h3{margin:2px 0 4px;font-size:20px}.pbody h3 small{font-size:13.5px;color:var(--muted);font-weight:400;margin-left:4px}
+.ptag{display:inline-block;font-size:12px;font-weight:700;color:#8A5A00;background:#FBE8B6;border-radius:999px;padding:2px 10px}
+.pjob{margin:0 0 6px;color:var(--muted);font-size:14px}
+.pbio{margin:0 0 8px;font-size:14.5px;line-height:1.7;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pbio.full{display:block;-webkit-line-clamp:unset}
+.pbks,.abks{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 10px}
+.pbks>span,.abks>span{font-size:12.5px;color:var(--muted);width:100%}
+.pbk,.abk{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 9px;font-size:13.5px;text-align:left}
+.abk small{color:var(--muted);margin-left:6px}.abk em{font-style:normal;font-size:11px;background:#2F6B3A;color:#fff;border-radius:999px;padding:0 6px;margin-left:6px}
+.rlist{display:flex;flex-direction:column}
+.rrow{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 0;border-top:1px solid var(--line)}
+.rrow .rt b{font-size:15px;margin-right:8px}
+.alink{color:var(--muted);font-size:13.5px;text-decoration:underline;text-underline-offset:2px}
+.rrow .rm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tagp{font-size:12px;background:var(--paper-2);border-radius:999px;padding:1px 8px}
+@media (max-width:560px){.person,.acard{gap:12px;padding:12px}.pph{width:70px;height:90px}.pbody h3{font-size:18px}}
 .qbooks{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;font-size:14px}
 .qbooks b{background:var(--paper-2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-weight:600}
 .sguide h4{margin:18px 0 4px}
@@ -569,6 +592,10 @@ body.role-staff .news{background:#FFFBF0}
   body.docked .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
   body.docked .toast{bottom:calc(74px + env(safe-area-inset-bottom,0px))}
   body.docked .wpop{bottom:calc(130px + env(safe-area-inset-bottom,0px))}
+  .tabs.dock.dock-2 button{padding:8px 1px 7px;min-height:44px;font-size:13px}
+  body.docked.dock2 .wrap{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
+  body.docked.dock2 .toast{bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+  body.docked.dock2 .wpop{bottom:calc(150px + env(safe-area-inset-bottom,0px))}
   .top-in{padding:12px 16px}
   .mark small{font-size:11px}
   .board{margin-top:14px}
@@ -671,7 +698,7 @@ var TK="ungcheon-seoga-token";
 function tok(){try{return localStorage.getItem(TK)||sessionStorage.getItem(TK)||"";}catch(e){return "";}}
 function setTok(t,keep){try{localStorage.removeItem(TK);sessionStorage.removeItem(TK);if(t)(keep?localStorage:sessionStorage).setItem(TK,t);}catch(e){}}
 function call(name,payload){
-  if(D&&D.preview&&name!=="state"&&name!=="libSearch")return Promise.reject(new Error("미리보기 화면에서는 저장되지 않습니다. 위 막대의 ‘교사 화면으로’를 눌러 돌아가세요."));
+  if(D&&D.preview&&name!=="state"&&name!=="libSearch"&&name!=="findHome"&&name!=="authorFind")return Promise.reject(new Error("미리보기 화면에서는 저장되지 않습니다. 위 막대의 ‘교사 화면으로’를 눌러 돌아가세요."));
   busy(1);
   return new Promise(function(res,rej){
     function done(json){
@@ -1152,11 +1179,11 @@ function renderBoard(){
     (last&&last.bonus?'이번 주 도장 '+n+'/'+cap+' · 책갈피 '+W.bonus+'장':'이번 주 도장 '+n+'/'+cap+' · 다음 별까지 '+ST.toNext+'개'));
 }
 
-var TS=[["shelf","서가"],["write","글 쓰기","쓰기"],["wall","게시판"],["quiz","북퀴즈","퀴즈"],["mine","내 서재"]];
-var TJ=[["shelf","서가"],["wall","게시판"],["quiz","북퀴즈","퀴즈"],["mine","내 서재"]];
-var TT=[["shelf","서가"],["wall","게시판"],["check","새 글"],["over","한눈에 보기","한눈"],["give","도장 주기","도장"],["finish","상품권"],["readlog","독서 기록","독서"],["accounts","가입 현황·계정","가입"],["tlabel","라벨·문장 쓰기","글쓰기"],["suggest","추천 도서","추천"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
-var TSUB=[["shelf","서가"],["wall","게시판"],["give","도장 주기","도장"],["suggest","추천 도서","추천"],["tlabel","라벨·문장 쓰기","글쓰기"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
-var TA=[["shelf","서가"],["wall","게시판"],["check","새 글"],["over","한눈에 보기","한눈"],["books","도서 관리","도서"],["quizadm","퀴즈 관리","퀴즈"],["print","시상"],["finish","상품권"],["desk","배부 확인","배부"],["readlog","독서 기록","독서"],["accounts","가입 현황·계정","가입"],["give","도장 주기","도장"],["tlabel","라벨·문장 쓰기","글쓰기"],["suggest","추천 도서","추천"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
+var TS=[["shelf","서가"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["write","글 쓰기","쓰기"],["wall","게시판"],["quiz","북퀴즈","퀴즈"],["mine","내 서재"]];
+var TJ=[["shelf","서가"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["wall","게시판"],["quiz","북퀴즈","퀴즈"],["mine","내 서재"]];
+var TT=[["shelf","서가"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["wall","게시판"],["check","새 글"],["over","한눈에 보기","한눈"],["give","도장 주기","도장"],["finish","상품권"],["readlog","독서 기록","독서"],["accounts","가입 현황·계정","가입"],["tlabel","라벨·문장 쓰기","글쓰기"],["suggest","추천 도서","추천"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
+var TSUB=[["shelf","서가"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["wall","게시판"],["give","도장 주기","도장"],["suggest","추천 도서","추천"],["tlabel","라벨·문장 쓰기","글쓰기"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
+var TA=[["shelf","서가"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["wall","게시판"],["check","새 글"],["over","한눈에 보기","한눈"],["books","도서 관리","도서"],["quizadm","퀴즈 관리","퀴즈"],["print","시상"],["finish","상품권"],["desk","배부 확인","배부"],["readlog","독서 기록","독서"],["accounts","가입 현황·계정","가입"],["give","도장 주기","도장"],["tlabel","라벨·문장 쓰기","글쓰기"],["suggest","추천 도서","추천"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
 function tabList(){
   if(D.me.role==="student")return (D.canWrite?TS:TJ)
     .concat(D.me.club&&!D.preview?[["desk","배부 확인","배부"]]:[])
@@ -1167,10 +1194,10 @@ function tabList(){
 function renderTabs(){
   var L=tabList();
   if(!L.some(function(t){return t[0]===ui.tab;}))ui.tab=L[0][0];
-  var nav=$("tabs"),dock=L.length<=8&&D.me.role==="student";
+  var nav=$("tabs"),dock=L.length<=10&&D.me.role==="student",two=dock&&L.length>6;   /* 폰 아래 막대: 6개 넘으면 두 줄 */
   document.body.setAttribute("data-tab",ui.tab);
-  nav.classList.toggle("dock",dock);nav.style.setProperty("--n",L.length);
-  document.body.classList.toggle("docked",dock);
+  nav.classList.toggle("dock",dock);nav.classList.toggle("dock-2",two);nav.style.setProperty("--n",two?Math.ceil(L.length/2):L.length);
+  document.body.classList.toggle("docked",dock);document.body.classList.toggle("dock2",two);
   nav.innerHTML=L.map(function(t){
     var n=t[0]==="check"&&D.newCount?'<span class="n">'+D.newCount+'</span>':"";
     return '<button role="tab" data-tab="'+t[0]+'" aria-selected="'+(ui.tab===t[0])+'"><span class="l">'+t[1]+'</span><span class="s">'+(t[2]||t[1])+'</span>'+n+'</button>';}).join("");
@@ -1185,7 +1212,7 @@ function toPanel(){
 }
 function renderPanel(){
   var f={shelf:pShelfAll,write:pWrite,wall:pWallAll,vote:pVote,quiz:pQuiz,check:pCheck,print:pPrintAll,result:pResult,
-    finish:pGift,books:pBooks,desk:pDesk,idea:pIdea,accounts:pAccounts,give:pGive,over:pOverview,suggest:pSuggest,quizadm:pQuizAdm,guide:pGuide,tlabel:pTLabelAll,search:pSearch,mine:pMine,readlog:pReadlog}[ui.tab];
+    finish:pGift,books:pBooks,desk:pDesk,idea:pIdea,accounts:pAccounts,give:pGive,over:pOverview,suggest:pSuggest,quizadm:pQuizAdm,guide:pGuide,tlabel:pTLabelAll,search:pSearch,rec:pRecTab,author:pAuthorTab,mine:pMine,readlog:pReadlog}[ui.tab];
   $("panels").innerHTML=f?f():"";
   if(ui.tab==="write")wireWrite();
   if(ui.tab==="print")wirePrint();
@@ -1193,10 +1220,10 @@ function renderPanel(){
 }
 
 /* 탭을 줄이고 성격이 같은 화면을 한 곳에 모은다(2026-09-20) */
-function pShelfAll(){return pShelf()+'<div class="gapline"></div>'+pSearch();}
+function pShelfAll(){return pShelf();}   /* 도서 검색은 따로 '도서 검색' 탭으로(2026-10-09) */
 function pWallAll(){return (ui.wf==="vote")?pWallHead()+pVote():pWall();}
 function pPrintAll(){return pResult()+'<div class="gapline"></div>'+posterHTML();}   /* 라벨 스티커 인쇄는 뺌(2026-09-28) */
-function pTLabelAll(){return pTLabel();}   /* 도서 검색은 서가 탭에(교사도 학생과 같은 서가를 본다) */
+function pTLabelAll(){return pTLabel();}
 /* ── 교사: 도장 주기(모든 선생님) ── */
 var GIVE_WHY=["기억에 남는 문구를 옮겨 적음","쉬는 시간마다 책을 읽음","독서 토론에서 좋은 질문","수업에서 읽은 책을 소개함","도서관 정리를 도와줌","친구에게 책을 추천해 줌"];
 function pGive(){
@@ -1484,6 +1511,86 @@ function ideaBox(solo){
         '</div>';}).join("")+'</div>':'');
 }
 
+/* ── 도서 검색 탭(2026-10-09): 맨 위 이주의 인물, 아래 도서 검색 · 청소년 권장도서(소장) · 작가 이야기 ── */
+var FH=null,FHwait=false,AF=null;
+function findHome(){
+  if(FH||FHwait)return;FHwait=true;
+  call("findHome",{}).then(function(r){FH=r||{rec:[]};FHwait=false;if(ui.tab==="rec"||ui.tab==="author")renderPanel();})
+    .catch(function(){FH={rec:[],person:null};FHwait=false;if(ui.tab==="rec"||ui.tab==="author")renderPanel();});
+}
+/* 권장도서·작가 이야기 탭: 처음 열 때 목록·이주의 인물을 한 번 받아 온다 */
+function pRecTab(){findHome();return pRec();}
+function pAuthorTab(){findHome();return personHTML()+pAuthor();}   /* 이주의 인물은 작가 이야기 맨 위 */
+function bdayLabel(md){var m=/^(\d{2})-(\d{2})$/.exec(md||"");return m?Number(m[1])+"월 "+Number(m[2])+"일":"";}
+function personHTML(){
+  var P=FH&&FH.person;if(!P)return FH?'':'<div class="person loading"><span class="hint">이주의 인물을 불러오는 중…</span></div>';
+  var bk=(P.books||[]).slice(0,4).map(function(b){return '<button class="pbk" data-rq="'+esc(b.t)+'">『'+esc(b.t)+'』</button>';}).join("");
+  return '<section class="person">'+(P.photo?'<img class="pph" src="'+esc(P.photo)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<div class="pph none">✍️</div>')+
+    '<div class="pbody"><span class="ptag">'+(P.isBday?'🎂 이번 주 생일 · 이주의 인물':'이주의 인물')+'</span>'+
+    '<h3>'+esc(P.name)+(P.life?' <small>'+esc(P.life)+'</small>':'')+'</h3>'+
+    (P.job||P.bday?'<p class="pjob">'+esc(P.job||"")+(P.bday?(P.job?' · ':'')+'생일 '+bdayLabel(P.bday):'')+'</p>':'')+
+    '<p class="pbio">'+esc(P.bio)+'</p>'+
+    (bk?'<div class="pbks"><span>우리 도서관에 있어요</span>'+bk+'</div>':'')+
+    '<button class="btn ghost sm" data-aname="'+esc(P.name)+'">작가 이야기 더 보기</button></div></section>';
+}
+/* 청소년 권장도서: 우리 학교에 있는 책만(권장도서 시트). 소설·청소년부터 */
+var REC_ORDER=["소설","청소년","시·에세이","인문","철학","역사","사회·정치","경제·경영","과학","기술·IT","예술","자기계발"];
+function recIdx(s){var i=REC_ORDER.indexOf(s);return i<0?99:i;}
+function recRows(){
+  var L=(FH&&FH.rec)||[],a=ui.recArea||"",nq=String(ui.recQ||"").replace(/\s/g,"");
+  return L.filter(function(b){return (!a||b.s===a)&&(!nq||(b.t+b.a).replace(/\s/g,"").indexOf(nq)>=0);})
+    .sort(function(x,y){return recIdx(x.s)-recIdx(y.s)||(x.t<y.t?-1:x.t>y.t?1:0);});
+}
+function recListHTML(){
+  var rows=recRows();
+  return '<p class="libsum" style="margin:6px 0 10px">'+rows.length+'권</p>'+(rows.length?'<div class="rlist">'+rows.map(function(b){
+    return '<div class="rrow"><div class="rt"><b>'+esc(b.t)+'</b><button class="alink" data-aname="'+esc(b.k||b.a)+'">'+esc(b.a)+'</button></div>'+
+      '<div class="rm"><span class="tagp">'+esc(b.s)+'</span>'+(b.call?'<span class="callno">'+esc(b.call)+'</span>':'')+(b.n?'<span class="hint">'+b.n+'권</span>':'')+
+      '<button class="btn ghost sm" data-rq="'+esc(b.t)+'">대출 확인</button></div></div>';}).join("")+'</div>'
+    :'<div class="empty">조건에 맞는 책이 없어요.</div>');
+}
+function pRec(){
+  if(!FH)return '<div class="empty">목록을 불러오는 중…</div>';
+  var L=FH.rec||[],cnt={},areas=[];L.forEach(function(b){if(!cnt[b.s]){cnt[b.s]=0;areas.push(b.s);}cnt[b.s]++;});
+  areas.sort(function(x,y){return recIdx(x)-recIdx(y);});
+  var a=ui.recArea||"";
+  return '<h3 class="sec">청소년 권장도서 <span class="hint">· 우리 도서관에 있는 책 '+L.length+'권</span></h3>'+
+    '<p class="sub">서울대 권장 100선, 책따세, 인터넷 서점 청소년 추천 등에서 모은 권장도서 가운데 <b>우리 학교 도서관에 있는 책만</b> 모았어요. 지은이를 누르면 <b>작가 이야기</b>, ‘대출 확인’을 누르면 <b>도서 검색</b>에서 지금 빌릴 수 있는지 보여 줘요.</p>'+
+    '<div class="chips" style="margin-bottom:8px"><button class="chip" data-rarea="" aria-pressed="'+(!a)+'">전체 '+L.length+'</button>'+
+      areas.map(function(s){return '<button class="chip" data-rarea="'+esc(s)+'" aria-pressed="'+(a===s)+'">'+esc(s)+' '+cnt[s]+'</button>';}).join("")+'</div>'+
+    '<div class="sbar" style="max-width:420px"><input type="search" id="rec-q" placeholder="제목이나 지은이로 거르기" value="'+esc(ui.recQ||"")+'" autocomplete="off"></div>'+
+    '<div id="rec-list">'+recListHTML()+'</div>';
+}
+/* 작가 이야기: 짧은 열전 · 생일 · 우리 도서관에 있는 책 */
+function authorCardHTML(P){
+  var bk=(P.books||[]).map(function(b){return '<button class="abk" data-rq="'+esc(b.t)+'"><b>『'+esc(b.t)+'』</b>'+(b.call?'<small>'+esc(b.call)+'</small>':'')+(b.rec?'<em>권장</em>':'')+'</button>';}).join("");
+  return '<article class="acard">'+(P.photo?'<img class="pph" src="'+esc(P.photo)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<div class="pph none">✍️</div>')+
+    '<div class="pbody"><h3>'+esc(P.name)+(P.life?' <small>'+esc(P.life)+'</small>':'')+'</h3>'+
+    (P.job||P.bday?'<p class="pjob">'+esc(P.job||"")+(P.bday?(P.job?' · ':'')+'🎂 '+bdayLabel(P.bday):'')+'</p>':'')+
+    (P.bio?'<p class="pbio full">'+esc(P.bio)+'</p>'+(P.src?'<p class="hint" style="margin:4px 0 0">출처: <a href="'+esc(P.src)+'" target="_blank" rel="noopener">위키백과 ↗</a></p>':'')
+      :'<p class="hint">아직 이 작가 소개가 없어요. 우리 도서관에 있는 책만 보여 줄게요.</p>')+
+    (bk?'<div class="abks"><span>우리 도서관에 있는 이 작가의 책</span>'+bk+'</div>':'<p class="hint">우리 도서관에서 이 작가의 책을 찾지 못했어요.</p>')+
+    '</div></article>';
+}
+function pAuthor(){
+  var top=[];
+  if(FH&&FH.rec){var c={};FH.rec.forEach(function(b){if(b.k)c[b.k]=(c[b.k]||0)+1;});
+    top=Object.keys(c).sort(function(x,y){return c[y]-c[x]||(x<y?-1:1);}).slice(0,18);}
+  return '<h3 class="sec">작가 이야기</h3>'+
+    '<p class="sub">작가 이름을 찾으면 <b>짧은 열전</b>(어떤 사람인지·태어난 해·생일)과 <b>우리 도서관에 있는 그 작가의 책</b>이 나와요. 매주 한 명은 위의 <b>이주의 인물</b>로 소개해요(그 주에 생일인 작가가 먼저).</p>'+
+    '<div class="sbar"><input type="search" id="af-q" placeholder="예) 박경리, 김초엽, 헤르만 헤세" value="'+esc(ui.afQ||"")+'" enterkeyhint="search" autocomplete="off">'+
+    '<button class="btn" id="af-go" type="button">찾기</button></div>'+
+    (AF?(AF.error?'<div class="empty">'+esc(AF.error)+'</div>':AF.list.length?AF.list.map(authorCardHTML).join(""):woong("hi","‘"+esc(ui.afQ||"")+"’ 작가를 찾지 못했어. 우리 도서관에 그 작가 책이 있는지 ‘도서 검색’ 탭에서도 찾아봐."))
+      :(top.length?'<div class="chips"><span class="hint" style="align-self:center">권장도서가 많은 작가</span>'+top.map(function(k){return '<button class="chip" data-aname="'+esc(k)+'">'+esc(k)+'</button>';}).join("")+'</div>':''));
+}
+function goTab(k){if(ui.tab!==k){ui.tab=k;saveUI();renderTabs();renderPanel();toPanel();}}
+function authorGo(q){
+  q=String(q||"").trim();if(!q){toast("작가 이름을 넣어 주세요.");return;}
+  ui.afQ=q;AF={list:[]};goTab("author");
+  var b=$("af-go");if(b){b.disabled=true;b.textContent="찾는 중…";}
+  if(FH&&FH.person&&FH.person.name===q){AF={list:[FH.person]};renderPanel();return;}
+  call("authorFind",{q:q}).then(function(r){AF=r||{list:[]};renderPanel();}).catch(function(e){AF={error:e.message,list:[]};renderPanel();});
+}
 /* ── 도서 검색: 학교 도서관 소장 도서 ── */
 var SR={};   /* 마지막 검색 결과 */
 function pSearch(){
@@ -1508,6 +1615,8 @@ function pSearch(){
     (SR.q&&!items.length?woong("hi","우리 학교 도서관엔 ‘'+esc(SR.q)+'’이(가) 없나 봐. 띄어쓰기를 바꾸거나 지은이로 찾아봐. 없는 책이면 도서관에 신청할 수 있어!"):'')+
     '<div class="sres">'+list+'</div>';
 }
+/* 권장도서 거르기: 글자를 칠 때마다 목록만 다시(입력 칸은 그대로) */
+document.addEventListener("input",function(e){if(e.target&&e.target.id==="rec-q"){ui.recQ=e.target.value;var el=document.getElementById("rec-list");if(el)el.innerHTML=recListHTML();}});
 function doSearch(q){
   q=(q||"").trim();if(!q){toast("찾을 책 제목이나 지은이를 입력해 주세요.");return;}
   ui.searchQ=q;saveUI();
@@ -2737,6 +2846,7 @@ document.addEventListener("keydown",function(e){
   if((e.key==="Enter"||e.key===" ")&&e.target.closest&&e.target.closest(".woong .bear")){e.preventDefault();poke(e.target.closest(".woong .bear"));return;}
   if(e.key==="Enter"&&e.target.closest&&e.target.closest(".login")&&$("g-go2")){e.preventDefault();doRegister();}
   if(e.key==="Enter"&&e.target.id==="s-q"){e.preventDefault();doSearch(e.target.value);}
+  if(e.key==="Enter"&&e.target.id==="af-q"){e.preventDefault();authorGo(e.target.value);}
 });
 document.addEventListener("click",function(e){
   var wb=e.target.closest(".woong .bear");if(wb){poke(wb);return;}
@@ -2772,6 +2882,10 @@ document.addEventListener("click",function(e){
     call("logout",{}).catch(function(){}).then(function(){setTok("");D=null;GATE={kind:"login",step:"choose"};renderAll();refresh();});return;}
   if(id==="g-agree"){call("consent",{agree:true}).then(function(){toast("동의했습니다.");return refresh();}).catch(function(e){toast(e.message);});return;}
   if(id==="s-go"){doSearch(val("s-q"));return;}
+  if(d.rarea!=null&&t.closest("[data-rarea]")){ui.recArea=d.rarea;renderPanel();return;}
+  if(d.rq){goTab("search");doSearch(d.rq);return;}
+  if(d.aname){authorGo(d.aname);return;}
+  if(id==="af-go"){authorGo(val("af-q"));return;}
   if(d.giftok){if(d.paid==="1")put("ungcheon-seoga-gift2|"+D.me.id+"|"+d.giftok,"1");else ui.giftHide=d.giftok;renderBoard();return;}
   if(d.tkind){ui.tKind=d.tkind;renderPanel();return;}
   if(d.giftack){act("giftAck",{from:d.giftack},"확인했어요. 즐겁게 읽어!").then(function(){var o=document.querySelector(".ackpop");if(o)o.remove();}).catch(function(){});return;}

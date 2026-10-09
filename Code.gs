@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261004-003524";
+var CODE_VERSION="20261009-180806";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -58,6 +58,12 @@ function doGet(e){
       try{applySheetUi_();}catch(x){m.시트모양=x.message;}
       try{Core.make(makeDb_(),makeEnv_()).maintain();}catch(x){m.정리=x.message;}
       try{tidySheets_();}catch(x){}   /* 옮기고 비운 옛 탭을 그 자리에서 정리 */
+      /* &authors=1: 작가 이야기 소개를 지금 25명 받아 보기(위키백과가 막는지 확인용). 쓰기라 잠그고 */
+      if(e.parameter.authors){var lka=LockService.getScriptLock();
+        try{lka.waitLock(20000);LOCK_HELD_=true;var cA=Core.make(makeDb_(),makeEnv_());m.작가=cA.fillAuthors(25);
+          var dbA=makeDb_(),rA=dbA.rows("작가");m.작가줄=rA.length;m.작가소개=rA.filter(function(r){return String(r["소개"]).trim();}).length;}
+        catch(x){m.작가=x.message;}
+        finally{LOCK_HELD_=false;try{lka.releaseLock();}catch(x){}}}
       /* &quiz=1: 이번 주 북퀴즈 채우기·다음 주 책 정하기를 지금(시계를 기다리지 않고). 쓰기라 잠그고 */
       if(e.parameter.quiz){var lkq=LockService.getScriptLock();
         try{lkq.waitLock(20000);LOCK_HELD_=true;m.퀴즈=Core.make(makeDb_(),makeEnv_()).ensureWeeklyQuiz();}catch(x){m.퀴즈=x.message;}
@@ -642,7 +648,7 @@ function installEditTriggers_(){
 /* 시트 모양 정리: 교사 '담당' 칸 드롭다운(관리자·1학년·2학년·3학년·교사), 명단 '도서부' 칸 드롭다운(Y).
    예전 값 '전체'는 '관리자'로, '3-2' 같은 반은 '3학년'으로 바꿔 둔다 */
 /* 시트 정리: 선생님이 볼 탭만 앞에 차례대로, 앱이 혼자 쓰는 탭은 숨김 */
-var SHEET_ORDER=["시작","안내","설정","명단","교사","도서","권장도서","주제","이벤트","글","도장","퀴즈","수령기간","수령대상","지급","공지","건의","문장","장서목록"];
+var SHEET_ORDER=["시작","안내","설정","명단","교사","도서","권장도서","주제","이벤트","글","도장","퀴즈","수령기간","수령대상","지급","공지","건의","문장","장서목록","작가"];
 /* 더 이상 쓰지 않는 탭(옛 메일 인증, 문장을 따로 두던 채집)은 숨겨만 둔다 — 지우지는 않는다 */
 var SHEET_HIDE=["기기","반응","퀴즈응답"];
 /* 판이 바뀌며 더 쓰지 않게 된 탭: 줄이 거의 없으면 지우고, 자료가 있으면 숨기기만 한다 */

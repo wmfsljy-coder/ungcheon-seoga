@@ -55,6 +55,7 @@ window.DemoServer=(function(){
       T["설정"].forEach(function(r){if(r["항목"]==="상품권공개")r["값"]="Y";if(r["항목"]==="상품권배부")r["값"]=f(a)+"~"+f(b);});
       T["공지"]=[{"id":"n1","시작":f(d),"끝":f(b),"제목":"도서관 점심시간 개방","내용":"이번 주는 점심시간에도 도서관을 열어요. 읽고 싶은 책을 빌려 가세요.","대상":"학생","숨김":"","시각":""}];})();
     T["도서"]=Core.seedBooks();
+    T["작가"]=(typeof DEMO_AUTHORS!=="undefined"?DEMO_AUTHORS:[]).map(function(r){return Object.assign({},r);});
     [["3101","박하늘","3-1"],["3102","최민재","3-1"],["3201","김서준","3-2"],["3202","이도윤","3-2"],["3203","정유나","3-2"],["3204","서하람","3-2"],
      ["3301","한지우","3-3"],["3501","오세린","3-5"],["3502","문가온","3-5"],["2101","강다온","2-1"]].forEach(function(r){
       T["명단"].push({"학번":r[0],"이름":r[1],"반":r[2],"도서부":r[0]==="3202"?"Y":"","이메일":r[0]==="3203"||r[0]==="3204"?"":"s"+r[0]+"@school.kr",
@@ -125,6 +126,7 @@ window.DemoServer=(function(){
   }
   var T;
   try{T=JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){}
+  if(T&&!(T["작가"]&&T["작가"].length)&&typeof DEMO_AUTHORS!=="undefined")T["작가"]=DEMO_AUTHORS.map(function(r){return Object.assign({},r);});   /* 작가 이야기(2026-10-09) */
   if(!T)T=seed();
   function save(){try{localStorage.setItem(KEY,JSON.stringify(T));}catch(e){}}
   var db={

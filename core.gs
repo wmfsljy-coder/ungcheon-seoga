@@ -25,7 +25,8 @@ var HEAD={
   "교사신청":["id","시각","이름","이메일","상태"],
   "기기":["토큰","계정","만든날","마지막","만료","해제","기기","이메일"],
   "지급":["키","월","학번","이름","반","도장","처리","시각","처리자","매수","별","수령확인","확인시각"],
-  "도장":["id","시각","주","학번","이름","반","사유","교사","취소"]
+  "도장":["id","시각","주","학번","이름","반","사유","교사","취소"],
+  "작가":["이름","생몰","생일","직업","소개","사진","출처","확인","숨김"]
 };
 var CONF0=[["프로그램명","웅천 서가"],["부제","한 권 읽고, 한 줄 남기기"],["차수","1"],
   ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","2"],["월최대매수","3"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["투표묶음","2026-09~2026-10"],["주간투표","5"],["백업주기","주"],["백업보관","12"],["백업폴더","https://drive.google.com/drive/folders/1Nw-1moQpxXHkeuHYo0kMJjNVtvueqF_a"],["주간라벨문장글","3"],["만화규칙","라벨만"],["만화청구기호","만, 만화, 657"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
@@ -828,6 +829,10 @@ var SHEET_DOC={
        "별":["그때 가진 별","4"],"상품권":["받을 매수","2"],"배부":["배부 완료 여부","배부 완료"],
        "처리자":["배부한 사람","도서부 이도윤"],"처리시각":["배부한 때",""],
        "수령확인":["학생이 앱에서 '확인'을 눌렀는지","확인"],"확인시각":["학생이 확인한 때",""]}},
+  "작가":{d:"작가 이야기·이주의 인물에 나오는 작가 소개. 앱이 권장도서·추천 도서의 지은이를 위키백과에서 조금씩 받아 채웁니다(출처 위키백과, CC BY-SA). 확인 칸이 차 있는 줄은 다시 받지 않으니, 소개를 고쳐 써도 그대로 남습니다.",edit:"소개를 고치거나 숨김에 Y",
+    c:{"이름":["작가 이름(지은이에서 뽑음)","박경리"],"생몰":["태어난 해~돌아간 해","1926~2008"],"생일":["월-일(이주의 인물 생일 주간)","12-02"],
+       "직업":["한 줄 설명","대한민국의 소설가"],"소개":["짧은 열전(학생 화면에 나옴)",""],"사진":["사진 주소",""],"출처":["위키백과 문서 주소",""],
+       "확인":["받은 날. '없음'이면 위키백과에서 못 찾음(직접 써도 됨)","2026-10-09"],"숨김":["Y 면 안 보임",""]}},
   "지급":{d:"상품권을 실제로 준 기록. 별은 여기 적힌 만큼만 줄어듭니다.",edit:"보기만 하세요(화면에서 체크)",
     c:{"키":["기간+학번","2026-10-05|1101"],"월":["기간 첫날","2026-10-05"],"학번":["학생","1101"],
        "이름":["이름","김서준"],"반":["학급","1-1"],"도장":["그때까지 도장 수","23"],
@@ -1596,6 +1601,128 @@ function make(db,env){
   }
   /* 다음 주 퀴즈 책(미리 알림) */
   function nextQuizBooks(){var nwk=weekKey(env.now(),1),b=planOf(nwk,conf()["이달"]);return b.length?{week:nwk,books:b}:null;}
+  /* ── 작가 이야기(2026-10-09 회장님 지시): 짧은 열전·생일·이주의 인물 ──
+     권장도서·추천 도서의 지은이를 위키백과 요약(+위키데이터 생일)으로 '작가' 시트에 조금씩 모은다.
+     확인 칸이 찬 줄은 다시 받지 않는다(사서 선생님이 고친 소개가 그대로 남게) */
+  var ROLE_W={"지음":1,"글":1,"그림":1,"글·그림":1,"그림·글":1,"엮음":1,"옮김":1,"편저":1,"편역":1,"저":1,"역":1,"편":1,"외":1,"등":1,"씀":1,"원작":1,"감수":1,"공저":1,"글그림":1};
+  function authorKey(a){
+    var t=S(a).split(/[,;\/]/)[0].replace(/\(.*?\)|\[.*?\]/g," ").split(/\s+/).filter(Boolean);
+    t=t.filter(function(w){return !ROLE_W[w];});
+    return t.join(" ").trim();
+  }
+  var WRITER_RE=/작가|소설가|시인|수필가|저술가|문학|철학자|역사학자|사학자|학자|교수|기자|칼럼니스트|건축가|과학자|평론가|번역가|극작가|저자|사상가|만화가|일러스트|그림책|동화|변호사|판사|언론인|방송인|강연|기업인|교사|정치인|운동가|의사|연구자/;
+  function bare(t){return S(t).replace(/\s*\(.*?\)\s*/g,"").replace(/[\s·.]/g,"");}
+  function authorWanted(){
+    var m={},order=[];
+    function add(a,t){var k=authorKey(a);if(!k||k.length<2||m[k]!=null)return;m[k]=S(t);order.push(k);}
+    db.rows("권장도서").forEach(function(r){if(S(r["뺌"])!=="Y")add(r["지은이"],r["제목"]);});
+    db.rows("도서").forEach(function(r){if(S(r["숨김"])!=="Y")add(r["지은이"],r["제목"]);});
+    return {m:m,order:order};
+  }
+  /* 위키백과에서 작가 찾기: ① 이름 그대로 ② '이름 책제목'으로 검색. 사람이 맞는지(이름·직업 낱말·책 제목) 확인한 것만 */
+  function fetchAuthors(list){
+    var WK="https://ko.wikipedia.org";
+    function sum(t){return {url:WK+"/api/rest_v1/page/summary/"+encodeURIComponent(S(t).replace(/ /g,"_")),method:"get"};}
+    function js(r){try{return r&&r.code===200?JSON.parse(r.text):null;}catch(e){return null;}}
+    function good(x,it){
+      if(!x||x.type==="disambiguation"||!S(x.extract))return false;
+      var txt=S(x.description)+" "+S(x.extract),bk=bare(it.book);
+      var bookHit=bk.length>=2&&bare(txt).indexOf(bk)>=0;
+      var nm=bare(it.name),tt=bare(x.title);
+      var nameOk=tt===nm||(nm.length>=3&&tt.indexOf(nm)>=0)||(nm.length>=3&&tt.slice(0,2)===nm.slice(0,2)&&Math.abs(tt.length-nm.length)<=2);
+      return (nameOk&&WRITER_RE.test(txt))||(bookHit&&tt.slice(0,1)===nm.slice(0,1));
+    }
+    var got=list.map(function(){return null;}),bad=list.map(function(){return false;});
+    function ok(r){return r&&(r.code===200||r.code===404);}
+    var r1=httpAll(list.map(function(it){return sum(it.name);}));
+    list.forEach(function(it,i){if(!ok(r1[i]))bad[i]=true;var x=js(r1[i]);if(good(x,it))got[i]=x;});
+    var miss=[];list.forEach(function(it,i){if(!got[i])miss.push(i);});
+    if(miss.length){
+      var r2=httpAll(miss.map(function(i){return {url:WK+"/w/api.php?action=query&list=search&format=json&srlimit=3&srsearch="+encodeURIComponent(list[i].name+(list[i].book?" "+list[i].book:"")),method:"get"};}));
+      var pick=[];
+      miss.forEach(function(i,k){if(!ok(r2[k]))bad[i]=true;var x=js(r2[k]),hs=(x&&x.query&&x.query.search)||[],nm=bare(list[i].name);
+        /* 이름 그대로인 문서(동음이의어·다른 뜻)는 이미 봤으니 빼고, 앞의 두 개까지 */
+        hs.map(function(s){return S(s.title);}).filter(function(t){return bare(t).slice(0,1)===nm.slice(0,1)&&S(t)!==S(list[i].name);})
+          .slice(0,2).forEach(function(t){pick.push({i:i,t:t});});});
+      if(pick.length){var r3=httpAll(pick.map(function(p){return sum(p.t);}));
+        pick.forEach(function(p,k){if(!ok(r3[k]))bad[p.i]=true;var x=js(r3[k]);if(!got[p.i]&&good(x,list[p.i]))got[p.i]=x;});}
+    }
+    /* 생일·생몰년: 위키데이터(한 번에 여러 사람) */
+    var ids=[],life={};got.forEach(function(x){if(x&&x.wikibase_item)ids.push(S(x.wikibase_item));});
+    for(var a=0;a<ids.length;a+=40){
+      var rw=httpAll([{url:"https://www.wikidata.org/w/api.php?action=wbgetentities&props=claims&format=json&ids="+ids.slice(a,a+40).join("|"),method:"get"}])[0],d=js(rw);
+      if(!d||!d.entities)continue;
+      Object.keys(d.entities).forEach(function(q){var cl=d.entities[q].claims||{};
+        function t(p){try{var v=cl[p][0].mainsnak.datavalue.value;return {y:v.time.slice(1,5).replace(/^0+/,""),md:v.precision>=11?v.time.slice(6,11):""};}catch(e){return null;}}
+        life[q]={b:t("P569"),d:t("P570")};});
+    }
+    var td=today(env.now());
+    /* 첫 문장 괄호 '(1926년 12월 2일 ~ 2008년 5월 5일)' 에서 생몰을 먼저 읽는다 */
+    function lifeOf(ex){
+      var head=S(ex).slice(0,(S(ex).indexOf(")")+1)||160).slice(0,220),parts=head.split(/\s[~–-]\s?|~|–/);
+      function one(s){var m=/(\d{3,4})년\s*(?:(\d{1,2})월\s*(\d{1,2})일)?/.exec(S(s));return m?{y:m[1],md:m[2]?p2(Number(m[2]))+"-"+p2(Number(m[3])):""}:null;}
+      var b=one(parts[0]),d=parts.length>1?one(parts[1]):null;
+      return b?{b:b,d:d}:null;
+    }
+    return list.map(function(it,i){
+      var x=got[i];if(!x)return bad[i]?null:{"이름":it.name,"확인":"없음 "+td};
+      var ex=S(x.extract).replace(/\s+/g," "),L=lifeOf(ex)||life[S(x.wikibase_item)]||{};
+      if(L.b&&!L.b.md&&life[S(x.wikibase_item)]&&life[S(x.wikibase_item)].b)L.b.md=life[S(x.wikibase_item)].b.md||"";
+      if(ex.length>420){var cut=ex.slice(0,420),k=Math.max(cut.lastIndexOf("다. "),cut.lastIndexOf(". "));ex=k>120?cut.slice(0,k+2).trim():cut+"…";}
+      return {"이름":it.name,"생몰":L.b&&L.b.y?L.b.y+"~"+(L.d&&L.d.y?L.d.y:""):"","생일":L.b?L.b.md:"","직업":S(x.description),"소개":ex,
+        "사진":x.thumbnail?S(x.thumbnail.source):"","출처":x.content_urls&&x.content_urls.desktop?S(x.content_urls.desktop.page):"","확인":td};
+    }).filter(Boolean);   /* 요청이 막혀(429 등) 못 받은 사람은 줄을 쓰지 않고 다음에 다시 */
+  }
+  function fillAuthors(limit){
+    var have={};db.rows("작가").forEach(function(r){have[S(r["이름"])]=1;});
+    var W=authorWanted(),todo=W.order.filter(function(k){return !have[k];}).slice(0,limit||20);
+    if(!todo.length)return 0;
+    var out=fetchAuthors(todo.map(function(k){return {name:k,book:W.m[k]};}));
+    addRows("작가",out);
+    return out.filter(function(r){return S(r["소개"]);}).length;
+  }
+  /* 우리 도서관에 있는 그 작가의 책(권장도서 먼저, 그다음 장서목록) */
+  function authorBooks(name,n){
+    var nm=bare(name),out=[],seen={};
+    function add(t,call,cnt,rec,area){var k=norm(shownTitle(t));if(!k||seen[k]||out.length>=n)return;seen[k]=1;out.push({t:shownTitle(t)||S(t),call:S(call),n:Number(cnt)||0,rec:!!rec,s:S(area)});}
+    db.rows("권장도서").forEach(function(r){if(S(r["뺌"])!=="Y"&&bare(authorKey(r["지은이"]))===nm)add(r["제목"],r["청구기호"],r["권수"],true,r["영역"]);});
+    try{db.rows("장서목록").forEach(function(r){if(out.length<n&&bare(authorKey(r["지은이"]))===nm)add(r["제목"],r["청구기호"],r["권수"],false,"");});}catch(e){}
+    return out;
+  }
+  function authorCard(r,bday){
+    return {name:S(r["이름"]),life:S(r["생몰"]),bday:S(r["생일"]),job:S(r["직업"]),bio:S(r["소개"]),photo:S(r["사진"]),src:S(r["출처"]),isBday:!!bday,books:authorBooks(S(r["이름"]),8)};
+  }
+  /* 이주의 인물: 이번 주(월~일)에 생일인 작가, 없으면 주마다 돌아가며 */
+  function personOfWeek(){
+    var wk=weekKey(env.now(),0),days={};for(var i=0;i<7;i++)days[addDays(wk,i).slice(5)]=1;
+    var P=db.rows("작가").filter(function(r){return S(r["소개"])&&S(r["숨김"])!=="Y";});
+    if(!P.length)return null;
+    P.sort(function(x,y){return S(x["이름"])<S(y["이름"])?-1:1;});
+    var bd=P.filter(function(r){return days[S(r["생일"])];});
+    var pick=shuffle(bd.length?bd:P,wk+"|person")[0];
+    return authorCard(pick,bd.length>0);
+  }
+  function authorFind(q){
+    var nq=bare(q);if(nq.length<2)fail("작가 이름을 두 글자 이상 적어 주세요.");
+    var all=db.rows("작가").filter(function(r){return bare(r["이름"]).indexOf(nq)>=0;});
+    var rows=all.filter(function(r){return S(r["숨김"])!=="Y"&&S(r["소개"]);}).slice(0,5);
+    if(!rows.length&&all.some(function(r){return S(r["숨김"])==="Y";}))return {list:[]};   /* 숨긴 작가 */
+    if(!rows.length&&all.length){var b0=authorBooks(S(all[0]["이름"]),8);return {list:b0.length?[{name:S(all[0]["이름"]),life:"",bday:"",job:"",bio:"",photo:"",src:"",isBday:false,books:b0}]:[]};}
+    if(!rows.length){
+      /* 시트에 없으면 우리 도서관에 그 작가 책이 있을 때만 위키백과에서 한 번 받아 둔다 */
+      var bks=authorBooks(q,8);
+      if(!bks.length)return {list:[]};
+      var got=fetchAuthors([{name:S(q).trim(),book:bks[0].t}]);
+      if(got[0]&&S(got[0]["소개"])){addRows("작가",got);rows=got;}
+      else return {list:[{name:S(q).trim(),life:"",bday:"",job:"",bio:"",photo:"",src:"",isBday:false,books:bks}]};
+    }
+    return {list:rows.map(function(r){return authorCard(r,false);})};
+  }
+  function recBooks(){
+    return db.rows("권장도서").filter(function(r){return S(r["뺌"])!=="Y"&&S(r["제목"]);}).map(function(r){
+      return {t:S(r["제목"]),a:S(r["지은이"]),k:authorKey(r["지은이"]),s:S(r["영역"]),call:S(r["청구기호"]),n:Number(r["권수"])||0};})
+      .sort(function(x,y){return x.s<y.s?-1:x.s>y.s?1:(x.t<y.t?-1:1);});
+  }
   /* 그 주 퀴즈에 나온 책들 */
   function weekBooksOf(wk){
     var seen={},out=[];
@@ -1667,6 +1794,7 @@ function make(db,env){
       return {down:true,why:p.why,rotate:null,lib:{checked:0,found:0,failed:0},quiz:ensureWeeklyQuiz()};}
     var r=rotateMonth(S(conf()["선별판"])!=="3"),l=refreshLibrary(null,r&&r.ids),filled=0,cc=conf();
     try{fillDetails(60);}catch(e){}
+    try{fillAuthors(25);}catch(e){}   /* 작가 이야기: 한 번에 25명씩 */
     if(S(cc["장서확인"])!==today(env.now())){
       try{var hn=libCount();if(hn){setConf("장서",String(hn));setConf("장서확인",today(env.now()));}}catch(e){}
     }
@@ -3533,6 +3661,9 @@ function make(db,env){
       fail("먼저 개인정보 수집·이용에 동의해 주세요.");
     }
     if(name==="libSearch")return libSearch(a,p);
+    /* 도서 검색 탭(2026-10-09): 이주의 인물 · 청소년 권장도서(소장) · 작가 찾기 */
+    if(name==="findHome")return {person:personOfWeek(),rec:recBooks()};
+    if(name==="authorFind")return authorFind(S(p.q));
     if(name==="state"){
       if(p.as&&a.role!=="student")return previewState(a,S(p.as));
       return a.role==="student"?studentState(a):teacherState(a);
@@ -3602,6 +3733,7 @@ function make(db,env){
     });
     chk("이번 주 퀴즈 문항",live.length===(Number(c["퀴즈문항수"])||5),live.length+"문제");
     try{var nq=nextQuizBooks();chk("다음 주 퀴즈 책 미리 알림",!!nq,nq?nq.week+" "+nq.books.join(", "):"아직 안 정함");}catch(e){chk("다음 주 퀴즈 책 미리 알림",false,e.message);}
+    try{var pw=personOfWeek(),na=db.rows("작가").filter(function(r){return S(r["소개"]);}).length;chk("작가 이야기",true,na+"명"+(pw?" · 이주의 인물 "+pw.name+(pw.isBday?"(생일 주간)":""):""));}catch(e){chk("작가 이야기",false,e.message);}
     chk("이번 주 퀴즈 책 "+(Number(c["퀴즈책수"])||2)+"권 이하",Object.keys(bk).length<=(Number(c["퀴즈책수"])||2),Object.keys(bk).length+"권");
     chk("퀴즈 보기·정답 정상",!bad.length,bad.join(","));
     var bank=db.rows("퀴즈").filter(function(q){return S(q["상태"])==="예비"&&S(q["월"])===mon;}).length;
@@ -3675,7 +3807,7 @@ function make(db,env){
       posts:db.rows("글").length,copyDist:(function(){var h={};db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y"){var n=Number(b["권수"])||0;h[n]=(h[n]||0)+1;}});return h;})(),
       maxCopies:(function(){var m=0;db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y")m=Math.max(m,Number(b["권수"])||0);});return m;})(),loginMode:S(c["로그인방식"]),students:db.rows("명단").length,teachers:db.rows("교사").length};
   }
-  return {overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
+  return {fillAuthors:fillAuthors,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
 }
 
 return {SHEET_DOC:SHEET_DOC,TEEN:TEEN,GENRES:GENRES,make:make,HEAD:HEAD,CONF0:CONF0,CONF_DESC:CONF_DESC,AREAS:AREAS,seedBooks:seedBooks,weekKey:weekKey,libMatch:libMatch,libSearchUrl:libSearchUrl,periodOf:periodOf,seedQuotes:seedQuotes,QUOTES:QUOTES,weekOfYmd:weekOfYmd,prevMonth:prevMonth,quizQuality:quizQuality,shownTitle:shownTitle,shownAuthor:shownAuthor,AREA_CATS:AREA_CATS};

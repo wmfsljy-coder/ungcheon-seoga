@@ -10,7 +10,10 @@ banner = ('<div class="demo">시연본 — 구글 로그인 대신 계정을 골
           '<a href="#" onclick="DemoServer.reset();return false">처음 상태로</a></div>'
           '<script>(function(){var s=document.getElementById("demo-who");DemoServer.accounts.forEach(function(a){'
           'var o=document.createElement("option");o.value=a[0];o.textContent=a[1];o.selected=a[0]===DemoServer.current();s.appendChild(o);});})();</scr'+'ipt>')
-inject = "<script>\n" + core + "\n" + demo + "\n</script>\n" + banner
+# 시연본 작가 이야기: 위키백과에서 미리 받아 둔 작가 소개(tools/demo_authors.json, 출처 위키백과 CC BY-SA)
+ap = root / "tools" / "demo_authors.json"
+authors = "var DEMO_AUTHORS=" + (ap.read_text(encoding="utf-8") if ap.exists() else "[]") + ";\n"
+inject = "<script>\n" + authors + core + "\n" + demo + "\n</script>\n" + banner
 assert "<!--DEMO-->" in page
 (root / "demo.html").write_text(page.replace("<!--DEMO-->", inject), encoding="utf-8")
 print("demo.html", len(page) + len(inject), "bytes")
