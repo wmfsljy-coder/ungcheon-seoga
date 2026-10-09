@@ -2520,10 +2520,10 @@ function make(db,env){
     return PAIDW[from+"|"+hb]||{paid:false,n:0,stars:0,who:"",at:"",ack:false,ackAt:""};
   }
   /* 그 수령 기간에 받을 수 있는 매수. 이미 받았으면 그때 기록을 그대로 보여 준다 */
-  function claimOf(hb,wins,i){
+  function claimOf(hb,wins,i,asOf){
     var R=giftRule(),w=wins[i],p=paidInfo(w.from,hb);
     if(p.paid)return {from:w.from,to:w.to,label:winLabel(w),stars:p.stars||p.n*R.pair,vouchers:p.n,paid:true,paidN:p.n,who:p.who,at:p.at,ack:p.ack,ackAt:p.ackAt};
-    var have=starsNow(hb);
+    var have=asOf?Math.max(0,starTimes(hb).filter(function(t){return t<=asOf;}).length-starsUsed(hb)):starsNow(hb);
     return {from:w.from,to:w.to,label:winLabel(w),stars:have,vouchers:Math.min(R.max,Math.floor(have/R.pair)),paid:false,paidN:0,who:"",at:""};
   }
   /* 상품권 규칙 견주기(읽기만, 이름 없이 숫자만): 별 몇 개에 1매로 하면 지금 몇 명이 몇 매를 받나 + 최근 도장 속도 */
@@ -2616,10 +2616,10 @@ function make(db,env){
     return out.length;
   }
   /* 한 수령 기간의 대상 학생(상품권 1매 이상). a 가 있으면 그 교사가 보는 학년만 */
-  function giftRows(a,from){
+  function giftRows(a,from,asOf){
     var wins=recvWindows(),i=winIndex(wins,from);if(i<0)return [];
     return db.rows("명단").filter(function(r){return seeCls(a,S(r["반"]));}).map(function(r){
-      var hb=S(r["학번"]),x=claimOf(hb,wins,i);
+      var hb=S(r["학번"]),x=claimOf(hb,wins,i,asOf);
       return {hakbun:hb,name:S(r["이름"]),cls:S(r["반"]),stars:x.stars,vouchers:x.vouchers,paid:x.paid,paidN:x.paidN,who:x.who,at:x.at,ack:!!x.ack,ackAt:x.ackAt||"",eligible:x.vouchers>0};
     }).filter(function(x){return x.vouchers>0||x.paid;}).sort(function(x,y){return x.hakbun<y.hakbun?-1:1;});
   }
@@ -2633,6 +2633,15 @@ function make(db,env){
     return {from:w.from,to:w.to,label:winLabel(w),open:t>=w.from&&t<=w.to,place:S(c["상품권배부장소"]),
       rows:who?giftRows(who,w.from):[]};
   }
+  /* 앱의 배부 대상 명단 기준 시각(2026-10-09 회장님 지시): 수령 날(금요일)에는 실시간, 다른 날은 오전 9시·오후 3시에 한 번씩.
+     구글 시트 '수령대상'은 늘 실시간. '' = 실시간 */
+  function giftCutoff(){
+    var t=today(env.now()),now=stamp(env.now());
+    if(recvWindows().some(function(w){return t>=w.from&&t<=w.to;}))return "";
+    var hm=now.slice(11,16);
+    return hm>="15:00"?t+" 15:00:00":hm>="09:00"?t+" 09:00:00":addDays(t,-1)+" 15:00:00";
+  }
+  function cutLabel(cut){if(!cut)return "";var d=cut.slice(0,10);return Number(d.slice(5,7))+"월 "+Number(d.slice(8,10))+"일 "+(cut.slice(11,13)==="09"?"오전 9시":"오후 3시");}
   /* 도서부 '배부 확인' 화면(2026-09-28 회장님 지시): 대상자 명단은 늘 보이고, 배부 단추는 수령 기간에만.
      기간 중이면 그 기간, 아니면 다음 기간(지금까지 모은 별 기준 예정), 다음이 없으면 지난 기간 */
   function deskView(c,who){
@@ -2641,8 +2650,9 @@ function make(db,env){
     if(!w){w=wins.filter(function(x){return x.from>t;})[0]||null;if(w)st="soon";}
     if(!w&&wins.length){w=wins[wins.length-1];st="past";}
     if(!w)return {none:true,open:false,rows:[]};
-    return {from:w.from,to:w.to,label:winLabel(w),open:st==="open",state:st,place:S(c["상품권배부장소"]),
-      rows:giftRows(who,w.from).filter(function(x){return x.vouchers>0||x.paid;})};
+    var cut=st==="open"?"":giftCutoff();
+    return {from:w.from,to:w.to,label:winLabel(w),open:st==="open",state:st,place:S(c["상품권배부장소"]),live:!cut,asOf:cutLabel(cut),
+      rows:giftRows(who,w.from,cut).filter(function(x){return x.vouchers>0||x.paid;})};
   }
   /* 학생: 도서부가 배부를 눌렀는데 아직 '확인'을 누르지 않은 수령(최근 40일) */
   function ackWaiting(hb){
@@ -3327,7 +3337,8 @@ function make(db,env){
     shown.forEach(function(w){if(!def&&td>=addDays(w.from,-7)&&td<=w.to)def=w.from;});
     if(!def){var past=shown.filter(function(w){return w.from<=td;});def=past.length?past[past.length-1].from:(shown[0]&&shown[0].from);}
     res.gifts={wins:shown.map(function(w){return {from:w.from,to:w.to,label:winLabel(w),open:td>=w.from&&td<=w.to,future:td<w.from};}),def:def,rows:{},rule:giftRule(c)};
-    shown.forEach(function(w){if(w.from<=td||w.from===def)res.gifts.rows[w.from]=giftRows(a,w.from);});
+    var gcut=giftCutoff();res.gifts.live=!gcut;res.gifts.asOf=cutLabel(gcut);
+    shown.forEach(function(w){if(w.from<=td||w.from===def)res.gifts.rows[w.from]=giftRows(a,w.from,gcut);});
     res.today=today(now);
     res.myLabels=all.filter(function(r){return S(r["반"])===TEACHER_CLS&&S(r["이름"])===a.name;}).map(function(r){return full(r);});
     res.news=teacherNews(a,c,scope,fin,now);

@@ -1021,6 +1021,13 @@ function poke(bear){
   setTimeout(function(){bear.classList.remove("m-"+mv);},1500);
   bub.innerHTML='<b class="who">웅이</b>'+esc(pool[i]);
 }
+/* 수령 날을 말로: 이번 주 금요일(10월 16일) / 다음 주 금요일(…) / 오늘 */
+function fridayWhen(GN){
+  if(!GN||!GN.from)return "수령 날";if(GN.open)return "오늘("+md(GN.from)+")";
+  var t=new Date(String(D.today||"").slice(0,10)+"T00:00:00Z"),f=new Date(GN.from+"T00:00:00Z"),dow=(t.getUTCDay()+6)%7,diff=Math.round((f-t)/864e5);
+  var wd=["일","월","화","수","목","금","토"][f.getUTCDay()];
+  return (diff<=6-dow?"이번 주 ":diff<=13-dow?"다음 주 ":"")+(wd==="금"?"금요일":wd+"요일")+"("+md(GN.from)+")";
+}
 /* 상품권 배부 완료 확인 창(도서부가 '배부'를 누른 뒤 학생이 '확인'을 누를 때까지) */
 function ackPop(){
   var old=document.querySelector(".ackpop");if(old)old.remove();
@@ -1154,8 +1161,8 @@ function renderBoard(){
   if(GO&&GN&&GN.mine&&(GN.mine.vouchers>0||GN.mine.paid)&&ui.giftHide!==GN.from&&!(GN.mine.paid&&get("ungcheon-seoga-gift2|"+D.me.id+"|"+GN.from)==="1")){
     var me=GN.mine,where='<b>'+rangeLabel(GN.from,GN.to)+' '+placeTalk(GN.place)+'</b>';
     gb='<div class="giftbar">'+starSVG()+'<span>'+(me.paid?'<b>'+esc(GN.label)+' — 수령했어요 ✓</b> 문화상품권 '+(me.paidN||me.vouchers)+'매. 받은 별은 사라졌어요.'
-        :GN.open?'<b>'+esc(GN.label)+': 문화상품권 '+me.vouchers+'매를 받을 수 있어요!</b> '+where+' 받아 가세요. <b>'+(D.conf.recvWeekly?'오늘 못 받으면 다음 주 금요일에 받을 수 있어요.':'이 기간에만 받을 수 있어요.')+'</b>'
-        :'<b>'+esc(GN.label)+' 대상이에요!</b> 지금 별 '+me.stars+'개 → 문화상품권 <b>'+me.vouchers+'매</b>. 수령 기간 '+where+' 받을 수 있어요.')+
+        :GN.open?'<b>문화상품권 수령 대상이에요! 오늘('+md(GN.from)+') 점심시간에 도서관으로 오세요.</b> 별 '+me.stars+'개 → 문화상품권 '+me.vouchers+'매. <b>'+(D.conf.recvWeekly?'오늘 못 받으면 다음 주 금요일에 받을 수 있어요.':'이 기간에만 받을 수 있어요.')+'</b>'
+        :'<b>문화상품권 수령 대상이에요! '+fridayWhen(GN)+' 점심시간에 도서관으로 오세요.</b> 지금 별 '+me.stars+'개 → 문화상품권 <b>'+me.vouchers+'매</b>.')+
       '</span><button class="btn ghost sm end" data-giftok="'+esc(GN.from)+'" data-paid="'+(me.paid?1:0)+'">알겠어요</button></div>';
     if(GN.open&&!me.paid&&get("ungcheon-seoga-giftpop2|"+D.me.id+"|"+GN.from)!=="1"&&!D.preview){
       put("ungcheon-seoga-giftpop2|"+D.me.id+"|"+GN.from,"1");
@@ -1191,7 +1198,9 @@ function renderBoard(){
       '<div class="track" style="--cap:'+R.per+'">'+track+'</div>'+leafHTML()+
       '<div class="reset">🔄 도장과 별은 <b>계속 쌓여요.</b> 달이 바뀌어도 사라지지 않고, 별은 <b>문화상품권으로 바꿀 때만</b> 줄어들어요.</div></div>'+
     talk;
-  if(newStar)woongPop("yay",'<span class="fresh-msg">'+esc(pick(PRAISE.star))+'</span>지금 별 '+stars+'개 · 누적 도장 '+ST.stamps+'개');
+  if(newStar){var GN2=D.giftNotice,v2=GN2&&GN2.mine&&!GN2.mine.paid?GN2.mine.vouchers:0;
+    woongPop("yay",'<span class="fresh-msg">'+esc(pick(PRAISE.star))+'</span>지금 별 '+stars+'개 · 누적 도장 '+ST.stamps+'개'+
+      (GO&&v2?'<br><b>문화상품권 '+v2+'매 수령 대상이야! '+fridayWhen(GN2)+' 점심시간에 도서관으로 와.</b>':''));}
   else if(fresh)woongPop(last&&last.bonus?"read":"yay",'<span class="fresh-msg">'+esc(praise)+'</span>'+
     (last&&last.bonus?'이번 주 도장 '+n+'/'+cap+' · 책갈피 '+W.bonus+'장':'이번 주 도장 '+n+'/'+cap+' · 다음 별까지 '+ST.toNext+'개'));
 }
@@ -1220,7 +1229,7 @@ function quietCall(name,payload){
 /* 배부 확인·상품권 탭을 보고 있으면 30초마다 대상 명단을 새로(입력 중이 아니고 화면이 보일 때) */
 var LIVEGIFT=null;
 function liveGift(){
-  var on=D&&(ui.tab==="desk"||ui.tab==="finish");
+  var on=D&&(ui.tab==="desk"||ui.tab==="finish")&&giftLiveNow();   /* 금요일(수령 날)만 실시간 */
   if(!on){if(LIVEGIFT){clearInterval(LIVEGIFT);LIVEGIFT=null;}return;}
   if(LIVEGIFT)return;
   if(D.me.role==="admin"||D.me.club)quietCall("recvSync",{}).catch(function(){});
@@ -1230,7 +1239,11 @@ function liveGift(){
     quietCall("state",PV?{as:PV}:{}).then(function(s){if(s&&s.me){ui.giftAt=new Date();applyState(s);}}).catch(function(){});
   },30000);
 }
-function liveStamp(){var t=ui.giftAt||new Date();return '<span class="hint" style="font-weight:400">· '+p2l(t.getHours())+':'+p2l(t.getMinutes())+':'+p2l(t.getSeconds())+' 기준, 30초마다 새로</span>';}
+function giftLiveNow(){var K=ui.tab==="desk"?D.giftDesk:D.gifts;return !!(K&&K.live);}
+function liveStamp(){
+  var K=ui.tab==="desk"?D.giftDesk:D.gifts;
+  if(K&&!K.live&&K.asOf)return '<span class="hint" style="font-weight:400">· '+esc(K.asOf)+' 기준(오전 9시·오후 3시에 새로, 금요일 수령 날은 실시간 · 구글 시트는 늘 실시간)</span>';
+  var t=ui.giftAt||new Date();return '<span class="hint" style="font-weight:400">· 실시간 '+p2l(t.getHours())+':'+p2l(t.getMinutes())+':'+p2l(t.getSeconds())+' 기준, 30초마다 새로</span>';}
 function p2l(n){return (n<10?"0":"")+n;}
 var PREFETCHED=false;
 function renderTabs(){
@@ -1937,7 +1950,7 @@ function noticesHTML(){
     var me=G.mine,R=G.rule||rule();
     items.push('<li class="ntc gift"><b>'+esc(G.label)+' · 문화상품권'+(G.open?' — 지금 받는 기간':'')+'</b>'+
       '<span>'+rangeLabel(G.from,G.to)+(G.place?'<br>'+esc(G.place):'')+'</span>'+
-      (me?'<em>'+(me.paid?'수령했어요 ✓ ('+(me.paidN||me.vouchers)+'매)':me.vouchers?'나는 '+me.vouchers+'매 받을 수 있어요(별 '+me.stars+'개)':'별 '+me.stars+'개 · 이번엔 대상이 아니에요(별 '+R.pair+'개부터)')+'</em>':'')+
+      (me?'<em>'+(me.paid?'수령했어요 ✓ ('+(me.paidN||me.vouchers)+'매)':me.vouchers?'수령 대상이에요! '+fridayWhen(G)+' 점심시간에 도서관으로 오세요(별 '+me.stars+'개 → '+me.vouchers+'매)':'별 '+me.stars+'개 · 이번엔 대상이 아니에요(별 '+R.pair+'개부터)')+'</em>':'')+
             '<small>'+(D.conf.recvWeekly?'매주 금요일 점심시간에 도서관에서 받아요. 이번 금요일에 못 받으면 다음 주 금요일에 받을 수 있어요.':'수령 기간에만 받을 수 있어요. 못 받은 별은 사라지지 않고 다음 기간에 쓸 수 있습니다.')+' 별 '+R.pair+'개 = '+won(R.won)+' 1매, '+(R.max<9999?'한 번에 최대 '+R.max+'매':'매수 제한 없음')+'.</small></li>');   /* 실제 동작과 같음 */
   }
   N.forEach(function(n){items.push('<li class="ntc"><b>'+esc(n.title)+'</b>'+(n.body?'<span>'+esc(n.body).replace(/\n/g,"<br>")+'</span>':'')+
