@@ -1217,6 +1217,21 @@ function quietCall(name,payload){
     else google.script.run.withSuccessHandler(done).withFailureHandler(rej).api(name,body);
   });
 }
+/* 배부 확인·상품권 탭을 보고 있으면 30초마다 대상 명단을 새로(입력 중이 아니고 화면이 보일 때) */
+var LIVEGIFT=null;
+function liveGift(){
+  var on=D&&(ui.tab==="desk"||ui.tab==="finish");
+  if(!on){if(LIVEGIFT){clearInterval(LIVEGIFT);LIVEGIFT=null;}return;}
+  if(LIVEGIFT)return;
+  if(D.me.role==="admin"||D.me.club)quietCall("recvSync",{}).catch(function(){});
+  LIVEGIFT=setInterval(function(){
+    if(!(ui.tab==="desk"||ui.tab==="finish")){clearInterval(LIVEGIFT);LIVEGIFT=null;return;}
+    if(document.hidden)return;var ae=document.activeElement;if(ae&&(ae.tagName==="INPUT"||ae.tagName==="TEXTAREA"))return;
+    quietCall("state",PV?{as:PV}:{}).then(function(s){if(s&&s.me){ui.giftAt=new Date();applyState(s);}}).catch(function(){});
+  },30000);
+}
+function liveStamp(){var t=ui.giftAt||new Date();return '<span class="hint" style="font-weight:400">· '+p2l(t.getHours())+':'+p2l(t.getMinutes())+':'+p2l(t.getSeconds())+' 기준, 30초마다 새로</span>';}
+function p2l(n){return (n<10?"0":"")+n;}
 var PREFETCHED=false;
 function renderTabs(){
   if(!PREFETCHED&&D&&D.me){PREFETCHED=true;setTimeout(function(){findHome(true);},2500);}   /* 첫 화면을 다 그린 뒤 */
@@ -1245,6 +1260,7 @@ function renderPanel(){
   if(ui.tab==="write")wireWrite();
   if(ui.tab==="print")wirePrint();
   if(ui.tab==="tlabel")wireTLabel();
+  liveGift();
 }
 
 /* 탭을 줄이고 성격이 같은 화면을 한 곳에 모은다(2026-09-20) */
@@ -1702,7 +1718,7 @@ function pWrite(){
         '<p class="hint" style="margin:8px 0 0">'+(isL?'이 책을 집어 들게 만드는 한 줄 소개예요.'
           :isQ?'책에서 마음에 남은 문장을 그대로 옮겨 적어요. 가장 짧게 남기는 방법이에요.'
           :'읽고 난 생각을 길게. 한 주에 한 편이면 도장 한 칸이에요.')+
-        ' <b>라벨과 문장은 한 주에 합쳐서 한 칸</b>이에요.</p></div>'+
+        (D.week&&D.week.split?' <b>라벨 한 칸, 문장 한 칸</b> — 한 주에 각각 도장 1개예요.':' <b>라벨과 문장은 한 주에 합쳐서 한 칸</b>이에요.'+(D.conf.writeSplitFrom?' ('+md(D.conf.writeSplitFrom)+'부터는 따로 한 칸씩)':''))+'</p></div>'+
       '<div class="field"><label for="w-book">책 고르기</label><select id="w-book">'+opts+'</select>'+
         '<label class="ckline"><input type="checkbox" id="w-comic"'+(isComic?' checked':'')+(lockComic?' disabled':'')+'><span>만화·웹툰이에요'+
         (lockComic?' <span class="hint">(서가에 만화로 표시된 책이에요)</span>':'')+'</span></label>'+
@@ -1767,17 +1783,17 @@ function guideHTML(){
   var seals='<div class="gseals">'+SLOTS.map(function(k){return '<div>'+sealSVG(k)+'<span>'+SEAL[k].name+'</span></div>';}).join("")+'</div>';
   var R=rule();
   var key='<div class="redbox"><h4>도장 · 별 · 문화상품권 한눈에</h4><ul>'+
-    '<li class="red">한 주 도장은 모두 <b>'+c.weekCap+'칸</b> — <u>讀 라벨·문장 '+kcap("write")+'개 · 感 독후감 '+kcap("review")+'개 · 問 퀴즈 '+kcap("quiz")+'개</u>까지, <b>萬 만능 도장</b>은 개수 제한이 없어요</li>'+
-    '<li class="red"><u>라벨과 문장은 둘을 합쳐 한 개</u>예요. 상한을 넘겨 한 활동은 <b>책갈피 한 장</b>이 되고, 책갈피는 <b>한 주 '+(c.leafWeek||5)+'장</b>까지 쌓여요(그 뒤에 낸 글은 기록만)</li>'+
+    '<li class="red">한 주 도장은 모두 <b>'+c.weekCap+'칸</b> — <u>讀 '+(c.writeSplit?'라벨 '+(kcap("write")/2)+'개 · 句 문장 '+(kcap("write")/2)+'개':'라벨·문장 '+kcap("write")+'개')+' · 感 독후감 '+kcap("review")+'개 · 問 퀴즈 '+kcap("quiz")+'개</u>까지, <b>萬 만능 도장</b>은 개수 제한이 없어요</li>'+
+    '<li class="red">'+(c.writeSplit?'<u>라벨 1개·문장 1개는 따로 도장</u>이에요.':'<u>라벨과 문장은 둘을 합쳐 한 개</u>예요.'+(c.writeSplitFrom?' <b>'+md(c.writeSplitFrom)+'부터는 따로 한 칸씩</b>.':''))+' 상한을 넘겨 한 활동은 <b>책갈피 한 장</b>이 되고, 책갈피는 <b>한 주 '+(c.leafWeek||5)+'장</b>까지 쌓여요(그 뒤에 낸 글은 기록만)</li>'+
     '<li class="red"><b>책갈피 '+((D.stars&&D.stars.leaf&&D.stars.leaf.per)||5)+'장 = 만능 도장 1개</b> · 만능 도장은 <b>선생님도 찍어 주세요</b> · 그 주 '+c.weekCap+'칸이 차 있으면 <u>다음 주로 넘어가요</u></li>'+
     '<li class="red">도장 '+R.per+'개 = 별 1개 · <u>도장과 별은 달이 바뀌어도 그대로 쌓여요</u> · 달마다 받은 도장·별은 내 서재에서</li>'+
-    (c.giftOn?'<li class="red">별 '+R.pair+'개 = 문화상품권 '+won(R.won)+' 1매 · 한 번에 최대 '+R.max+'매'+(R.pair>1?' · 별 1개는 대상 아님':'')+'</li>'+
+    (c.giftOn?'<li class="red">별 '+R.pair+'개 = 문화상품권 '+won(R.won)+' 1매 · '+(R.max<9999?'한 번에 최대 '+R.max+'매':'매수 제한 없음')+(R.pair>1?' · 별 1개는 대상 아님':'')+'</li>'+
       '<li class="red">'+(c.recvWeekly?'<b>매주 금요일</b> 점심시간에 도서관에서 받아요':'수령 기간(공지사항에 날짜)에 도서관에서 받아요')+'. <u>받은 만큼만 별이 줄고</u>, 못 받아도 별은 그대로 남아 다음 수령 때 쓸 수 있어요</li>'
       :'<li class="red">별을 모으면 쓰임을 곧 공지할게요. 지금부터 모은 별은 그대로 쌓여요</li>')+'</ul></div>';
   return '<div class="guide sguide"><h3 class="sec">이용 안내</h3>'+key+
     woong("read","<b>읽고 → 한 줄 남기고 → 도장 받기.</b> 이게 전부야. 아래는 궁금할 때만 봐도 돼.")+
     sec("1. 도장은 이렇게 받아요",seals+'<ul>'+
-      '<li><b>讀 라벨·문장</b>: <b>라벨</b>('+L.label.join("~")+'자)은 이 책을 집어 들게 만드는 한 줄 소개예요. <b>문장</b>('+L.quote.join("~")+'자)은 책에서 마음에 남은 한 줄을 그대로 옮겨 적는 거예요. <u>둘을 합쳐 한 주 '+kcap("write")+'개</u>, 더 내면 책갈피 한 장이 돼요.</li>'+
+      '<li><b>讀 라벨·문장</b>: <b>라벨</b>('+L.label.join("~")+'자)은 이 책을 집어 들게 만드는 한 줄 소개예요. <b>문장</b>('+L.quote.join("~")+'자)은 책에서 마음에 남은 한 줄을 그대로 옮겨 적는 거예요. '+(c.writeSplit?'<u>한 주에 라벨 '+(kcap("write")/2)+'개·문장 '+(kcap("write")/2)+'개가 따로 도장</u>이고, 더 내면 책갈피 한 장이 돼요.':'<u>둘을 합쳐 한 주 '+kcap("write")+'개</u>, 더 내면 책갈피 한 장이 돼요.')+'</li>'+
       '<li><b>感 독후감</b>('+L.review.join("~")+'자): 읽고 남은 생각. 웹 게시판에 올라가요. <u>한 주 '+kcap("review")+'개</u>까지(이 주의 주제·추천 도서 덤 도장도 여기에 들어가요).</li>'+
       '<li><b>問 퀴즈</b>: 문제를 <b>성의껏</b> 내면(품질 '+(c.quizBar||6)+'점 이상) 그 자리에서 도장 1개, 이번 주 북퀴즈를 <b>절반 이상</b> 맞히면 또 1개. <u>출제와 풀이를 합쳐 한 주 '+kcap("quiz")+'개</u>까지.</li>'+
       '<li><b>萬 만능 도장</b>: 모은 <b>책갈피 '+((D.stars&&D.stars.leaf&&D.stars.leaf.per)||5)+'장</b>이 만능 도장 1개가 되고, <b>선생님이 직접 찍어 주시기도</b> 해요. <u>라벨·문장 / 독후감 / 퀴즈 어느 것이든 대신할 수 있고</u>, 개수 제한이 없어요. 그 주 칸이 차 있으면 <b>다음 주로 넘어가</b> 쌓입니다.</li>'+
@@ -1786,7 +1802,7 @@ function guideHTML(){
       '<li><b>별 1개 = 도장 '+R.per+'개.</b> 한 주 '+c.weekCap+'칸을 다 채우면 별 하나가 되는 셈이에요. 라벨만 이어 쓰면 도장은 한 개고 나머지는 책갈피로 모여요.</li></ul>')+
     sec("2. 글쓰기 약속",'<ul>'+
       '<li>하루에 '+c.dayCap+'편까지. 같은 책으로 같은 종류의 글(라벨·문장·독후감)은 한 번만.</li>'+
-      (c.writeWeek?'<li><b>라벨과 문장은 한 주에 합쳐서 '+c.writeWeek+'편</b>까지 낼 수 있어요. 첫 편이 <b>도장</b>, 나머지는 <b>책갈피</b>가 돼요(책갈피 '+((D.stars&&D.stars.leaf&&D.stars.leaf.per)||5)+'장 = 만능 도장 1개).</li>':'')+
+      (c.writeWeek?'<li><b>라벨과 문장은 한 주에 합쳐서 '+c.writeWeek+'편</b>까지 낼 수 있어요. '+(c.writeSplit?'라벨 첫 편·문장 첫 편이 각각 <b>도장</b>':'첫 편이 <b>도장</b>')+', 나머지는 <b>책갈피</b>가 돼요(책갈피 '+((D.stars&&D.stars.leaf&&D.stars.leaf.per)||5)+'장 = 만능 도장 1개).</li>':'')+
       '<li><b>만화·웹툰</b>은 <b>라벨·문장</b>으로 남겨요. 도장은 똑같이 한 개 받고, <b>독후감 도장만</b> 줄글 책에 드려요. 『쥐』·『페르세폴리스』 같은 <b>그래픽노블</b>은 선생님이 예외로 열어 두면 독후감도 돼요.</li>'+
       '<li>목록에 없는 책도 돼요. 어떤 책이든 읽었으면 쓸 수 있어요.</li>'+
       '<li>‘이 책을 언제, 어떻게 읽게 됐나’는 꼭 적어요(선생님만 봐요).</li>'+
@@ -1840,7 +1856,7 @@ function pDesk(){
   var q=(ui.deskQ||"").trim(),rows=K.rows.filter(function(x){return !q||x.hakbun.indexOf(q)>=0||x.name.indexOf(q)>=0;});
   var done=K.rows.filter(function(x){return x.paid;}),acked=done.filter(function(x){return x.ack;}),total=K.rows.reduce(function(a,x){return a+x.vouchers;},0),given=done.reduce(function(a,x){return a+(x.paidN||x.vouchers);},0);
   var tag=K.open?'<span class="pill gold">배부 중</span>':K.state==="soon"?'<span class="pill">예정</span>':'<span class="pill grey">지난 기간</span>';
-  return '<h3 class="sec">'+esc(K.label)+' 상품권 배부 확인 '+tag+'</h3>'+
+  return '<h3 class="sec">'+esc(K.label)+' 상품권 배부 확인 '+tag+' '+liveStamp()+'</h3>'+
     (K.open?'<p class="sub">수령 기간 '+rangeLabel(K.from,K.to)+(K.place?' · '+esc(K.place):'')+'. 대상 학생이 <b>학번 순</b>으로 나옵니다. 학번·이름을 확인하고 매수만큼 문화상품권을 준 뒤 이름 옆 <b>배부</b>를 누르세요. 그 학생 화면에 ‘배부 완료’ 안내가 뜨고, 학생이 <b>확인</b>을 누르면 ‘수령 확인 ✓’가 붙습니다. 잘못 눌렀으면 다시 눌러 되돌립니다. 누가 눌렀는지 기록됩니다.</p>'
       :K.state==="soon"?'<p class="sub">다음 수령 기간은 <b>'+rangeLabel(K.from,K.to)+'</b>'+(K.place?' · '+esc(K.place):'')+'입니다. 아래는 <b>지금까지 모은 별 기준</b> 예정 명단이라 기간 전까지 조금 바뀔 수 있어요. <b>배부 단추는 수령 기간에만</b> 생깁니다.</p>'
       :'<p class="sub">지난 수령 기간('+rangeLabel(K.from,K.to)+') 명단입니다. 배부 단추는 다음 수령 기간에 생깁니다.</p>')+
@@ -1918,7 +1934,7 @@ function noticesHTML(){
     items.push('<li class="ntc gift"><b>'+esc(G.label)+' · 문화상품권'+(G.open?' — 지금 받는 기간':'')+'</b>'+
       '<span>'+rangeLabel(G.from,G.to)+(G.place?'<br>'+esc(G.place):'')+'</span>'+
       (me?'<em>'+(me.paid?'수령했어요 ✓ ('+(me.paidN||me.vouchers)+'매)':me.vouchers?'나는 '+me.vouchers+'매 받을 수 있어요(별 '+me.stars+'개)':'별 '+me.stars+'개 · 이번엔 대상이 아니에요(별 '+R.pair+'개부터)')+'</em>':'')+
-            '<small>'+(D.conf.recvWeekly?'매주 금요일 점심시간에 도서관에서 받아요. 이번 금요일에 못 받으면 다음 주 금요일에 받을 수 있어요.':'수령 기간에만 받을 수 있어요. 못 받은 별은 사라지지 않고 다음 기간에 쓸 수 있습니다.')+' 별 '+R.pair+'개 = '+won(R.won)+' 1매, 한 번에 최대 '+R.max+'매.</small></li>');   /* 실제 동작과 같음 */
+            '<small>'+(D.conf.recvWeekly?'매주 금요일 점심시간에 도서관에서 받아요. 이번 금요일에 못 받으면 다음 주 금요일에 받을 수 있어요.':'수령 기간에만 받을 수 있어요. 못 받은 별은 사라지지 않고 다음 기간에 쓸 수 있습니다.')+' 별 '+R.pair+'개 = '+won(R.won)+' 1매, '+(R.max<9999?'한 번에 최대 '+R.max+'매':'매수 제한 없음')+'.</small></li>');   /* 실제 동작과 같음 */
   }
   N.forEach(function(n){items.push('<li class="ntc"><b>'+esc(n.title)+'</b>'+(n.body?'<span>'+esc(n.body).replace(/\n/g,"<br>")+'</span>':'')+
     (n.to?'<small>'+dayLabel(n.to)+'까지</small>':'')+'</li>');});
@@ -2412,13 +2428,13 @@ function doNotice(){
     '<div class="big">읽고 → 한 줄 남기고 → 도장 받기</div>'+
     '<div class="steps"><div class="st"><b>1</b>도서관에서 책을 빌려요</div><div class="st"><b>2</b>QR로 들어가 로그인해요<br><small>학번·이름 → PIN 여섯 자리</small></div>'+
       '<div class="st"><b>3</b>라벨·문장·독후감을 써요</div><div class="st"><b>4</b>도장이 찍히고 별이 쌓여요</div></div>'+
-    '<div class="row"><div class="bx"><h3>讀 라벨 · 句 문장</h3><p>라벨 40~90자 한 줄 소개.<br>문장은 책 속 한 줄 15~120자.<br>둘을 합쳐 <b>한 주 한 칸</b>.</p></div>'+
+    '<div class="row"><div class="bx"><h3>讀 라벨 · 句 문장</h3><p>라벨 40~90자 한 줄 소개.<br>문장은 책 속 한 줄 15~120자.<br>'+(D.conf.writeSplit?'<b>라벨 한 칸, 문장 한 칸</b>(한 주에 각각).':'둘을 합쳐 <b>한 주 한 칸</b>.')+'</p></div>'+
       '<div class="bx"><h3>感 독후감</h3><p>300~700자.<br>추천 도서·이 주의 주제 책이면 <b>도장 2개</b>.</p></div>'+
       '<div class="bx"><h3>問 答 북퀴즈</h3><p>문제를 내면 한 칸(問),<br>매주 월요일 5문제를 절반 이상 맞히면 한 칸(答).</p></div></div>'+
     '<div class="rule">· 한 주 도장은 <b>'+R.per+'칸</b> — 讀·句 라벨·문장 '+kcap("write")+' · 感 독후감 '+kcap("review")+' · 問 퀴즈 '+kcap("quiz")+' · 萬 만능(제한 없음)<br>'+
       '· 상한을 넘기면 <b>책갈피</b> 한 장. <b>책갈피 5장 = 만능 도장 1개</b>(선생님도 찍어 주세요)<br>'+
       '· 도장 '+R.per+'개 = <b>별 1개</b>. 도장·별·책갈피는 달이 바뀌어도 계속 쌓여요<br>'+
-      (GO?'· 별 '+R.pair+'개 = <b>문화상품권 '+won(R.won)+' 1매</b>(한 번에 최대 '+R.max+'매)'+(R.pair>1?' · 별 1개는 대상이 아니에요':'')+'<br>'+
+      (GO?'· 별 '+R.pair+'개 = <b>문화상품권 '+won(R.won)+' 1매</b>('+(R.max<9999?'한 번에 최대 '+R.max+'매':'매수 제한 없음')+')'+(R.pair>1?' · 별 1개는 대상이 아니에요':'')+'<br>'+
           (D.conf.recvWeekly?'· <b>매주 금요일</b> 점심시간에 도서관에서 받아요. 못 받아도 별은 남아 다음 금요일에 받을 수 있어요<br>'
             :'· 수령 기간'+(win?'('+rangeLabel(win,(D.gifts.wins.filter(function(w){return w.from===win;})[0]||{}).to)+')':'')+'에 도서관에서 받아요. <b>그때만 받을 수 있어요</b><br>'):'')+
       '· 도장과 별은 <b>계속 쌓여요.</b> 별은 상품권으로 바꿀 때만 줄어요. 게시판에는 이름 없이 <b>학급만</b> 보여요</div>'+
@@ -2580,8 +2596,8 @@ function pGift(){
         :(x.paid?'배부 완료':'<span class="hint">대기</span>'))+(x.paid&&x.who?'<div class="hint">'+esc(x.who)+'</div>':'')+'</td>'+
       '<td>'+(x.paid?(x.ack?'<span class="pill gold">확인 ✓</span><div class="hint">'+esc(String(x.ackAt||"").slice(5,16))+'</div>':'<span class="hint">확인 전</span>'):'')+'</td></tr>';}).join("");
   var auto=!c.recvSheet&&!(c.giftWins||[]).length;
-  return '<h3 class="sec">상품권</h3>'+
-    '<div class="box" style="margin:0 0 12px;font-size:13.5px">누적 도장 <b>'+R.per+'개 = 별 1개</b>, <b>별 '+R.pair+'개 = 문화상품권 '+won(R.won)+' 1매</b>, 한 번 수령에 최대 <b>'+R.max+'매</b>.'+(R.pair>1?' 별 1개는 대상이 아닙니다.':'')+' '+
+  return '<h3 class="sec">상품권 '+liveStamp()+'</h3>'+
+    '<div class="box" style="margin:0 0 12px;font-size:13.5px">누적 도장 <b>'+R.per+'개 = 별 1개</b>, <b>별 '+R.pair+'개 = 문화상품권 '+won(R.won)+' 1매</b>, '+(R.max<9999?'한 번 수령에 최대 <b>'+R.max+'매</b>.':'<b>매수 제한 없음</b>.')+(R.pair>1?' 별 1개는 대상이 아닙니다.':'')+' '+
       '지금 가진 별로 받습니다. <b>별은 상품권으로 바꿀 때만 빠집니다</b> — 이 기간에 못 받아도 사라지지 않고 다음 수령에 쓸 수 있고, 기간 중에 새로 생긴 별도 쓸 수 있습니다.'+
       '<br><span class="hint">수령 날은 구글 시트 <b>수령기간</b> 탭에 있습니다'+(c.recvWeekly?'(지금은 <b>매주 금요일</b> 한 줄씩 — 쉬는 날·시험 기간이면 그 줄을 지우세요)':auto?'(지금은 비어 있어 매달 첫 월요일~목요일)':'')+'. 대상자 명단과 배부·수령 확인은 <b>수령대상</b> 탭에 자동으로 정리됩니다.</span>'+
       (c.giftOn?'':'<br><span class="hint">지금은 설정 상품권공개가 N 이라 학생 화면에는 상품권 안내가 나가지 않습니다(별은 그대로 쌓임).</span>')+'</div>'+
@@ -2753,7 +2769,7 @@ function stampNote(){
   return '<div class="box">도장은 선생님이 찍지 않습니다. 학생이 한 편을 내면 도장판에 자동으로 찍힙니다. '+
     '<b style="color:#9E3B24">라벨·문장 = 감빛 둥근 도장 讀·句</b>, <b style="color:#2B4C7E">독후감 = 쪽빛 네모 도장 感</b>, '+
     '<b style="color:#2F6B3A">퀴즈 출제 = 초록 마름모 도장 問</b>, <b style="color:#1F6F6B">퀴즈 풀이 = 答</b>, <b style="color:#7A4B8A">만능 = 萬</b>, <b style="color:#6B3F7A">선생님 도장 = 賞</b>(<b>도장 주기</b> 탭에서 직접, 자리와 상관없는 만능 도장). '+
-    '한 주에 모두 '+D.conf.weekCap+'칸이고, 종류마다 상한이 있습니다 — <b>라벨·문장 합쳐 '+kcap("write")+'개, 독후감 '+kcap("review")+'개, 퀴즈(출제+풀이) '+kcap("quiz")+'개</b>, <b>만능은 제한 없음</b>. 상한을 넘긴 활동은 <b>책갈피</b> 한 장이 되고, 책갈피는 <b>한 주 5장</b>까지 쌓입니다. <b>책갈피 5장 = 만능 도장 1개</b>입니다. 만능 도장은 그 주 칸이 차 있으면 다음 주로 넘어갑니다. 누적 도장 <b>'+R.per+'개마다 별 1개</b>, <b>별 '+R.pair+'개 = 문화상품권 '+won(R.won)+' 1매</b>(한 번 수령에 최대 '+R.max+'매'+(R.pair>1?', 별 1개는 대상 아님':'')+'). '+
+    '한 주에 모두 '+D.conf.weekCap+'칸이고, 종류마다 상한이 있습니다 — <b>'+(D.conf.writeSplit?'라벨 '+(kcap("write")/2)+'개·문장 '+(kcap("write")/2)+'개(따로)':'라벨·문장 합쳐 '+kcap("write")+'개')+', 독후감 '+kcap("review")+'개, 퀴즈(출제+풀이) '+kcap("quiz")+'개</b>, <b>만능은 제한 없음</b>. 상한을 넘긴 활동은 <b>책갈피</b> 한 장이 되고, 책갈피는 <b>한 주 5장</b>까지 쌓입니다. <b>책갈피 5장 = 만능 도장 1개</b>입니다. 만능 도장은 그 주 칸이 차 있으면 다음 주로 넘어갑니다. 누적 도장 <b>'+R.per+'개마다 별 1개</b>, <b>별 '+R.pair+'개 = 문화상품권 '+won(R.won)+' 1매</b>('+(R.max<9999?'한 번에 최대 '+R.max+'매':'매수 제한 없음')+(R.pair>1?', 별 1개는 대상 아님':'')+'). '+
     (D.conf.recvWeekly?'<b>매주 금요일</b> 점심시간에 도서관에서 받고, ':'수령 기간에 ')+'받은 만큼만 별이 줄고, 못 받은 별은 그대로 남아 다음 수령 때 씁니다. 글을 내리면 그 도장도 사라집니다.</div>';
 }
 function guideHomeroom(){

@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261009-215623";
+var CODE_VERSION="20261009-221602";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -58,6 +58,7 @@ function doGet(e){
       try{applySheetUi_();}catch(x){m.시트모양=x.message;}
       try{Core.make(makeDb_(),makeEnv_()).maintain();}catch(x){m.정리=x.message;}
       try{tidySheets_();}catch(x){}   /* 옮기고 비운 옛 탭을 그 자리에서 정리 */
+      if(e.parameter.recv)markRecvDirty_();   /* &recv=1: 수령대상 시트를 1분 안에 다시 쓰게 */
       /* &authors=1: 작가 이야기 소개를 지금 25명 받아 보기(위키백과가 막는지 확인용). 쓰기라 잠그고 */
       if(e.parameter.authors){var lka=LockService.getScriptLock();
         try{lka.waitLock(20000);LOCK_HELD_=true;var cA=Core.make(makeDb_(),makeEnv_());m.작가=cA.fillAuthors(25);
@@ -170,6 +171,7 @@ function doGet(e){
     var trg=ScriptApp.getProjectTriggers();
     st.firstRunPending=trg.some(function(t){return t.getHandlerFunction()==="firstRun";});
     st.triggers=trg.map(function(t){return t.getHandlerFunction();}).sort().join(",");
+    st.recvAt=PropertiesService.getScriptProperties().getProperty("recvAt")||"";st.recvDirty=!!PropertiesService.getScriptProperties().getProperty("recvDirty");
     try{st.sheets=SpreadsheetApp.getActive().getSheets().map(function(sh){return sh.getName()+":"+sh.getLastRow();});}catch(x){}
     return ContentService.createTextOutput(JSON.stringify(st)).setMimeType(ContentService.MimeType.JSON);
   }
@@ -213,6 +215,7 @@ function api(name,json){
   }catch(e){err=String(e&&e.message||e);}
   finally{if(lock){LOCK_HELD_=false;try{lock.releaseLock();}catch(e){}}}
   if(err)return JSON.stringify({error:err});
+  if(write&&name!=="state"&&RECV_QUIET_.indexOf(name)<0)markRecvDirty_();   /* 별이 바뀌었을 수 있다 → 1분 안에 수령대상 시트를 다시 */
   if(out==null)out={ok:true};
   var st=name==="state"?out:null;
   if(want){try{st=Core.make(db,env).api("state",{_t:p._t,as:p._as});out={r:out,state:st};}catch(e){}}
@@ -649,7 +652,24 @@ function rotateNow(){
   say_(r.picked?"이번 달 추천 도서 "+r.picked+"권을 새로 뽑았습니다.":"새로 뽑지 못했습니다. 독서로 응답을 확인해 주세요.");
 }
 var HOURS_=[7,15,0];
-function onSheetEdit(e){try{bumpSheet_(e.range.getSheet().getName());}catch(x){}}
+function onSheetEdit(e){try{var nm=e.range.getSheet().getName();bumpSheet_(nm);if(nm!=="수령대상")markRecvDirty_();}catch(x){}}
+/* ── 구글 시트 '수령대상'을 실시간으로(2026-10-09 회장님 지시) ──
+   쓰기 요청·시트 고침이 있으면 표시만 남기고, 1분마다 도는 시계가 표시가 있을 때만 다시 쓴다(없으면 바로 끝) */
+var RECV_QUIET_=["like","newsSeen","ideaAdd","ideaReply","login","pinChange","consent","recvSync","authorFind","findHome","libSearch","staffLabel","vote"];
+function markRecvDirty_(){try{PropertiesService.getScriptProperties().setProperty("recvDirty",String(Date.now()));}catch(e){}}
+function recvMinute(){
+  var P=PropertiesService.getScriptProperties();
+  if(!P.getProperty("recvDirty"))return 0;
+  var lk=LockService.getScriptLock();if(!lk.tryLock(15000))return 0;
+  try{
+    LOCK_HELD_=true;
+    P.deleteProperty("recvDirty");   /* 지우고 나서 쓴다 — 그 사이 또 바뀌면 다음 분에 다시 */
+    var n=Core.make(makeDb_(),makeEnv_()).syncRecvSheet();
+    P.setProperty("recvAt",Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd HH:mm:ss")+" · "+n+"줄");
+    return n;
+  }catch(e){P.setProperty("recvDirty",String(Date.now()));console.log("수령대상: "+e.message);return 0;}
+  finally{LOCK_HELD_=false;try{lk.releaseLock();}catch(e){}}
+}
 function onSheetChange(e){try{Object.keys(Core.HEAD).forEach(bumpSheet_);}catch(x){}}
 function installEditTriggers_(){
   var have={};ScriptApp.getProjectTriggers().forEach(function(t){have[t.getHandlerFunction()]=true;});
@@ -841,6 +861,8 @@ function doPost(e){
 }
 function installTrigger_(){
   try{installEditTriggers_();}catch(e){console.log("편집 감지: "+e.message);}
+  try{if(!ScriptApp.getProjectTriggers().some(function(t){return t.getHandlerFunction()==="recvMinute";}))
+    ScriptApp.newTrigger("recvMinute").timeBased().everyMinutes(1).create();}catch(e){console.log("수령대상 시계: "+e.message);}
   var mine=ScriptApp.getProjectTriggers().filter(function(t){return t.getHandlerFunction()==="libDaily";});
   if(mine.length===HOURS_.length)return false;
   mine.forEach(function(t){ScriptApp.deleteTrigger(t);});
