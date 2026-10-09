@@ -1688,8 +1688,11 @@ function doSearch(q){
 }
 
 /* ── 학생: 글 쓰기 ── */
+/* 오늘 이 종류를 이미 몇 편 냈나(종류마다 하루 dayKindCap 편) */
+function todayKindCount(k){var td=String(D.today||"").slice(0,10);return (D.mine||[]).filter(function(l){return l.kind===k&&String(l.date||"").slice(0,10)===td&&l.status!=="down";}).length;}
 function pWrite(){
   var K=ui.kind==="review"?"review":ui.kind==="quote"?"quote":"label",lim=D.conf.limit[K]||[40,90];
+  var kDone=D.conf.dayKindCap&&todayKindCount(K)>=D.conf.dayKindCap;
   var isL=K==="label",isQ=K==="quote",isR=K==="review";
   var opts='<option value="free"'+(ui.pick==="free"?' selected':'')+'>목록에 없는 책 직접 입력</option>'+
     D.books.map(function(b){return '<option value="'+b.id+'"'+(ui.pick===b.id?' selected':'')+'>'+esc(b.t)+' — '+esc(b.a)+'</option>';}).join("");
@@ -1718,7 +1721,8 @@ function pWrite(){
         '<p class="hint" style="margin:8px 0 0">'+(isL?'이 책을 집어 들게 만드는 한 줄 소개예요.'
           :isQ?'책에서 마음에 남은 문장을 그대로 옮겨 적어요. 가장 짧게 남기는 방법이에요.'
           :'읽고 난 생각을 길게. 한 주에 한 편이면 도장 한 칸이에요.')+
-        (D.week&&D.week.split?' <b>라벨 한 칸, 문장 한 칸</b> — 한 주에 각각 도장 1개예요.':' <b>라벨과 문장은 한 주에 합쳐서 한 칸</b>이에요.'+(D.conf.writeSplitFrom?' ('+md(D.conf.writeSplitFrom)+'부터는 따로 한 칸씩)':''))+'</p></div>'+
+        (D.week&&D.week.split?' <b>라벨 한 칸, 문장 한 칸</b> — 한 주에 각각 도장 1개예요.':' <b>라벨과 문장은 한 주에 합쳐서 한 칸</b>이에요.'+(D.conf.writeSplitFrom?' ('+md(D.conf.writeSplitFrom)+'부터는 따로 한 칸씩)':''))+
+        (kDone?'<br><b style="color:var(--red)">오늘은 '+kindName(K)+'을 이미 냈어요.</b> 라벨·문장·독후감은 종류마다 하루 '+D.conf.dayKindCap+'편이에요. 다른 종류로 써 보세요.':'')+'</p></div>'+
       '<div class="field"><label for="w-book">책 고르기</label><select id="w-book">'+opts+'</select>'+
         '<label class="ckline"><input type="checkbox" id="w-comic"'+(isComic?' checked':'')+(lockComic?' disabled':'')+'><span>만화·웹툰이에요'+
         (lockComic?' <span class="hint">(서가에 만화로 표시된 책이에요)</span>':'')+'</span></label>'+
@@ -1801,7 +1805,7 @@ function guideHTML(){
       '<li><b>이벤트</b>: 기간을 정해 열려요. <b>도장 2배</b>, <b>추첨권</b>(글 한 편이 표 한 장), <b>반 대항</b>(우리 반 참여율), <b>미션</b>(목표를 채우면 도장 더) 네 가지가 있어요. 서가 맨 위 띠에서 지금 열린 이벤트를 봐요.</li>'+
       '<li><b>별 1개 = 도장 '+R.per+'개.</b> 한 주 '+c.weekCap+'칸을 다 채우면 별 하나가 되는 셈이에요. 라벨만 이어 쓰면 도장은 한 개고 나머지는 책갈피로 모여요.</li></ul>')+
     sec("2. 글쓰기 약속",'<ul>'+
-      '<li>하루에 '+c.dayCap+'편까지. 같은 책으로 같은 종류의 글(라벨·문장·독후감)은 한 번만.</li>'+
+      '<li>'+(c.dayKindCap?'라벨·문장·독후감은 <b>종류마다 하루 '+c.dayKindCap+'편</b>까지(하루 모두 합쳐 '+c.dayCap+'편). ':'하루에 '+c.dayCap+'편까지. ')+'같은 책으로 같은 종류의 글(라벨·문장·독후감)은 한 번만.</li>'+
       (c.writeWeek?'<li><b>라벨과 문장은 한 주에 합쳐서 '+c.writeWeek+'편</b>까지 낼 수 있어요. '+(c.writeSplit?'라벨 첫 편·문장 첫 편이 각각 <b>도장</b>':'첫 편이 <b>도장</b>')+', 나머지는 <b>책갈피</b>가 돼요(책갈피 '+((D.stars&&D.stars.leaf&&D.stars.leaf.per)||5)+'장 = 만능 도장 1개).</li>':'')+
       '<li><b>만화·웹툰</b>은 <b>라벨·문장</b>으로 남겨요. 도장은 똑같이 한 개 받고, <b>독후감 도장만</b> 줄글 책에 드려요. 『쥐』·『페르세폴리스』 같은 <b>그래픽노블</b>은 선생님이 예외로 열어 두면 독후감도 돼요.</li>'+
       '<li>목록에 없는 책도 돼요. 어떤 책이든 읽었으면 쓸 수 있어요.</li>'+

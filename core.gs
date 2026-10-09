@@ -29,7 +29,7 @@ var HEAD={
   "작가":["이름","생몰","생일","직업","소개","사진","출처","확인","숨김"]
 };
 var CONF0=[["프로그램명","웅천 서가"],["부제","한 권 읽고, 한 줄 남기기"],["차수","1"],
-  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","N"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","1"],["월최대매수","0"],["라벨문장따로","2026-10-19"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["투표묶음","2026-09~2026-10"],["주간투표","5"],["백업주기","주"],["백업보관","12"],["백업폴더","https://drive.google.com/drive/folders/1Nw-1moQpxXHkeuHYo0kMJjNVtvueqF_a"],["주간라벨문장글","3"],["만화규칙","라벨만"],["만화청구기호","만, 만화, 657"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
+  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","N"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","1"],["월최대매수","0"],["라벨문장따로","2026-10-19"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","3"],["하루종류상한","1"],["투표묶음","2026-09~2026-10"],["주간투표","5"],["백업주기","주"],["백업보관","12"],["백업폴더","https://drive.google.com/drive/folders/1Nw-1moQpxXHkeuHYo0kMJjNVtvueqF_a"],["주간라벨문장글","3"],["만화규칙","라벨만"],["만화청구기호","만, 만화, 657"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
   ["학교코드","S100000673"],["교육청코드","S10"],["학교명","웅천고등학교"],
   ["이달의권수","40"],["추천방식","권장"],["추천묶음","2026-09~2026-10"],["퀴즈문항수","5"],["퀴즈책수","2"],["퀴즈품질기준","6"],["보유기간","3학년은 졸업식 날까지, 1·2학년은 학년말(2월)까지"],["개인정보담당","도서관 담당 교사"]];
 /* 설정 시트 '설명' 칸에 들어가는 뜻풀이 */
@@ -95,7 +95,9 @@ var CONF_DESC={
   "로그인방식":"핀(기본) = 학생은 학번·이름, 교사는 이름으로 들어와 PIN 여섯 자리를 정합니다 / 구글 = 학교 구글 계정으로 바로(학교 계정이 있을 때만)",
   "기기기억일":"메일 로그인 뒤 같은 PC에서 자동 로그인을 유지하는 날 수",
   "상품권메일":"Y = 수령 날 아침 담당·담임 선생님께 대상 명단 메일(지금은 N — 대상은 앱 '배부 확인'·'상품권'과 수령대상 시트에서 바로 봅니다)",
-  "하루제출상한":"학생 한 명이 하루에 낼 수 있는 글 수",
+  "하루제출상한":"학생 한 명이 하루에 낼 수 있는 글 수(모두 합쳐서)",
+  "하루종류상한":"라벨·문장·독후감을 종류마다 하루에 몇 편까지(1 = 하루에 라벨 1·문장 1·독후감 1). 0 이면 종류별 제한 없음",
+  "하루종류판":"(자동 기록) 손대지 마세요",
   "투표후보수":"투표에서 부문마다 한 학생에게 보이는 후보 수(올라온 지 7일 안의 글)",
   "참여학년":"(더 이상 쓰지 않음 — 명단에 있는 학생은 학년과 상관없이 모두 글쓰기·투표·도장)",
   "허용도메인":"이 도메인 계정만 들어옴. 예: @학교도메인",
@@ -932,7 +934,7 @@ function make(db,env){
   function pubConf(c){
     return {name:c["프로그램명"],sub:c["부제"],round:c["차수"],approve:approveMode(c),
       goal:Number(c["주간도장"])||5,weekCap:Number(c["주간도장"])||5,monthCap:Number(c["월간도장"])||0,
-      quote:todayQuote(),giftOn:S(c["상품권공개"])==="Y",giftNote:S(c["상품권안내"]),dayCap:Number(c["하루제출상한"])||2,writeWeek:Number(c["주간라벨문장글"])||0,voteGroup:(function(){var m=/(\d{4}-\d{2})\s*~\s*(\d{4}-\d{2})/.exec(S(c["투표묶음"]));return m?{from:m[1],to:m[2]}:null;})(),voteN:Number(c["투표후보수"])||8,giftMin:Number(c["상품권기준"])||5,giftTypes:S(c["상품권세종류"])!=="N",limit:LIMIT,areas:S(c["추천방식"])==="장르"?GENRE_NAMES:TEEN_NAMES,lib:libConf(c),libChecked:S(c["도서확인"]),libResult:S(c["도서확인결과"]),loginMode:S(c["로그인방식"])==="구글"?"google":"pin",subjects:S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean),giftWins:giftWindows(c),writeSplit:(function(){try{return splitOn(weekKey(env.now(),0),c);}catch(e){return false;}})(),writeSplitFrom:S(c["라벨문장따로"]),recvWeekly:(function(){try{return weeklyRecv(c);}catch(e){return false;}})(),recvSheet:(function(){try{return db.rows("수령기간").length>0;}catch(e){return false;}})(),giftPlace:S(c["상품권배부장소"]),selVer:S(c["선별판"]),upToDate:S(c["선별판"])==="3"&&S(c["퀴즈판"])==="4"&&S(c["문장판"])==="2",quizBooks:Number(c["퀴즈책수"])||2,leafWeek:Number(c["주간책갈피"])||5,comicRule:comicRule(c),comicKeys:comicKeys(c),monthN:Number(c["이달의권수"])||40,holdings:S(c["장서"]),month:S(c["이달"]),
+      quote:todayQuote(),giftOn:S(c["상품권공개"])==="Y",giftNote:S(c["상품권안내"]),dayCap:Number(c["하루제출상한"])||2,dayKindCap:Number(c["하루종류상한"])>0?Number(c["하루종류상한"]):0,writeWeek:Number(c["주간라벨문장글"])||0,voteGroup:(function(){var m=/(\d{4}-\d{2})\s*~\s*(\d{4}-\d{2})/.exec(S(c["투표묶음"]));return m?{from:m[1],to:m[2]}:null;})(),voteN:Number(c["투표후보수"])||8,giftMin:Number(c["상품권기준"])||5,giftTypes:S(c["상품권세종류"])!=="N",limit:LIMIT,areas:S(c["추천방식"])==="장르"?GENRE_NAMES:TEEN_NAMES,lib:libConf(c),libChecked:S(c["도서확인"]),libResult:S(c["도서확인결과"]),loginMode:S(c["로그인방식"])==="구글"?"google":"pin",subjects:S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean),giftWins:giftWindows(c),writeSplit:(function(){try{return splitOn(weekKey(env.now(),0),c);}catch(e){return false;}})(),writeSplitFrom:S(c["라벨문장따로"]),recvWeekly:(function(){try{return weeklyRecv(c);}catch(e){return false;}})(),recvSheet:(function(){try{return db.rows("수령기간").length>0;}catch(e){return false;}})(),giftPlace:S(c["상품권배부장소"]),selVer:S(c["선별판"]),upToDate:S(c["선별판"])==="3"&&S(c["퀴즈판"])==="4"&&S(c["문장판"])==="2",quizBooks:Number(c["퀴즈책수"])||2,leafWeek:Number(c["주간책갈피"])||5,comicRule:comicRule(c),comicKeys:comicKeys(c),monthN:Number(c["이달의권수"])||40,holdings:S(c["장서"]),month:S(c["이달"]),
       period:S(c["이달"])?periodOf(S(c["이달"]),c["추천묶음"]):null,
       privacy:{keep:S(c["보유기간"]),owner:S(c["개인정보담당"])},quizBar:Number(c["퀴즈품질기준"])||6,quizTarget:Number(c["퀴즈문항수"])||5};
   }
@@ -1233,6 +1235,14 @@ function make(db,env){
     if(S(conf()["무인증판"])!=="1"){setConf("교사등록무인증","N");setConf("무인증판","1");}
     /* 북퀴즈는 2권 이내(2026-09-28 회장님 지시): 옛 기본값 3 → 2 를 한 번만(나중에 시트에서 고치면 그대로) */
     if(S(conf()["퀴즈책판"])!=="2"){if(S(conf()["퀴즈책수"])==="3"||!S(conf()["퀴즈책수"]))setConf("퀴즈책수","2");setConf("퀴즈책판","2");}
+    /* 라벨·문장·독후감 종류마다 하루 1편(2026-10-09 회장님 지시). 하루 합계가 2면 3으로(종류마다 하나씩 낼 수 있게) */
+    if(S(conf()["하루종류판"])!=="1"){
+      if(!S(conf()["하루종류상한"]))setConf("하루종류상한","1");
+      if(S(conf()["하루제출상한"])==="2")setConf("하루제출상한","3");
+      try{var wt8=weekNoticeText(conf());db.rows("공지").forEach(function(r){
+        if(S(r["제목"])==="한 주 도장은 다섯 칸"&&!/하루/.test(S(r["내용"])))db.set("공지","id",S(r["id"]),{"내용":wt8});});}catch(e){}
+      setConf("하루종류판","1");
+    }
     /* 상품권 매수 제한 없음 · 대상 메일 끔 · 10/19 주부터 라벨·문장 도장 따로(2026-10-09 회장님 지시) */
     if(S(conf()["무제한판"])!=="1"){
       setConf("월최대매수","0");setConf("상품권메일","N");
@@ -2695,7 +2705,8 @@ function make(db,env){
     var mmdd=sp?Number(S(c["라벨문장따로"]).slice(5,7))+"월 "+Number(S(c["라벨문장따로"]).slice(8,10))+"일":"";
     var w=now||sp?"라벨 "+caps.kind.write+"개·문장 "+caps.kind.write+"개(따로 도장)":"라벨·문장은 합쳐서 "+caps.kind.write+"개";
     return (sp&&!now?mmdd+"부터 ":"")+w+", 독후감 "+caps.kind.review+"개, 퀴즈 "+caps.kind.quiz+"개까지, 모두 합쳐 한 주 "+caps.week+"칸. 선생님이 주시는 만능 도장은 제한이 없어요."+
-      (wcap?" 라벨·문장은 한 주에 합쳐서 "+wcap+"편까지 낼 수 있고, "+(now||sp?"라벨 첫 편·문장 첫 편이 도장":"첫 편이 도장")+"·나머지는 책갈피예요.":"");
+      (wcap?" 라벨·문장은 한 주에 합쳐서 "+wcap+"편까지 낼 수 있고, "+(now||sp?"라벨 첫 편·문장 첫 편이 도장":"첫 편이 도장")+"·나머지는 책갈피예요.":"")+
+      (Number(c["하루종류상한"])>0?" 라벨·문장·독후감은 종류마다 하루 "+Number(c["하루종류상한"])+"편까지.":"");
   }
   function giftNoticeText(c){
     var R=giftRule(c);
@@ -3144,6 +3155,10 @@ function make(db,env){
     var cap=Number(c["하루제출상한"])||2,td=today(now);
     if(mine.filter(function(r){return S(r["시각"]).slice(0,10)===td;}).length>=cap)
       fail("하루에 "+cap+"편까지 낼 수 있습니다. 내일 이어서 써 주세요.");
+    /* 라벨·문장·독후감은 종류마다 하루 하루종류상한(1)편까지(2026-10-09 회장님 지시) */
+    var kcapD=Number(c["하루종류상한"]);if(!(kcapD>0))kcapD=0;
+    if(kcapD&&mine.filter(function(r){return S(r["시각"]).slice(0,10)===td&&writeKind(r["종류"])===kind;}).length>=kcapD)
+      fail("오늘은 "+kName(kind)+"을 이미 "+kcapD+"편 냈어요. 라벨·문장·독후감은 종류마다 하루 "+kcapD+"편까지예요. 다른 종류로 쓰거나 내일 이어서 써 주세요.");
     if(mine.some(function(r){return S(r["종류"])===kind&&norm(r["책제목"])===norm(title)&&S(r["차수"])===c["차수"];}))
       fail("같은 책으로 같은 종류의 글을 이미 냈습니다.");
     /* 라벨·문장은 둘을 합쳐 한 주 정해진 편수까지. 첫 편이 도장, 나머지는 책갈피가 된다 */

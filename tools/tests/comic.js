@@ -9,7 +9,7 @@ const db={replace:(t,l)=>{T[t]=[];l.forEach(o=>db.add(t,o));},rows:t=>T[t],add:(
   set:(t,k,v,p)=>T[t].forEach(r=>{if(String(r[k]).trim()===String(v))Object.keys(p).forEach(c=>r[c]=String(p[c]))}),
   setMany:(t,k,m)=>T[t].forEach(r=>{const p=m[String(r[k])];if(p)Object.keys(p).forEach(c=>r[c]=String(p[c]))}),
   setConf:(k,v)=>{const h=T["설정"].find(r=>r["항목"]===k);if(h)h["값"]=v;else T["설정"].push({"항목":k,"값":v})}};
-const C=()=>Core.make(db,env);C().maintain();T["주제"].length=0;db.setConf("로그인방식","구글");db.setConf("하루제출상한","9");
+const C=()=>Core.make(db,env);C().maintain();T["주제"].length=0;db.setConf("로그인방식","구글");db.setConf("하루제출상한","9");db.setConf("하루종류상한","0");   /* 만화 규칙만 잰다 — 종류마다 하루 1편은 day_kind.js */
 const must=(c,m)=>{if(!c){console.log("✗",m);process.exitCode=1;}else console.log("✓",m);};
 const err=f=>{try{f();return "";}catch(e){return e.message;}};
 T["교사"].push({"이메일":"lib@x","이름":"사서","담당":"관리자"});
