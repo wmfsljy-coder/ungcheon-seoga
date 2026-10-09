@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261009-212526";
+var CODE_VERSION="20261009-214302";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -133,6 +133,13 @@ function doGet(e){
       }
     }catch(x){pk={error:String(x&&x.message||x)};}}
     return ContentService.createTextOutput(JSON.stringify(pk)).setMimeType(ContentService.MimeType.JSON);
+  }
+  /* 상품권 규칙 견주기(읽기만, 숫자만, 열쇠 필요): ?giftsim=<열쇠> */
+  if(e&&e.parameter&&e.parameter.giftsim){
+    var gs={};
+    if(!keyOk_(e.parameter.giftsim))gs={error:"열쇠가 맞지 않습니다."};
+    else{try{gs=Core.make(makeDb_(),makeEnv_()).giftSim([1,2]);}catch(x){gs={error:String(x&&x.message||x)};}}
+    return ContentService.createTextOutput(JSON.stringify(gs)).setMimeType(ContentService.MimeType.JSON);
   }
   /* 한눈에 보기 자료만 뽑아 보기(읽기만, 열쇠 필요) */
   if(e&&e.parameter&&e.parameter.overview){

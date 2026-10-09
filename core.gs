@@ -2442,6 +2442,28 @@ function make(db,env){
     var have=starsNow(hb);
     return {from:w.from,to:w.to,label:winLabel(w),stars:have,vouchers:Math.min(R.max,Math.floor(have/R.pair)),paid:false,paidN:0,who:"",at:""};
   }
+  /* 상품권 규칙 견주기(읽기만, 이름 없이 숫자만): 별 몇 개에 1매로 하면 지금 몇 명이 몇 매를 받나 + 최근 도장 속도 */
+  function giftSim(pairs){
+    var c=conf(),R=giftRule(c),t=today(env.now()),sm=stampMap(),out={rule:R,students:0,active:0,stamps:0,stars:0,starDist:{},stampDist:{},pairs:{},recent:{}};
+    (pairs||[1,2]).forEach(function(p){out.pairs[p]={eligible:0,vouchers:0,won:0,capped:0};});
+    db.rows("명단").forEach(function(r){
+      var hb=S(r["학번"]);if(!hb)return;out.students++;
+      var st=starsNow(hb),ns=((sm[hb]||{}).stamps||[]).length;
+      if(ns>0)out.active++;out.stamps+=ns;out.stars+=st;
+      out.starDist[st]=(out.starDist[st]||0)+1;
+      var b=ns===0?"0":ns<5?"1-4":ns<10?"5-9":ns<15?"10-14":ns<20?"15-19":"20+";out.stampDist[b]=(out.stampDist[b]||0)+1;
+      Object.keys(out.pairs).forEach(function(p){var raw=Math.floor(st/Number(p)),v=Math.min(R.max,raw);
+        if(v>0){out.pairs[p].eligible++;out.pairs[p].vouchers+=v;if(raw>R.max)out.pairs[p].capped++;}});
+    });
+    Object.keys(out.pairs).forEach(function(p){out.pairs[p].won=out.pairs[p].vouchers*R.won;});
+    /* 최근 7일·14일·28일 도장 수(달마다 얼마나 쌓이나 어림) */
+    [7,14,28].forEach(function(d){var since=addDays(t,-d+1),n=0,who={};
+      Object.keys(sm).forEach(function(hb){(sm[hb].stamps||[]).forEach(function(s){if(S(s.at).slice(0,10)>=since){n++;who[hb]=1;}});});
+      out.recent[d]={stamps:n,students:Object.keys(who).length};});
+    out.firstStamp="";Object.keys(sm).forEach(function(hb){(sm[hb].stamps||[]).forEach(function(s){var d=S(s.at).slice(0,10);if(d&&(!out.firstStamp||d<out.firstStamp))out.firstStamp=d;});});
+    out.paid=db.rows("지급").filter(function(r){return S(r["처리"])==="지급";}).length;
+    return out;
+  }
   /* 지금 가진 별 = 쌓인 별 − 상품권으로 바꾼 별 */
   function starsNow(hb){return Math.max(0,starTimes(hb).length-starsUsed(hb));}
   function winIndex(wins,from){for(var i=0;i<wins.length;i++)if(wins[i].from===from)return i;return -1;}
@@ -3838,7 +3860,7 @@ function make(db,env){
       posts:db.rows("글").length,copyDist:(function(){var h={};db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y"){var n=Number(b["권수"])||0;h[n]=(h[n]||0)+1;}});return h;})(),
       maxCopies:(function(){var m=0;db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y")m=Math.max(m,Number(b["권수"])||0);});return m;})(),loginMode:S(c["로그인방식"]),students:db.rows("명단").length,teachers:db.rows("교사").length};
   }
-  return {fillAuthors:fillAuthors,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
+  return {giftSim:giftSim,fillAuthors:fillAuthors,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
 }
 
 return {SHEET_DOC:SHEET_DOC,TEEN:TEEN,GENRES:GENRES,make:make,HEAD:HEAD,CONF0:CONF0,CONF_DESC:CONF_DESC,AREAS:AREAS,seedBooks:seedBooks,weekKey:weekKey,libMatch:libMatch,libSearchUrl:libSearchUrl,periodOf:periodOf,seedQuotes:seedQuotes,QUOTES:QUOTES,weekOfYmd:weekOfYmd,prevMonth:prevMonth,quizQuality:quizQuality,shownTitle:shownTitle,shownAuthor:shownAuthor,AREA_CATS:AREA_CATS};
