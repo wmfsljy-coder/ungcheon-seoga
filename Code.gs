@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261009-230804";
+var CODE_VERSION="20261009-234542";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -660,10 +660,13 @@ function markRecvDirty_(){try{PropertiesService.getScriptProperties().setPropert
 function recvMinute(){
   var P=PropertiesService.getScriptProperties();
   if(!P.getProperty("recvDirty"))return 0;
+  /* 금요일 아침 9시~오후 5시는 1분마다, 나머지는 바뀐 것이 있어도 10분에 한 번(2026-10-09 회장님 지시) */
+  var hm=Utilities.formatDate(new Date(),"Asia/Seoul","u HH:mm"),busy=hm.charAt(0)==="5"&&hm.slice(2)>="09:00"&&hm.slice(2)<"17:00";
+  if(!busy&&Date.now()-(Number(P.getProperty("recvLast"))||0)<10*60*1000)return 0;
   var lk=LockService.getScriptLock();if(!lk.tryLock(15000))return 0;
   try{
     LOCK_HELD_=true;
-    P.deleteProperty("recvDirty");   /* 지우고 나서 쓴다 — 그 사이 또 바뀌면 다음 분에 다시 */
+    P.deleteProperty("recvDirty");P.setProperty("recvLast",String(Date.now()));   /* 지우고 나서 쓴다 — 그 사이 또 바뀌면 다음 차례에 다시 */
     var n=Core.make(makeDb_(),makeEnv_()).syncRecvSheet();
     P.setProperty("recvAt",Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd HH:mm:ss")+" · "+n+"줄");
     return n;

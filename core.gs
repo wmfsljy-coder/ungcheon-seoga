@@ -2636,12 +2636,15 @@ function make(db,env){
   /* 앱의 배부 대상 명단 기준 시각(2026-10-09 회장님 지시): 수령 날(금요일)에는 실시간, 다른 날은 오전 9시·오후 3시에 한 번씩.
      구글 시트 '수령대상'은 늘 실시간. '' = 실시간 */
   function giftCutoff(){
-    var t=today(env.now()),now=stamp(env.now());
-    if(recvWindows().some(function(w){return t>=w.from&&t<=w.to;}))return "";
-    var hm=now.slice(11,16);
+    var t=today(env.now()),now=stamp(env.now()),hm=now.slice(11,16);
+    /* 수령 날(금요일)은 아침 9시~오후 5시만 실시간, 5시 뒤에는 오후 5시 기준(2026-10-09 회장님 지시) */
+    if(recvWindows().some(function(w){return t>=w.from&&t<=w.to;})){
+      if(hm>="09:00"&&hm<"17:00")return "";
+      if(hm>="17:00")return t+" 17:00:00";
+    }
     return hm>="15:00"?t+" 15:00:00":hm>="09:00"?t+" 09:00:00":addDays(t,-1)+" 15:00:00";
   }
-  function cutLabel(cut){if(!cut)return "";var d=cut.slice(0,10);return Number(d.slice(5,7))+"월 "+Number(d.slice(8,10))+"일 "+(cut.slice(11,13)==="09"?"오전 9시":"오후 3시");}
+  function cutLabel(cut){if(!cut)return "";var d=cut.slice(0,10),hh=cut.slice(11,13);return Number(d.slice(5,7))+"월 "+Number(d.slice(8,10))+"일 "+(hh==="09"?"오전 9시":hh==="17"?"오후 5시":"오후 3시");}
   /* 도서부 '배부 확인' 화면(2026-09-28 회장님 지시): 대상자 명단은 늘 보이고, 배부 단추는 수령 기간에만.
      기간 중이면 그 기간, 아니면 다음 기간(지금까지 모은 별 기준 예정), 다음이 없으면 지난 기간 */
   function deskView(c,who){
@@ -2650,7 +2653,7 @@ function make(db,env){
     if(!w){w=wins.filter(function(x){return x.from>t;})[0]||null;if(w)st="soon";}
     if(!w&&wins.length){w=wins[wins.length-1];st="past";}
     if(!w)return {none:true,open:false,rows:[]};
-    var cut=st==="open"?"":giftCutoff();
+    var cut=giftCutoff();   /* 수령 날 9시~5시만 실시간 */
     return {from:w.from,to:w.to,label:winLabel(w),open:st==="open",state:st,place:S(c["상품권배부장소"]),live:!cut,asOf:cutLabel(cut),
       rows:giftRows(who,w.from,cut).filter(function(x){return x.vouchers>0||x.paid;})};
   }

@@ -1242,7 +1242,7 @@ function liveGift(){
 function giftLiveNow(){var K=ui.tab==="desk"?D.giftDesk:D.gifts;return !!(K&&K.live);}
 function liveStamp(){
   var K=ui.tab==="desk"?D.giftDesk:D.gifts;
-  if(K&&!K.live&&K.asOf)return '<span class="hint" style="font-weight:400">· '+esc(K.asOf)+' 기준(오전 9시·오후 3시에 새로, 금요일 수령 날은 실시간 · 구글 시트는 늘 실시간)</span>';
+  if(K&&!K.live&&K.asOf)return '<span class="hint" style="font-weight:400">· '+esc(K.asOf)+' 기준(오전 9시·오후 3시에 새로, 금요일 수령 날은 아침 9시~오후 5시 실시간)</span>';
   var t=ui.giftAt||new Date();return '<span class="hint" style="font-weight:400">· 실시간 '+p2l(t.getHours())+':'+p2l(t.getMinutes())+':'+p2l(t.getSeconds())+' 기준, 30초마다 새로</span>';}
 function p2l(n){return (n<10?"0":"")+n;}
 var PREFETCHED=false;

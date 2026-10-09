@@ -49,3 +49,10 @@ dk=as("3102","state").giftDesk;
 must(dk.live&&dk.open&&dk.rows.some(r=>r.hakbun==="3102"),"금요일엔 도서부 명단이 실시간(10:50 에 생긴 별도 바로)");
 g=as("사서","state").gifts;
 must(g.live,"금요일엔 교사 상품권 탭도 실시간");
+/* 금요일도 아침 9시 전·오후 5시 뒤에는 천천히 */
+NOW=new Date("2026-10-15T23:30:00Z");   /* 10/16(금) 08:30 */
+dk=as("3102","state").giftDesk;
+must(!dk.live&&/10월 15일 오후 3시/.test(dk.asOf),"금요일 아침 9시 전에는 전날 오후 3시 기준");
+NOW=new Date("2026-10-16T08:30:00Z");   /* 10/16(금) 17:30 */
+dk=as("3102","state").giftDesk;
+must(!dk.live&&/10월 16일 오후 5시/.test(dk.asOf),"금요일 오후 5시 뒤에는 오후 5시 기준");
