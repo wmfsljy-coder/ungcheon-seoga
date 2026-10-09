@@ -8,6 +8,7 @@ const db={rows:t=>T[t],add:(t,o)=>{const r={};Core.HEAD[t].forEach(h=>r[h]=o[h]=
   setMany:(t,k,m)=>T[t].forEach(r=>{const p=m[String(r[k])];if(p)Object.keys(p).forEach(c=>r[c]=String(p[c]))}),
   setConf:(k,v)=>{const h=T["설정"].find(r=>r["항목"]===k);if(h)h["값"]=v;else T["설정"].push({"항목":k,"값":v})}};
 const must=(c,m)=>{if(!c){console.log("✗",m);process.exitCode=1;}else console.log("✓",m);};
+db.setConf("추천20판","1");db.setConf("이달의권수","40");   /* 뽑는 방법을 40권으로 잰다 — 20권 줄이기는 month20.js */
 const C=()=>Core.make(db,env);C().maintain();
 must(T["권장도서"].length===Core.TEEN.length&&Core.TEEN.length>=240,"권장도서 시트 "+T["권장도서"].length+"권(우리 학교에 있는 청소년 권장도서)");
 const cnt={};Core.TEEN.forEach(x=>cnt[x[2]]=(cnt[x[2]]||0)+1);console.log("  영역별",JSON.stringify(cnt));
