@@ -268,6 +268,8 @@ th{font-size:12px;color:var(--muted);font-weight:500}
 .major{margin:4px 0 16px}
 .major .mh{display:block;font-size:13.5px;font-weight:700;margin:0 0 6px}.major .mh small{font-weight:400;color:var(--muted);margin-left:4px}
 .major .chips{gap:6px}.major .chip small{color:var(--muted);margin-left:2px}
+button,.chip,a{touch-action:manipulation}   /* 두 번 눌러 확대 기다림 없이 바로 */
+button.is-busy{opacity:.6;cursor:progress;pointer-events:none}
 .wabar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid #E9D39A;border-radius:12px;padding:10px 14px;margin:0 0 14px;background:linear-gradient(135deg,#FFF8E6,#FFFDF6)}
 .wabar img,.wabar .wai{width:44px;height:52px;object-fit:cover;border-radius:8px;flex:none;background:var(--paper-2);display:flex;align-items:center;justify-content:center;font-size:22px}
 .wabar .wat{flex:1;min-width:0;line-height:1.4}
@@ -2319,11 +2321,19 @@ function make(db,env){
     return out.filter(function(r){return S(r["소개"]);}).length;
   }
   /* 우리 도서관에 있는 그 작가의 책(권장도서 먼저, 그다음 장서목록) */
+  var AIDX=null;
+  function authorIndex(){
+    if(AIDX)return AIDX;
+    var rec={},lib={};
+    db.rows("권장도서").forEach(function(r){if(S(r["뺌"])==="Y")return;var k=bare(authorKey(r["지은이"]));if(k)(rec[k]=rec[k]||[]).push(r);});
+    try{db.rows("장서목록").forEach(function(r){var k=bare(authorKey(r["지은이"]));if(k)(lib[k]=lib[k]||[]).push(r);});}catch(e){}
+    return AIDX={rec:rec,lib:lib};
+  }
   function authorBooks(name,n){
-    var nm=bare(name),out=[],seen={};
+    var nm=bare(name),out=[],seen={},I=authorIndex();
     function add(t,call,cnt,rec,area){var k=norm(shownTitle(t));if(!k||seen[k]||out.length>=n)return;seen[k]=1;out.push({t:shownTitle(t)||S(t),call:S(call),n:Number(cnt)||0,rec:!!rec,s:S(area)});}
-    db.rows("권장도서").forEach(function(r){if(S(r["뺌"])!=="Y"&&bare(authorKey(r["지은이"]))===nm)add(r["제목"],r["청구기호"],r["권수"],true,r["영역"]);});
-    try{db.rows("장서목록").forEach(function(r){if(out.length<n&&bare(authorKey(r["지은이"]))===nm)add(r["제목"],r["청구기호"],r["권수"],false,"");});}catch(e){}
+    (I.rec[nm]||[]).forEach(function(r){add(r["제목"],r["청구기호"],r["권수"],true,r["영역"]);});
+    (I.lib[nm]||[]).forEach(function(r){add(r["제목"],r["청구기호"],r["권수"],false,"");});
     return out;
   }
   function authorCard(r,bday,light){
@@ -2355,7 +2365,7 @@ function make(db,env){
       var bks=authorBooks(q,8);
       if(!bks.length)return {list:[]};
       var got=fetchAuthors([{name:S(q).trim(),book:bks[0].t}]);
-      if(got[0]&&S(got[0]["소개"])){addRows("작가",got);rows=got;}
+      if(got[0]&&S(got[0]["소개"])){addRows("작가",got);rows=got;AIDX=null;}
       else return {list:[{name:S(q).trim(),life:"",bday:"",job:"",bio:"",photo:"",src:"",isBday:false,books:bks}]};
     }
     return {list:rows.map(function(r){return authorCard(r,false);})};
@@ -4315,7 +4325,14 @@ function make(db,env){
     }
     if(name==="libSearch")return libSearch(a,p);
     /* 도서 검색 탭(2026-10-09): 이주의 작가 · 청소년 권장도서(소장) · 작가 찾기 */
-    if(name==="findHome")return {person:personOfWeek(),rec:recBooks(),major:majorAuthors(24)};
+    if(name==="findHome"){
+      var fk="findHome|"+weekKey(env.now(),0)+"|"+db.rows("작가").length,fh=env.cacheGet?env.cacheGet(fk):null;
+      if(fh)try{return JSON.parse(fh);}catch(e){}
+      var mj=majorAuthors(24),byN={};db.rows("작가").forEach(function(r){byN[S(r["이름"])]=r;});
+      var out={person:personOfWeek(),rec:recBooks(),major:mj,cards:mj.map(function(x){return byN[x.name]?authorCard(byN[x.name],false):null;}).filter(Boolean)};
+      if(env.cachePut)try{env.cachePut(fk,JSON.stringify(out),600);}catch(e){}   /* 너무 크면 못 넣어도 그만 */
+      return out;
+    }
     if(name==="authorFind")return authorFind(S(p.q));
     if(name==="state"){
       if(p.as&&a.role!=="student")return previewState(a,S(p.as));
@@ -4697,9 +4714,14 @@ function busy(d){
 var TK="ungcheon-seoga-token";
 function tok(){try{return localStorage.getItem(TK)||sessionStorage.getItem(TK)||"";}catch(e){return "";}}
 function setTok(t,keep){try{localStorage.removeItem(TK);sessionStorage.removeItem(TK);if(t)(keep?localStorage:sessionStorage).setItem(TK,t);}catch(e){}}
+/* 방금 누른 단추: 서버 응답을 기다리는 동안 바로 '처리 중' 모양으로(2026-10-09 반응 속도) */
+var CLICKED=null;
+document.addEventListener("click",function(e){CLICKED=e.target&&e.target.closest?e.target.closest("button"):null;setTimeout(function(){CLICKED=null;},0);},true);
 function call(name,payload){
   if(D&&D.preview&&name!=="state"&&name!=="libSearch"&&name!=="findHome"&&name!=="authorFind")return Promise.reject(new Error("미리보기 화면에서는 저장되지 않습니다. 위 막대의 ‘교사 화면으로’를 눌러 돌아가세요."));
   busy(1);
+  var btn=CLICKED;if(btn){btn.classList.add("is-busy");btn.setAttribute("aria-busy","true");}
+  function unbusy(){if(btn){btn.classList.remove("is-busy");btn.removeAttribute("aria-busy");}}
   return new Promise(function(res,rej){
     function done(json){
       var r;try{r=JSON.parse(json);}catch(e){rej(new Error("응답을 읽지 못했습니다."));return;}
@@ -4709,7 +4731,7 @@ function call(name,payload){
     var body=JSON.stringify(pl);
     if(DEMO)setTimeout(function(){done(window.DemoServer.api(name,body));},60);
     else google.script.run.withSuccessHandler(done).withFailureHandler(function(e){rej(new Error(e&&e.message||"연결에 실패했습니다."));}).api(name,body);
-  }).then(function(r){busy(-1);return r;},function(e){busy(-1);throw e;});
+  }).then(function(r){busy(-1);unbusy();return r;},function(e){busy(-1);unbusy();throw e;});
 }
 /* 처리하고 새 화면까지 한 번에 받아 온다(서버 왕복 한 번) */
 function act(name,payload,okMsg){
@@ -5191,7 +5213,18 @@ function tabList(){
   return D.me.role==="admin"?TA:D.me.kind==="subject"?TSUB:TT;
 }
 
+/* 위쪽 막대를 띄우지 않는 조용한 요청(미리 받아 두기용) */
+function quietCall(name,payload){
+  return new Promise(function(res,rej){
+    var pl=Object.assign({},payload||{});var tk=tok();if(tk)pl._t=tk;var body=JSON.stringify(pl);
+    function done(json){var r;try{r=JSON.parse(json);}catch(e){rej(e);return;}if(r&&r.error)rej(new Error(r.error));else res(r);}
+    if(DEMO)setTimeout(function(){done(window.DemoServer.api(name,body));},60);
+    else google.script.run.withSuccessHandler(done).withFailureHandler(rej).api(name,body);
+  });
+}
+var PREFETCHED=false;
 function renderTabs(){
+  if(!PREFETCHED&&D&&D.me){PREFETCHED=true;setTimeout(function(){findHome(true);},2500);}   /* 첫 화면을 다 그린 뒤 */
   var L=tabList();
   if(!L.some(function(t){return t[0]===ui.tab;}))ui.tab=L[0][0];
   var nav=$("tabs"),dock=L.length<=10&&D.me.role==="student",two=dock&&L.length>6;   /* 폰 아래 막대: 6개 넘으면 두 줄 */
@@ -5208,7 +5241,7 @@ function toPanel(){
   var docked=document.body.classList.contains("docked")&&window.matchMedia("(max-width:760px)").matches;
   var off=docked?10:($("tabs").offsetHeight+6);
   var y=$("panels").getBoundingClientRect().top+window.scrollY-off;
-  if(docked||window.scrollY>y)window.scrollTo({top:Math.max(0,y),behavior:"smooth"});
+  if(docked||window.scrollY>y)window.scrollTo(0,Math.max(0,y));   /* 바로 올린다(부드럽게 내려가며 기다리게 하지 않음) */
 }
 function renderPanel(){
   var f={shelf:pShelfAll,write:pWrite,wall:pWallAll,vote:pVote,quiz:pQuiz,check:pCheck,print:pPrintAll,result:pResult,
@@ -5512,10 +5545,11 @@ function ideaBox(solo){
 }
 
 /* ── 도서 검색 탭(2026-10-09): 맨 위 이주의 작가, 아래 도서 검색 · 청소년 권장도서(소장) · 작가 이야기 ── */
-var FH=null,FHwait=false,AF=null;
-function findHome(){
+var FH=null,FHwait=false,AF=null,AFC={};
+function findHome(quiet){
   if(FH||FHwait)return;FHwait=true;
-  call("findHome",{}).then(function(r){FH=r||{rec:[]};FHwait=false;if(ui.tab==="rec"||ui.tab==="author")renderPanel();})
+  (quiet?quietCall:call)("findHome",{}).then(function(r){FH=r||{rec:[]};FHwait=false;
+    (FH.cards||[]).forEach(function(c){AFC[c.name]={list:[c]};});if(FH.person)AFC[FH.person.name]={list:[FH.person]};if(ui.tab==="rec"||ui.tab==="author")renderPanel();})
     .catch(function(){FH={rec:[],person:null};FHwait=false;if(ui.tab==="rec"||ui.tab==="author")renderPanel();});
 }
 /* 권장도서·작가 이야기 탭: 처음 열 때 목록·이주의 작가을 한 번 받아 온다 */
@@ -5552,11 +5586,12 @@ function recRows(){
     .sort(function(x,y){return recIdx(x.s)-recIdx(y.s)||(x.t<y.t?-1:x.t>y.t?1:0);});
 }
 function recListHTML(){
-  var rows=recRows();
-  return '<p class="libsum" style="margin:6px 0 10px">'+rows.length+'권</p>'+(rows.length?'<div class="rlist">'+rows.map(function(b){
+  var all=recRows(),N=ui.recN||60,rows=all.slice(0,N);   /* 한꺼번에 다 그리면 폰에서 느려서 60권씩 */
+  return '<p class="libsum" style="margin:6px 0 10px">'+all.length+'권</p>'+(rows.length?'<div class="rlist">'+rows.map(function(b){
     return '<div class="rrow"><div class="rt"><b>'+esc(b.t)+'</b><button class="alink" data-aname="'+esc(b.k||b.a)+'">'+esc(b.a)+'</button></div>'+
       '<div class="rm"><span class="tagp">'+esc(b.s)+'</span>'+(b.call?'<span class="callno">'+esc(b.call)+'</span>':'')+(b.n?'<span class="hint">'+b.n+'권</span>':'')+
-      '<button class="btn ghost sm" data-rq="'+esc(b.t)+'">대출 확인</button></div></div>';}).join("")+'</div>'
+      '<button class="btn ghost sm" data-rq="'+esc(b.t)+'">대출 확인</button></div></div>';}).join("")+'</div>'+
+      (all.length>rows.length?'<button class="btn ghost" data-recmore="1" style="width:100%;margin-top:10px">더 보기 (남은 '+(all.length-rows.length)+'권)</button>':'')
     :'<div class="empty">조건에 맞는 책이 없어요.</div>');
 }
 function pRec(){
@@ -5604,8 +5639,8 @@ function authorGo(q){
   q=String(q||"").trim();if(!q){toast("작가 이름을 넣어 주세요.");return;}
   ui.afQ=q;AF={list:[]};goTab("author");
   var b=$("af-go");if(b){b.disabled=true;b.textContent="찾는 중…";}
-  if(FH&&FH.person&&FH.person.name===q){AF={list:[FH.person]};renderPanel();return;}
-  call("authorFind",{q:q}).then(function(r){AF=r||{list:[]};renderPanel();}).catch(function(e){AF={error:e.message,list:[]};renderPanel();});
+  if(AFC[q]){AF=AFC[q];renderPanel();return;}   /* 주요 작가·이주의 작가·한 번 본 작가는 바로 */
+  call("authorFind",{q:q}).then(function(r){AF=r||{list:[]};if(AF.list&&AF.list.length)AFC[q]=AF;renderPanel();}).catch(function(e){AF={error:e.message,list:[]};renderPanel();});
 }
 /* ── 도서 검색: 학교 도서관 소장 도서 ── */
 var SR={};   /* 마지막 검색 결과 */
@@ -5632,7 +5667,7 @@ function pSearch(){
     '<div class="sres">'+list+'</div>';
 }
 /* 권장도서 거르기: 글자를 칠 때마다 목록만 다시(입력 칸은 그대로) */
-document.addEventListener("input",function(e){if(e.target&&e.target.id==="rec-q"){ui.recQ=e.target.value;var el=document.getElementById("rec-list");if(el)el.innerHTML=recListHTML();}});
+document.addEventListener("input",function(e){if(e.target&&e.target.id==="rec-q"){ui.recQ=e.target.value;ui.recN=60;var el=document.getElementById("rec-list");if(el)el.innerHTML=recListHTML();}});
 function doSearch(q){
   q=(q||"").trim();if(!q){toast("찾을 책 제목이나 지은이를 입력해 주세요.");return;}
   ui.searchQ=q;saveUI();
@@ -6898,7 +6933,8 @@ document.addEventListener("click",function(e){
     call("logout",{}).catch(function(){}).then(function(){setTok("");D=null;GATE={kind:"login",step:"choose"};renderAll();refresh();});return;}
   if(id==="g-agree"){call("consent",{agree:true}).then(function(){toast("동의했습니다.");return refresh();}).catch(function(e){toast(e.message);});return;}
   if(id==="s-go"){doSearch(val("s-q"));return;}
-  if(d.rarea!=null&&t.closest("[data-rarea]")){ui.recArea=d.rarea;renderPanel();return;}
+  if(d.rarea!=null&&t.closest("[data-rarea]")){ui.recArea=d.rarea;ui.recN=60;renderPanel();return;}
+  if(d.recmore){ui.recN=(ui.recN||60)+60;var rl=$("rec-list");if(rl)rl.innerHTML=recListHTML();return;}
   if(d.rq){goTab("search");doSearch(d.rq);return;}
   if(d.aname){authorGo(d.aname);return;}
   if(id==="af-go"){authorGo(val("af-q"));return;}
@@ -6959,14 +6995,17 @@ document.addEventListener("click",function(e){
     call("rotate",{}).then(function(r){ui.libMsg=r.picked?"이번 달 추천 도서 "+r.picked+"권을 새로 뽑았습니다.":"새로 뽑지 못했습니다. 독서로 응답을 확인해 주세요.";return refresh();})
       .catch(function(e){toast(e.message);t.disabled=false;t.textContent="이번 달 추천 도서 다시 뽑기";});return;}
   if(id==="g-retry"){GATE=null;renderAll();refresh();return;}
-  if(d.like){act("like",{id:d.like},"전했습니다. 도서관에서 찾아 읽어 보세요.").then(function(){if(!$("reader").hidden)drawReader();}).catch(function(){});return;}
+  if(d.like){t.disabled=true;t.textContent="읽고 싶어요 ✓";act("like",{id:d.like},"전했습니다. 도서관에서 찾아 읽어 보세요.").then(function(){if(!$("reader").hidden)drawReader();}).catch(function(){t.disabled=false;t.textContent="읽고 싶어요";});return;}
   if(id==="dr-go"){
     call("draw",{n:Number(val("dr-n"))||3}).then(function(r){
       ui.drawOut=r.picked.length?'<table><tr><th>학번</th><th>이름</th><th>학급</th></tr>'+r.picked.map(function(x){
         return '<tr><td>'+esc(x.hakbun)+'</td><td>'+esc(x.name)+'</td><td>'+esc(x.cls)+'</td></tr>';}).join("")+'</table><p class="hint">대상 '+r.pool+'명 중 '+r.picked.length+'명</p>'
         :'<div class="empty">지난주 참여자 가운데 대상이 없습니다.</div>';
       $("dr-out").innerHTML=ui.drawOut;}).catch(function(e){toast(e.message);});return;}
-  if(d.tab){ui.tab=d.tab;saveUI();renderTabs();renderPanel();toPanel();return;}
+  if(d.tab){ui.tab=d.tab;saveUI();
+    [].forEach.call(document.querySelectorAll("#tabs button"),function(b){b.setAttribute("aria-selected",String(b.getAttribute("data-tab")===d.tab));});
+    var ran=false;function go(){if(ran)return;ran=true;renderTabs();renderPanel();toPanel();}
+    requestAnimationFrame(function(){setTimeout(go,0);});setTimeout(go,60);return;}   /* 다음 틀에(늦어도 0.06초 뒤) */
   if(d.filter){ui.filter=d.filter;saveUI();renderPanel();return;}
   if(d.kind){ui.kind=d.kind;saveUI();renderPanel();return;}
   if(d.bkind){ui.bkind=d.bkind;saveUI();renderPanel();return;}
@@ -6975,7 +7014,7 @@ document.addEventListener("click",function(e){
   if(id==="pv-close"){setPreview("");return;}
   if(id==="pv-blank"){setPreview("blank");return;}
   if(id==="pv-go"){var h=val("pv-h");if(h)setPreview(h);else toast("학번을 입력해 주세요.");return;}
-  if(d.vote){act("vote",{id:d.vote,kind:d.vkind},"투표했습니다. 누가 뽑았는지는 기록되지 않습니다.").catch(function(){});return;}
+  if(d.vote){t.disabled=true;t.textContent="뽑았어요 ✓";act("vote",{id:d.vote,kind:d.vkind},"투표했습니다. 누가 뽑았는지는 기록되지 않습니다.").catch(function(){t.disabled=false;t.textContent="이 글 뽑기";});return;}
   if(id==="q-send"){sendQuiz();return;}
   if(id==="q-tomake"){var el=document.getElementById("qs-b");if(el){el.scrollIntoView({behavior:"smooth",block:"center"});el.focus();}return;}
   if(id==="qs-send"){act("quizSubmit",quizPayload("qs-")).then(function(r){

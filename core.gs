@@ -1682,11 +1682,19 @@ function make(db,env){
     return out.filter(function(r){return S(r["소개"]);}).length;
   }
   /* 우리 도서관에 있는 그 작가의 책(권장도서 먼저, 그다음 장서목록) */
+  var AIDX=null;
+  function authorIndex(){
+    if(AIDX)return AIDX;
+    var rec={},lib={};
+    db.rows("권장도서").forEach(function(r){if(S(r["뺌"])==="Y")return;var k=bare(authorKey(r["지은이"]));if(k)(rec[k]=rec[k]||[]).push(r);});
+    try{db.rows("장서목록").forEach(function(r){var k=bare(authorKey(r["지은이"]));if(k)(lib[k]=lib[k]||[]).push(r);});}catch(e){}
+    return AIDX={rec:rec,lib:lib};
+  }
   function authorBooks(name,n){
-    var nm=bare(name),out=[],seen={};
+    var nm=bare(name),out=[],seen={},I=authorIndex();
     function add(t,call,cnt,rec,area){var k=norm(shownTitle(t));if(!k||seen[k]||out.length>=n)return;seen[k]=1;out.push({t:shownTitle(t)||S(t),call:S(call),n:Number(cnt)||0,rec:!!rec,s:S(area)});}
-    db.rows("권장도서").forEach(function(r){if(S(r["뺌"])!=="Y"&&bare(authorKey(r["지은이"]))===nm)add(r["제목"],r["청구기호"],r["권수"],true,r["영역"]);});
-    try{db.rows("장서목록").forEach(function(r){if(out.length<n&&bare(authorKey(r["지은이"]))===nm)add(r["제목"],r["청구기호"],r["권수"],false,"");});}catch(e){}
+    (I.rec[nm]||[]).forEach(function(r){add(r["제목"],r["청구기호"],r["권수"],true,r["영역"]);});
+    (I.lib[nm]||[]).forEach(function(r){add(r["제목"],r["청구기호"],r["권수"],false,"");});
     return out;
   }
   function authorCard(r,bday,light){
@@ -1718,7 +1726,7 @@ function make(db,env){
       var bks=authorBooks(q,8);
       if(!bks.length)return {list:[]};
       var got=fetchAuthors([{name:S(q).trim(),book:bks[0].t}]);
-      if(got[0]&&S(got[0]["소개"])){addRows("작가",got);rows=got;}
+      if(got[0]&&S(got[0]["소개"])){addRows("작가",got);rows=got;AIDX=null;}
       else return {list:[{name:S(q).trim(),life:"",bday:"",job:"",bio:"",photo:"",src:"",isBday:false,books:bks}]};
     }
     return {list:rows.map(function(r){return authorCard(r,false);})};
@@ -3678,7 +3686,14 @@ function make(db,env){
     }
     if(name==="libSearch")return libSearch(a,p);
     /* 도서 검색 탭(2026-10-09): 이주의 작가 · 청소년 권장도서(소장) · 작가 찾기 */
-    if(name==="findHome")return {person:personOfWeek(),rec:recBooks(),major:majorAuthors(24)};
+    if(name==="findHome"){
+      var fk="findHome|"+weekKey(env.now(),0)+"|"+db.rows("작가").length,fh=env.cacheGet?env.cacheGet(fk):null;
+      if(fh)try{return JSON.parse(fh);}catch(e){}
+      var mj=majorAuthors(24),byN={};db.rows("작가").forEach(function(r){byN[S(r["이름"])]=r;});
+      var out={person:personOfWeek(),rec:recBooks(),major:mj,cards:mj.map(function(x){return byN[x.name]?authorCard(byN[x.name],false):null;}).filter(Boolean)};
+      if(env.cachePut)try{env.cachePut(fk,JSON.stringify(out),600);}catch(e){}   /* 너무 크면 못 넣어도 그만 */
+      return out;
+    }
     if(name==="authorFind")return authorFind(S(p.q));
     if(name==="state"){
       if(p.as&&a.role!=="student")return previewState(a,S(p.as));
