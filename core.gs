@@ -1723,6 +1723,16 @@ function make(db,env){
     }
     return {list:rows.map(function(r){return authorCard(r,false);})};
   }
+  /* 작가 이야기 검색 칸 아래 '주요 작가': 소개가 있는(숨김 아님) 작가를 우리 도서관 권장도서가 많은 순으로 */
+  function majorAuthors(n){
+    var cnt={};db.rows("권장도서").forEach(function(r){if(S(r["뺌"])==="Y")return;var k=bare(authorKey(r["지은이"]));if(k)cnt[k]=(cnt[k]||0)+1;});
+    var seen={};
+    return db.rows("작가").filter(function(r){return S(r["소개"])&&S(r["숨김"])!=="Y";})
+      .map(function(r){return {name:S(r["이름"]),k:bare(r["이름"]),n:cnt[bare(r["이름"])]||0,photo:S(r["사진"]),job:S(r["직업"])};})
+      .filter(function(x){if(seen[x.k])return false;seen[x.k]=1;return x.n>0;})
+      .sort(function(x,y){return y.n-x.n||(x.name<y.name?-1:1);}).slice(0,n||24)
+      .map(function(x){return {name:x.name,n:x.n,photo:x.photo,job:x.job};});
+  }
   function recBooks(){
     return db.rows("권장도서").filter(function(r){return S(r["뺌"])!=="Y"&&S(r["제목"]);}).map(function(r){
       return {t:S(r["제목"]),a:S(r["지은이"]),k:authorKey(r["지은이"]),s:S(r["영역"]),call:S(r["청구기호"]),n:Number(r["권수"])||0};})
@@ -3221,6 +3231,7 @@ function make(db,env){
         mon:S(r["월"]),next:S(r["월"])===monN};});
     /* 교사 서가에도 이번 주(초록)·다음 주(보라) 퀴즈 책 표시(2026-09-28) */
     res.thisWeek=weekKey(now,0);res.weekBooks=weekBooksOf(res.thisWeek);res.nextQuiz=nextQuizBooks();
+    try{res.weekAuthor=personOfWeek(true);}catch(e){res.weekAuthor=null;}   /* 교사 첫 화면에도 이주의 작가(2026-10-09) */
     if(a.role!=="admin")return res;
 
     res.books=bookList();
@@ -3667,7 +3678,7 @@ function make(db,env){
     }
     if(name==="libSearch")return libSearch(a,p);
     /* 도서 검색 탭(2026-10-09): 이주의 작가 · 청소년 권장도서(소장) · 작가 찾기 */
-    if(name==="findHome")return {person:personOfWeek(),rec:recBooks()};
+    if(name==="findHome")return {person:personOfWeek(),rec:recBooks(),major:majorAuthors(24)};
     if(name==="authorFind")return authorFind(S(p.q));
     if(name==="state"){
       if(p.as&&a.role!=="student")return previewState(a,S(p.as));

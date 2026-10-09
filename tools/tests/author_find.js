@@ -81,3 +81,11 @@ must(af3.list.length===0,"우리 도서관에 책이 없는 작가는 위키백�
 NOW=new Date("2026-11-30T03:00:00Z");
 const sw=as("state").weekAuthor;
 must(sw&&sw.name==="박경리"&&sw.isBday&&!sw.bio&&sw.books.length===2,"학생 화면에 이주의 작가 한 줄(박경리 · 생일 주간 · 책 두 권)");
+
+/* 주요 작가(소개 있는 작가, 권장도서 많은 순) · 교사 첫 화면 이주의 작가 */
+A("김영하")["숨김"]="";
+const mj=as("findHome").major||[];
+must(mj.length>=2&&mj[0].name==="박경리"&&mj[0].n===2&&!mj.some(x=>x.name==="조지 오웰"),"주요 작가: 소개 있는 작가만, 권장도서 많은 순(박경리 2권 먼저)");
+const ttok=C().api("login",{role:"teacher",name:"사서",newPin:"713900"}).token;
+const tst=C().api("state",{_t:ttok});
+must(tst.weekAuthor&&tst.weekAuthor.name==="박경리","선생님 첫 화면에도 이주의 작가");

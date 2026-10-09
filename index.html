@@ -265,6 +265,9 @@ th{font-size:12px;color:var(--muted);font-weight:500}
 .qbooks.next b{background:#F1ECF8;border-color:#CDBFE3;color:#4B3375}
 .qbooks.next>span{color:#6A4C9C;font-weight:600}
 /* 도서 검색 탭: 이주의 작가 · 권장도서 · 작가 이야기(2026-10-09) */
+.major{margin:4px 0 16px}
+.major .mh{display:block;font-size:13.5px;font-weight:700;margin:0 0 6px}.major .mh small{font-weight:400;color:var(--muted);margin-left:4px}
+.major .chips{gap:6px}.major .chip small{color:var(--muted);margin-left:2px}
 .wabar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid #E9D39A;border-radius:12px;padding:10px 14px;margin:0 0 14px;background:linear-gradient(135deg,#FFF8E6,#FFFDF6)}
 .wabar img,.wabar .wai{width:44px;height:52px;object-fit:cover;border-radius:8px;flex:none;background:var(--paper-2);display:flex;align-items:center;justify-content:center;font-size:22px}
 .wabar .wat{flex:1;min-width:0;line-height:1.4}
@@ -1526,9 +1529,9 @@ function findHome(){
     .catch(function(){FH={rec:[],person:null};FHwait=false;if(ui.tab==="rec"||ui.tab==="author")renderPanel();});
 }
 /* 권장도서·작가 이야기 탭: 처음 열 때 목록·이주의 작가을 한 번 받아 온다 */
-/* 학생 첫 화면(이달 추천도서) 맨 위 한 줄: 이주의 작가. 누르면 작가 이야기 탭 */
+/* 첫 화면(이달 추천도서) 맨 위 한 줄: 이주의 작가(학생·선생님). 누르면 작가 이야기 탭 */
 function weekAuthorBar(){
-  var P=D.me.role==="student"&&D.weekAuthor;if(!P)return "";
+  var P=D.weekAuthor;if(!P)return "";   /* 학생·선생님 첫 화면 모두(2026-10-09) */
   var sub=[P.job,P.bday?(P.isBday?'🎂 ':'')+bdayLabel(P.bday)+' 생일':''].filter(Boolean).join(' · ');
   return '<button class="wabar" type="button" data-aname="'+esc(P.name)+'">'+
     (P.photo?'<img src="'+esc(P.photo)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<span class="wai">✍️</span>')+
@@ -1589,16 +1592,22 @@ function authorCardHTML(P){
     (bk?'<div class="abks"><span>우리 도서관에 있는 이 작가의 책</span>'+bk+'</div>':'<p class="hint">우리 도서관에서 이 작가의 책을 찾지 못했어요.</p>')+
     '</div></article>';
 }
+function majorHTML(){
+  var M=(FH&&FH.major)||[],cur=AF&&AF.list&&AF.list[0]?AF.list[0].name:"";
+  if(!M.length&&FH&&FH.rec){var c={};FH.rec.forEach(function(b){if(b.k)c[b.k]=(c[b.k]||0)+1;});   /* 소개가 아직 없으면 권장도서가 많은 작가로 */
+    M=Object.keys(c).sort(function(x,y){return c[y]-c[x]||(x<y?-1:1);}).slice(0,18).map(function(k){return {name:k,n:c[k]};});}
+  if(!M.length)return "";
+  return '<div class="major"><span class="mh">주요 작가 <small>우리 도서관 권장도서가 많은 순</small></span><div class="chips">'+
+    M.map(function(x){return '<button class="chip" data-aname="'+esc(x.name)+'" aria-pressed="'+(x.name===cur)+'">'+esc(x.name)+(x.n>1?' <small>'+x.n+'</small>':'')+'</button>';}).join("")+'</div></div>';
+}
 function pAuthor(){
-  var top=[];
-  if(FH&&FH.rec){var c={};FH.rec.forEach(function(b){if(b.k)c[b.k]=(c[b.k]||0)+1;});
-    top=Object.keys(c).sort(function(x,y){return c[y]-c[x]||(x<y?-1:1);}).slice(0,18);}
   return '<h3 class="sec">작가 이야기</h3>'+
     '<p class="sub">작가 이름을 찾으면 <b>짧은 열전</b>(어떤 사람인지·태어난 해·생일)과 <b>우리 도서관에 있는 그 작가의 책</b>이 나와요. 매주 한 명은 위의 <b>이주의 작가</b>로 소개해요(그 주에 생일인 작가가 먼저).</p>'+
     '<div class="sbar"><input type="search" id="af-q" placeholder="예) 박경리, 김초엽, 헤르만 헤세" value="'+esc(ui.afQ||"")+'" enterkeyhint="search" autocomplete="off">'+
     '<button class="btn" id="af-go" type="button">찾기</button></div>'+
+    majorHTML()+
     (AF?(AF.error?'<div class="empty">'+esc(AF.error)+'</div>':AF.list.length?AF.list.map(authorCardHTML).join(""):woong("hi","‘"+esc(ui.afQ||"")+"’ 작가를 찾지 못했어. 우리 도서관에 그 작가 책이 있는지 ‘도서 검색’ 탭에서도 찾아봐."))
-      :(top.length?'<div class="chips"><span class="hint" style="align-self:center">권장도서가 많은 작가</span>'+top.map(function(k){return '<button class="chip" data-aname="'+esc(k)+'">'+esc(k)+'</button>';}).join("")+'</div>':''));
+      :'');
 }
 function goTab(k){if(ui.tab!==k){ui.tab=k;saveUI();renderTabs();renderPanel();toPanel();}}
 function authorGo(q){
