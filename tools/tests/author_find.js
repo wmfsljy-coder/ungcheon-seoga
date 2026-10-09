@@ -76,3 +76,8 @@ must(af2.list.length===1&&af2.list[0].books.length===3,"이름 일부로 찾아�
 must(/두 글자/.test(as("authorFind",{q:"박"}).ERR||""),"한 글자는 안 된다");
 const af3=as("authorFind",{q:"없는작가"});
 must(af3.list.length===0,"우리 도서관에 책이 없는 작가는 위키백과에 묻지 않는다");
+
+/* 학생 첫 화면 한 줄: 이주의 작가(가볍게 — 소개 없이, 책은 권장도서 두 권) */
+NOW=new Date("2026-11-30T03:00:00Z");
+const sw=as("state").weekAuthor;
+must(sw&&sw.name==="박경리"&&sw.isBday&&!sw.bio&&sw.books.length===2,"학생 화면에 이주의 작가 한 줄(박경리 · 생일 주간 · 책 두 권)");

@@ -264,7 +264,14 @@ th{font-size:12px;color:var(--muted);font-weight:500}
 .bk .tag.qzn{margin-left:6px;background:#6A4C9C;color:#fff;border-radius:999px;padding:1px 8px;font-weight:600}
 .qbooks.next b{background:#F1ECF8;border-color:#CDBFE3;color:#4B3375}
 .qbooks.next>span{color:#6A4C9C;font-weight:600}
-/* 도서 검색 탭: 이주의 인물 · 권장도서 · 작가 이야기(2026-10-09) */
+/* 도서 검색 탭: 이주의 작가 · 권장도서 · 작가 이야기(2026-10-09) */
+.wabar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid #E9D39A;border-radius:12px;padding:10px 14px;margin:0 0 14px;background:linear-gradient(135deg,#FFF8E6,#FFFDF6)}
+.wabar img,.wabar .wai{width:44px;height:52px;object-fit:cover;border-radius:8px;flex:none;background:var(--paper-2);display:flex;align-items:center;justify-content:center;font-size:22px}
+.wabar .wat{flex:1;min-width:0;line-height:1.4}
+.wabar .wat em{display:block;font-style:normal;font-size:12px;font-weight:700;color:#8A5A00}
+.wabar .wat b{font-size:16px}.wabar .wat small{color:var(--muted);font-size:12.5px}
+.wabar .was{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wabar .wago{flex:none;font-size:13px;color:#8A5A00;font-weight:600}
 .person,.acard{display:flex;gap:16px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 16px;background:#FFFDF6}
 .person{background:linear-gradient(135deg,#FFF8E6,#FFFDF6);border-color:#E9D39A}
 .person.loading{display:block;padding:12px 16px}
@@ -1456,8 +1463,8 @@ var SHEET_DOC={
        "별":["그때 가진 별","4"],"상품권":["받을 매수","2"],"배부":["배부 완료 여부","배부 완료"],
        "처리자":["배부한 사람","도서부 이도윤"],"처리시각":["배부한 때",""],
        "수령확인":["학생이 앱에서 '확인'을 눌렀는지","확인"],"확인시각":["학생이 확인한 때",""]}},
-  "작가":{d:"작가 이야기·이주의 인물에 나오는 작가 소개. 앱이 권장도서·추천 도서의 지은이를 위키백과에서 조금씩 받아 채웁니다(출처 위키백과, CC BY-SA). 확인 칸이 차 있는 줄은 다시 받지 않으니, 소개를 고쳐 써도 그대로 남습니다.",edit:"소개를 고치거나 숨김에 Y",
-    c:{"이름":["작가 이름(지은이에서 뽑음)","박경리"],"생몰":["태어난 해~돌아간 해","1926~2008"],"생일":["월-일(이주의 인물 생일 주간)","12-02"],
+  "작가":{d:"작가 이야기·이주의 작가에 나오는 작가 소개. 앱이 권장도서·추천 도서의 지은이를 위키백과에서 조금씩 받아 채웁니다(출처 위키백과, CC BY-SA). 확인 칸이 차 있는 줄은 다시 받지 않으니, 소개를 고쳐 써도 그대로 남습니다.",edit:"소개를 고치거나 숨김에 Y",
+    c:{"이름":["작가 이름(지은이에서 뽑음)","박경리"],"생몰":["태어난 해~돌아간 해","1926~2008"],"생일":["월-일(이주의 작가 생일 주간)","12-02"],
        "직업":["한 줄 설명","대한민국의 소설가"],"소개":["짧은 열전(학생 화면에 나옴)",""],"사진":["사진 주소",""],"출처":["위키백과 문서 주소",""],
        "확인":["받은 날. '없음'이면 위키백과에서 못 찾음(직접 써도 됨)","2026-10-09"],"숨김":["Y 면 안 보임",""]}},
   "지급":{d:"상품권을 실제로 준 기록. 별은 여기 적힌 만큼만 줄어듭니다.",edit:"보기만 하세요(화면에서 체크)",
@@ -2228,7 +2235,7 @@ function make(db,env){
   }
   /* 다음 주 퀴즈 책(미리 알림) */
   function nextQuizBooks(){var nwk=weekKey(env.now(),1),b=planOf(nwk,conf()["이달"]);return b.length?{week:nwk,books:b}:null;}
-  /* ── 작가 이야기(2026-10-09 회장님 지시): 짧은 열전·생일·이주의 인물 ──
+  /* ── 작가 이야기(2026-10-09 회장님 지시): 짧은 열전·생일·이주의 작가 ──
      권장도서·추천 도서의 지은이를 위키백과 요약(+위키데이터 생일)으로 '작가' 시트에 조금씩 모은다.
      확인 칸이 찬 줄은 다시 받지 않는다(사서 선생님이 고친 소개가 그대로 남게) */
   var ROLE_W={"지음":1,"글":1,"그림":1,"글·그림":1,"그림·글":1,"엮음":1,"옮김":1,"편저":1,"편역":1,"저":1,"역":1,"편":1,"외":1,"등":1,"씀":1,"원작":1,"감수":1,"공저":1,"글그림":1};
@@ -2316,18 +2323,23 @@ function make(db,env){
     try{db.rows("장서목록").forEach(function(r){if(out.length<n&&bare(authorKey(r["지은이"]))===nm)add(r["제목"],r["청구기호"],r["권수"],false,"");});}catch(e){}
     return out;
   }
-  function authorCard(r,bday){
+  function authorCard(r,bday,light){
+    if(light){   /* 학생 첫 화면 한 줄용: 소개 없이, 책은 권장도서에서 두 권만(장서목록은 훑지 않음) */
+      var nm=bare(r["이름"]),bk=[];
+      db.rows("권장도서").forEach(function(x){if(bk.length<2&&S(x["뺌"])!=="Y"&&bare(authorKey(x["지은이"]))===nm)bk.push({t:shownTitle(x["제목"])||S(x["제목"])});});
+      return {name:S(r["이름"]),life:S(r["생몰"]),bday:S(r["생일"]),job:S(r["직업"]),photo:S(r["사진"]),isBday:!!bday,books:bk};
+    }
     return {name:S(r["이름"]),life:S(r["생몰"]),bday:S(r["생일"]),job:S(r["직업"]),bio:S(r["소개"]),photo:S(r["사진"]),src:S(r["출처"]),isBday:!!bday,books:authorBooks(S(r["이름"]),8)};
   }
-  /* 이주의 인물: 이번 주(월~일)에 생일인 작가, 없으면 주마다 돌아가며 */
-  function personOfWeek(){
+  /* 이주의 작가: 이번 주(월~일)에 생일인 작가, 없으면 주마다 돌아가며 */
+  function personOfWeek(light){
     var wk=weekKey(env.now(),0),days={};for(var i=0;i<7;i++)days[addDays(wk,i).slice(5)]=1;
     var P=db.rows("작가").filter(function(r){return S(r["소개"])&&S(r["숨김"])!=="Y";});
     if(!P.length)return null;
     P.sort(function(x,y){return S(x["이름"])<S(y["이름"])?-1:1;});
     var bd=P.filter(function(r){return days[S(r["생일"])];});
     var pick=shuffle(bd.length?bd:P,wk+"|person")[0];
-    return authorCard(pick,bd.length>0);
+    return authorCard(pick,bd.length>0,light);
   }
   function authorFind(q){
     var nq=bare(q);if(nq.length<2)fail("작가 이름을 두 글자 이상 적어 주세요.");
@@ -3629,7 +3641,7 @@ function make(db,env){
       voteL:vb("label"),voteQ:vb("quote"),voteR:vb("review"),
       quiz:{items:quiz,done:done&&!retake?Number(done["점수"]):null,retake:retake?{prev:Number(done["점수"])||0,total:Number(done["문항수"])||0}:null,next:nextQuizBooks(),books:weekBooksOf(wk),bookInfo:(function(){var bl={};bookList().forEach(function(b){bl[tkey(b.t)]=b;});
         return weekBooksOf(wk).map(function(t){var b=bl[tkey(t)]||{};return {t:t,total:b.total||0,avail:b.avail,call:b.call||""};});})()},myQuiz:myQuiz,
-      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftAck:ackWaiting(a.id),giftDesk:a.club?deskView(c,ALL_CLS):null};
+      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftAck:ackWaiting(a.id),weekAuthor:(function(){try{return personOfWeek(true);}catch(e){return null;}})(),giftDesk:a.club?deskView(c,ALL_CLS):null};
   }
 
   function bookList(){
@@ -4288,7 +4300,7 @@ function make(db,env){
       fail("먼저 개인정보 수집·이용에 동의해 주세요.");
     }
     if(name==="libSearch")return libSearch(a,p);
-    /* 도서 검색 탭(2026-10-09): 이주의 인물 · 청소년 권장도서(소장) · 작가 찾기 */
+    /* 도서 검색 탭(2026-10-09): 이주의 작가 · 청소년 권장도서(소장) · 작가 찾기 */
     if(name==="findHome")return {person:personOfWeek(),rec:recBooks()};
     if(name==="authorFind")return authorFind(S(p.q));
     if(name==="state"){
@@ -4360,7 +4372,7 @@ function make(db,env){
     });
     chk("이번 주 퀴즈 문항",live.length===(Number(c["퀴즈문항수"])||5),live.length+"문제");
     try{var nq=nextQuizBooks();chk("다음 주 퀴즈 책 미리 알림",!!nq,nq?nq.week+" "+nq.books.join(", "):"아직 안 정함");}catch(e){chk("다음 주 퀴즈 책 미리 알림",false,e.message);}
-    try{var pw=personOfWeek(),na=db.rows("작가").filter(function(r){return S(r["소개"]);}).length;chk("작가 이야기",true,na+"명"+(pw?" · 이주의 인물 "+pw.name+(pw.isBday?"(생일 주간)":""):""));}catch(e){chk("작가 이야기",false,e.message);}
+    try{var pw=personOfWeek(),na=db.rows("작가").filter(function(r){return S(r["소개"]);}).length;chk("작가 이야기",true,na+"명"+(pw?" · 이주의 작가 "+pw.name+(pw.isBday?"(생일 주간)":""):""));}catch(e){chk("작가 이야기",false,e.message);}
     chk("이번 주 퀴즈 책 "+(Number(c["퀴즈책수"])||2)+"권 이하",Object.keys(bk).length<=(Number(c["퀴즈책수"])||2),Object.keys(bk).length+"권");
     chk("퀴즈 보기·정답 정상",!bad.length,bad.join(","));
     var bank=db.rows("퀴즈").filter(function(q){return S(q["상태"])==="예비"&&S(q["월"])===mon;}).length;
@@ -5125,7 +5137,7 @@ function renderBoard(){
   /* 처음 들어온 학생: 아직 아무것도 안 했으면 환영 인사(닫으면 이 기기에서는 다시 안 뜸) */
   if(!(D.progress&&D.progress.total)&&!(D.mine&&D.mine.length)&&get("ungcheon-seoga-hello|"+D.me.id)!=="1"){
     cf+='<div class="giftbar welcome hello"><span class="wface">'+bearSVG("yay")+'</span><span><b>어서 와~ '+esc(D.me.name)+'! 웅천 서가에 온 걸 환영해.</b> '+
-      '여기서는 <b>책 한 권 읽고 한 줄만 남기면</b> 도장이 찍혀. 아래 <b>서가</b>에서 읽고 싶은 책을 골라 보고, 다 읽으면 <b>글 쓰기</b>에서 라벨이나 문장 한 줄이면 돼. '+
+      '여기서는 <b>책 한 권 읽고 한 줄만 남기면</b> 도장이 찍혀. 아래 <b>이달 추천도서</b>에서 읽고 싶은 책을 골라 보고, 다 읽으면 <b>글 쓰기</b>에서 라벨이나 문장 한 줄이면 돼. '+
       '도장 다섯 개가 모이면 별 하나!</span>'+
       '<button class="btn sm end" data-hellook="1">좋아요</button></div>';
   }
@@ -5153,11 +5165,11 @@ function renderBoard(){
     (last&&last.bonus?'이번 주 도장 '+n+'/'+cap+' · 책갈피 '+W.bonus+'장':'이번 주 도장 '+n+'/'+cap+' · 다음 별까지 '+ST.toNext+'개'));
 }
 
-var TS=[["shelf","서가"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["write","글 쓰기","쓰기"],["wall","게시판"],["quiz","북퀴즈","퀴즈"],["mine","내 서재"]];
-var TJ=[["shelf","서가"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["wall","게시판"],["quiz","북퀴즈","퀴즈"],["mine","내 서재"]];
-var TT=[["shelf","서가"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["wall","게시판"],["check","새 글"],["over","한눈에 보기","한눈"],["give","도장 주기","도장"],["finish","상품권"],["readlog","독서 기록","독서"],["accounts","가입 현황·계정","가입"],["tlabel","라벨·문장 쓰기","글쓰기"],["suggest","추천 도서","추천"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
-var TSUB=[["shelf","서가"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["wall","게시판"],["give","도장 주기","도장"],["suggest","추천 도서","추천"],["tlabel","라벨·문장 쓰기","글쓰기"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
-var TA=[["shelf","서가"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["wall","게시판"],["check","새 글"],["over","한눈에 보기","한눈"],["books","도서 관리","도서"],["quizadm","퀴즈 관리","퀴즈"],["print","시상"],["finish","상품권"],["desk","배부 확인","배부"],["readlog","독서 기록","독서"],["accounts","가입 현황·계정","가입"],["give","도장 주기","도장"],["tlabel","라벨·문장 쓰기","글쓰기"],["suggest","추천 도서","추천"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
+var TS=[["shelf","이달 추천도서","추천"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["write","글 쓰기","쓰기"],["wall","게시판"],["quiz","북퀴즈","퀴즈"],["mine","내 서재"]];
+var TJ=[["shelf","이달 추천도서","추천"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["wall","게시판"],["quiz","북퀴즈","퀴즈"],["mine","내 서재"]];
+var TT=[["shelf","이달 추천도서","추천"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["wall","게시판"],["check","새 글"],["over","한눈에 보기","한눈"],["give","도장 주기","도장"],["finish","상품권"],["readlog","독서 기록","독서"],["accounts","가입 현황·계정","가입"],["tlabel","라벨·문장 쓰기","글쓰기"],["suggest","추천 도서","추천"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
+var TSUB=[["shelf","이달 추천도서","추천"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["wall","게시판"],["give","도장 주기","도장"],["suggest","추천 도서","추천"],["tlabel","라벨·문장 쓰기","글쓰기"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
+var TA=[["shelf","이달 추천도서","추천"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["wall","게시판"],["check","새 글"],["over","한눈에 보기","한눈"],["books","도서 관리","도서"],["quizadm","퀴즈 관리","퀴즈"],["print","시상"],["finish","상품권"],["desk","배부 확인","배부"],["readlog","독서 기록","독서"],["accounts","가입 현황·계정","가입"],["give","도장 주기","도장"],["tlabel","라벨·문장 쓰기","글쓰기"],["suggest","추천 도서","추천"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
 function tabList(){
   if(D.me.role==="student")return (D.canWrite?TS:TJ)
     .concat(D.me.club&&!D.preview?[["desk","배부 확인","배부"]]:[])
@@ -5294,7 +5306,7 @@ function pShelf(){
     return arr.length?'<div class="shelf-head"><h4>'+title+'</h4><span>'+note+'</span></div><div class="shelf">'+arr.map(bookCard).join("")+'</div>':'';
   }
   var nt=D.me.role==="student"?noticesHTML():"";   /* 교사는 오른쪽 칸에서만 공지를 본다 */
-  return (nt?'<div class="ntinline">'+nt+'</div>':'')+feedStrip()+quizBar()+eventBar()+themeBar()+'<h3 class="sec">서가</h3>'+
+  return weekAuthorBar()+(nt?'<div class="ntinline">'+nt+'</div>':'')+feedStrip()+quizBar()+eventBar()+themeBar()+'<h3 class="sec">이달 추천도서</h3>'+
     '<div class="recinfo"><h4>'+(lab?esc(lab)+' ':'이번 달 ')+'추천 도서'+(pd?'<span class="dday">'+ddayText(pd)+'</span>':'')+'</h4>'+
       '<ul>'+(!hasAuto?'<li><b>이번 달 추천 도서</b>는 지금 준비 중이에요(학교 도서관 목록을 불러오는 중). 그동안 <b>도서 검색</b>으로 읽고 싶은 책을 찾아보세요.</li>':
       '<li><b>이번 달 추천 도서</b>는 <b>청소년 권장도서</b> 가운데 우리 학교 도서관'+(hold?' 책 <b>'+hold+'</b>':' 책')+'에 있는 책을 소설·청소년·시·에세이·인문·철학·역사·사회·경제·과학·기술·예술·자기계발 <b>12개 영역</b>으로 나눠 골랐어요. 모두 학교 도서관에 있는 책이에요.'+
@@ -5485,22 +5497,32 @@ function ideaBox(solo){
         '</div>';}).join("")+'</div>':'');
 }
 
-/* ── 도서 검색 탭(2026-10-09): 맨 위 이주의 인물, 아래 도서 검색 · 청소년 권장도서(소장) · 작가 이야기 ── */
+/* ── 도서 검색 탭(2026-10-09): 맨 위 이주의 작가, 아래 도서 검색 · 청소년 권장도서(소장) · 작가 이야기 ── */
 var FH=null,FHwait=false,AF=null;
 function findHome(){
   if(FH||FHwait)return;FHwait=true;
   call("findHome",{}).then(function(r){FH=r||{rec:[]};FHwait=false;if(ui.tab==="rec"||ui.tab==="author")renderPanel();})
     .catch(function(){FH={rec:[],person:null};FHwait=false;if(ui.tab==="rec"||ui.tab==="author")renderPanel();});
 }
-/* 권장도서·작가 이야기 탭: 처음 열 때 목록·이주의 인물을 한 번 받아 온다 */
+/* 권장도서·작가 이야기 탭: 처음 열 때 목록·이주의 작가을 한 번 받아 온다 */
+/* 학생 첫 화면(이달 추천도서) 맨 위 한 줄: 이주의 작가. 누르면 작가 이야기 탭 */
+function weekAuthorBar(){
+  var P=D.me.role==="student"&&D.weekAuthor;if(!P)return "";
+  var sub=[P.job,P.bday?(P.isBday?'🎂 ':'')+bdayLabel(P.bday)+' 생일':''].filter(Boolean).join(' · ');
+  return '<button class="wabar" type="button" data-aname="'+esc(P.name)+'">'+
+    (P.photo?'<img src="'+esc(P.photo)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<span class="wai">✍️</span>')+
+    '<span class="wat"><em>'+(P.isBday?'🎂 이번 주 생일 · ':'')+'이주의 작가</em><b>'+esc(P.name)+'</b>'+(P.life?' <small>'+esc(P.life)+'</small>':'')+
+    '<small class="was">'+esc(sub)+((P.books||[]).length?' · 『'+esc(P.books[0].t)+'』'+(P.books.length>1?' 외':''):'')+'</small></span>'+
+    '<span class="wago">작가 이야기 ›</span></button>';
+}
 function pRecTab(){findHome();return pRec();}
-function pAuthorTab(){findHome();return personHTML()+pAuthor();}   /* 이주의 인물은 작가 이야기 맨 위 */
+function pAuthorTab(){findHome();return personHTML()+pAuthor();}   /* 이주의 작가은 작가 이야기 맨 위 */
 function bdayLabel(md){var m=/^(\d{2})-(\d{2})$/.exec(md||"");return m?Number(m[1])+"월 "+Number(m[2])+"일":"";}
 function personHTML(){
-  var P=FH&&FH.person;if(!P)return FH?'':'<div class="person loading"><span class="hint">이주의 인물을 불러오는 중…</span></div>';
+  var P=FH&&FH.person;if(!P)return FH?'':'<div class="person loading"><span class="hint">이주의 작가를 불러오는 중…</span></div>';
   var bk=(P.books||[]).slice(0,4).map(function(b){return '<button class="pbk" data-rq="'+esc(b.t)+'">『'+esc(b.t)+'』</button>';}).join("");
   return '<section class="person">'+(P.photo?'<img class="pph" src="'+esc(P.photo)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<div class="pph none">✍️</div>')+
-    '<div class="pbody"><span class="ptag">'+(P.isBday?'🎂 이번 주 생일 · 이주의 인물':'이주의 인물')+'</span>'+
+    '<div class="pbody"><span class="ptag">'+(P.isBday?'🎂 이번 주 생일 · 이주의 작가':'이주의 작가')+'</span>'+
     '<h3>'+esc(P.name)+(P.life?' <small>'+esc(P.life)+'</small>':'')+'</h3>'+
     (P.job||P.bday?'<p class="pjob">'+esc(P.job||"")+(P.bday?(P.job?' · ':'')+'생일 '+bdayLabel(P.bday):'')+'</p>':'')+
     '<p class="pbio">'+esc(P.bio)+'</p>'+
@@ -5551,7 +5573,7 @@ function pAuthor(){
   if(FH&&FH.rec){var c={};FH.rec.forEach(function(b){if(b.k)c[b.k]=(c[b.k]||0)+1;});
     top=Object.keys(c).sort(function(x,y){return c[y]-c[x]||(x<y?-1:1);}).slice(0,18);}
   return '<h3 class="sec">작가 이야기</h3>'+
-    '<p class="sub">작가 이름을 찾으면 <b>짧은 열전</b>(어떤 사람인지·태어난 해·생일)과 <b>우리 도서관에 있는 그 작가의 책</b>이 나와요. 매주 한 명은 위의 <b>이주의 인물</b>로 소개해요(그 주에 생일인 작가가 먼저).</p>'+
+    '<p class="sub">작가 이름을 찾으면 <b>짧은 열전</b>(어떤 사람인지·태어난 해·생일)과 <b>우리 도서관에 있는 그 작가의 책</b>이 나와요. 매주 한 명은 위의 <b>이주의 작가</b>로 소개해요(그 주에 생일인 작가가 먼저).</p>'+
     '<div class="sbar"><input type="search" id="af-q" placeholder="예) 박경리, 김초엽, 헤르만 헤세" value="'+esc(ui.afQ||"")+'" enterkeyhint="search" autocomplete="off">'+
     '<button class="btn" id="af-go" type="button">찾기</button></div>'+
     (AF?(AF.error?'<div class="empty">'+esc(AF.error)+'</div>':AF.list.length?AF.list.map(authorCardHTML).join(""):woong("hi","‘"+esc(ui.afQ||"")+"’ 작가를 찾지 못했어. 우리 도서관에 그 작가 책이 있는지 ‘도서 검색’ 탭에서도 찾아봐."))
@@ -5723,7 +5745,7 @@ function guideHTML(){
     sec("3. 이름은 안 나와요",'<ul><li>게시판에는 학급만 보여요. 이름은 담임·담당 선생님만 봐요.</li>'+
       '<li><b>투표</b>: <b>올라온 지 '+(D.voteDays||7)+'일 안</b>의 글 가운데 무작위 '+c.voteN+'편이 보여요(사람마다 달라요). 라벨·문장·독후감에 <b>주마다 '+((D.voteL&&D.voteL.per)||5)+'표씩</b> 쓸 수 있고, 월요일에 새 표가 생겨요. <b>매달 말일</b>에 부문별로 뽑아 <b>독후감은 '+((D.awardTops||{}).review||10)+'위까지 별 '+(D.awardStars||1)+'개</b>, <b>라벨·문장은 '+((D.awardTops||{}).label||10)+'위까지 만능 도장 1개</b>를 드려요(표는 매달 1일에 처음부터 다시). 누가 누구를 뽑았는지는 <b>다른 사람에게 보이지 않아요</b>.</li>'+
       '<li>친구 글에 <b>읽고 싶어요</b>를 누르면 글쓴이에게 숫자로 전해져요.</li></ul>')+
-    sec("4. 책 찾기",'<ul><li><b>서가</b>: 이번 달 추천 도서(모두 학교 도서관에 있는 책, 매달 1일에 바뀜). 초록 <b>대출 가능</b>이면 지금 빌릴 수 있어요.</li>'+
+    sec("4. 책 찾기",'<ul><li><b>이달 추천도서</b>: 이번 달 추천 도서(모두 학교 도서관에 있는 책, 매달 1일에 바뀜). 초록 <b>대출 가능</b>이면 지금 빌릴 수 있어요.</li>'+
       '<li><b>도서 검색</b>: 학교 도서관 책을 제목·지은이로 찾아요. 옆 번호(청구기호)대로 서가에서 찾으면 돼요.</li>'+
       '<li>북퀴즈는 매주 월요일, 추천 도서 가운데 <b>'+(c.quizBooks||2)+'권 이하</b>에서 나와요(서가에 ‘이번 주 퀴즈’ 초록 표시, 다음 주 책은 한 주 앞서 ‘다음 주 퀴즈’ 보라 표시). 문제 내기는 어떤 책이든 괜찮아요.</li></ul>')+
     sec("5. 로그인",'<ul><li>학생은 <b>학번·이름</b>, 선생님은 <b>이름</b>으로 들어와요.</li>'+
