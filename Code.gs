@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261009-214302";
+var CODE_VERSION="20261009-215623";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -121,6 +121,11 @@ function doGet(e){
       if(e.parameter.find){var f=String(e.parameter.find);pk.found=[];
         for(var j=0;j<v.length;j++)for(var c=0;c<v[j].length;c++)if(String(v[j][c]).indexOf(f)>=0)pk.found.push({row:j+1,col:c+1,key:String(v[j][0]),val:String(v[j][c]).slice(0,90)});}
       pk.rows=v.length;
+      /* 이벤트 시트(당첨·기록 칸은 빼고): &events=1 */
+      if(e.parameter.events){pk.events=makeDb_().rows("이벤트").map(function(r){return {이름:String(r["이름"]),방식:String(r["방식"]),시작:String(r["시작"]),끝:String(r["끝"]),값:String(r["값"]),보상:String(r["보상"]),대상:String(r["대상"]),종류:String(r["종류"]),메모:String(r["메모"]),숨김:String(r["숨김"])};});
+        pk.giftConf={};["상품권당별","별당도장","월최대매수","상품권금액","수령시작월","상품권배부","상품권배부장소","주간도장"].forEach(function(k){makeDb_().rows("설정").forEach(function(r){if(String(r["항목"]).trim()===k)pk.giftConf[k]=String(r["값"]);});});
+        pk.recv=makeDb_().rows("수령기간").map(function(r){return [String(r["시작"]),String(r["끝"]),String(r["메모"])];});
+        pk.notices=makeDb_().rows("공지").map(function(r){return [String(r["제목"]),String(r["내용"]).slice(0,120),String(r["고정"]),String(r["숨김"])];});}
       /* 글 종류별 수(이름·학번 없이 숫자만): 문장이 다른 종류로 보이는지 살필 때 */
       if(e.parameter.kinds){var km={};makeDb_().rows("글").forEach(function(r){var k=JSON.stringify(String(r["종류"]))+"|"+String(r["상태"])+"|"+(String(r["반"])==="선생님"?"교사":"학생");km[k]=(km[k]||0)+1;});pk.kinds=km;}
       /* 잠근 채 새로 읽어 거르는 길을 실제로 한 번(기기: 풀렸거나 만료된 것만 지운다 — 아침 7시 정리와 같음) */

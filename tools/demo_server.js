@@ -135,6 +135,7 @@ window.DemoServer=(function(){
     addMany:function(t,list){list.forEach(function(o){var r={};Core.HEAD[t].forEach(function(h){r[h]=o[h]==null?"":String(o[h]);});db.rows(t).push(r);});save();},
     set:function(t,k,v,patch){db.rows(t).forEach(function(r){if(String(r[k]).trim()===String(v))Object.keys(patch).forEach(function(c){r[c]=String(patch[c]);});});save();},
     setMany:function(t,k,map){db.rows(t).forEach(function(r){var p=map[String(r[k]).trim()];if(p)Object.keys(p).forEach(function(c){r[c]=p[c]==null?"":String(p[c]);});});save();},
+    replace:function(t,list){T[t]=[];list.forEach(function(o){var r={};Core.HEAD[t].forEach(function(h){r[h]=o[h]==null?"":String(o[h]);});T[t].push(r);});save();},
     setConf:function(k,v){var hit=db.rows("설정").filter(function(r){return r["항목"]===k;})[0];if(hit)hit["값"]=v;else db.rows("설정").push({"항목":k,"값":v});save();}
   };
   if(!db.rows("설정").some(function(r){return r["항목"]==="도서확인";}))Core.make(db,env).tick();

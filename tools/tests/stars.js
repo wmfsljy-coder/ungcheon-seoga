@@ -9,6 +9,7 @@ const db={replace:(t,l)=>{T[t]=[];l.forEach(o=>db.add(t,o));},rows:t=>T[t],add:(
   set:(t,k,v,p)=>T[t].forEach(r=>{if(String(r[k]).trim()===String(v))Object.keys(p).forEach(c=>r[c]=String(p[c]))}),
   setMany:(t,k,m)=>T[t].forEach(r=>{const p=m[String(r[k])];if(p)Object.keys(p).forEach(c=>r[c]=String(p[c]))}),
   setConf:(k,v)=>{const h=T["설정"].find(r=>r["항목"]===k);if(h)h["값"]=v;else T["설정"].push({"항목":k,"값":v})}};
+db.setConf("금요수령판","1");db.setConf("상품권당별","2");   /* 이 시험은 옛 규칙(별 2개 = 1매, 달마다 수령)으로 잰다 — 금요일 규칙은 gift_friday.js */
 const C=()=>Core.make(db,env);C().maintain();T["주제"].length=0;   /* maintain 이 넣어 주는 주제 초안은 이 시험에서 치운다 */
 db.setConf("상품권공개","Y");db.setConf("상품권배부","2026-10-05~2026-10-08, 2026-11-02~2026-11-05");
 T["교사"].push({"이메일":"lib@x","이름":"사서","담당":"관리자"},{"이메일":"g3@x","이름":"삼","담당":"3학년"});

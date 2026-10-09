@@ -10,6 +10,7 @@ const db={rows:t=>T[t],add:(t,o)=>{const r={};Core.HEAD[t].forEach(h=>r[h]=o[h]=
   set:(t,k,v,p)=>T[t].forEach(r=>{if(String(r[k]).trim()===String(v))Object.keys(p).forEach(c=>r[c]=String(p[c]))}),
   setMany:(t,k,m)=>T[t].forEach(r=>{const p=m[String(r[k])];if(p)Object.keys(p).forEach(c=>r[c]=String(p[c]))}),
   setConf:(k,v)=>{const h=T["설정"].find(r=>r["항목"]===k);if(h)h["값"]=v;else T["설정"].push({"항목":k,"값":v})}};
+db.setConf("금요수령판","1");db.setConf("상품권당별","2");   /* 이 시험은 옛 규칙(별 2개 = 1매, 달마다 수령)으로 잰다 — 금요일 규칙은 gift_friday.js */
 const C=()=>Core.make(db,env);C().maintain();
 const must=(c,m)=>{if(!c){console.log("✗",m);process.exitCode=1;}else console.log("✓",m);};
 db.setConf("상품권공개","Y");db.setConf("상품권배부","2026-10-05~2026-10-08");

@@ -29,7 +29,7 @@ var HEAD={
   "작가":["이름","생몰","생일","직업","소개","사진","출처","확인","숨김"]
 };
 var CONF0=[["프로그램명","웅천 서가"],["부제","한 권 읽고, 한 줄 남기기"],["차수","1"],
-  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","2"],["월최대매수","3"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["투표묶음","2026-09~2026-10"],["주간투표","5"],["백업주기","주"],["백업보관","12"],["백업폴더","https://drive.google.com/drive/folders/1Nw-1moQpxXHkeuHYo0kMJjNVtvueqF_a"],["주간라벨문장글","3"],["만화규칙","라벨만"],["만화청구기호","만, 만화, 657"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
+  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","Y"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","1"],["월최대매수","3"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","2"],["투표묶음","2026-09~2026-10"],["주간투표","5"],["백업주기","주"],["백업보관","12"],["백업폴더","https://drive.google.com/drive/folders/1Nw-1moQpxXHkeuHYo0kMJjNVtvueqF_a"],["주간라벨문장글","3"],["만화규칙","라벨만"],["만화청구기호","만, 만화, 657"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
   ["학교코드","S100000673"],["교육청코드","S10"],["학교명","웅천고등학교"],
   ["이달의권수","40"],["추천방식","권장"],["추천묶음","2026-09~2026-10"],["퀴즈문항수","5"],["퀴즈책수","2"],["퀴즈품질기준","6"],["보유기간","3학년은 졸업식 날까지, 1·2학년은 학년말(2월)까지"],["개인정보담당","도서관 담당 교사"]];
 /* 설정 시트 '설명' 칸에 들어가는 뜻풀이 */
@@ -60,7 +60,8 @@ var CONF_DESC={
   "교사도장주간":"선생님 한 분이 한 주에 찍어 줄 수 있는 도장 수(같은 학생에게는 하루 한 개)",
   "시상별":"이달의 독후감에 뽑히면 주는 별 수(라벨·문장은 별 대신 만능 도장 1개)",
   "시상탑라벨":"이달의 라벨 몇 위까지 뽑는지(만능 도장 1개)","시상탑문장":"이달의 문장 몇 위까지 뽑는지(만능 도장 1개)","시상탑독후감":"이달의 독후감 몇 위까지 뽑는지(별 1개)",
-  "상품권당별":"별 몇 개에 문화상품권 1매(별이 이보다 적으면 수령 대상 아님)",
+  "상품권당별":"별 몇 개에 문화상품권 1매. 1이면 별 1개 = 1매(2026-10-09부터)",
+  "금요수령판":"(자동 기록) 손대지 마세요",
   "월최대매수":"한 번 수령 기간에 받을 수 있는 최대 매수",
   "상품권금액":"상품권 1매 금액(원). 학생 화면 안내에 쓰임",
   "수령시작월":"상품권배부를 비워 둘 때: 이 달부터 매달 첫 월요일~목요일을 수령 기간으로",
@@ -821,8 +822,8 @@ var SHEET_DOC={
     c:{"id":["번호",""],"시각":["보낸 때",""],"학번":["보낸 학생","1101"],"이름":["이름","김서준"],"반":["학급","1-1"],
        "내용":["건의 내용","청소년 소설을 더 들여 주세요"],"답변":["관리자 답변","곧 들여놓을게요"],
        "답변자":["답한 사람","박서가 선생님"],"답변시각":["답한 때",""],"상태":["대기 / 답변 / 삭제","답변"]}},
-  "수령기간":{d:"문화상품권을 나눠 주는 기간. 여기 날짜에만 도서부 배부 화면이 열립니다.",edit:"날짜를 고치세요",
-    c:{"시작":["첫날","2026-10-05"],"끝":["마지막 날","2026-10-08"],"메모":["안내용 이름","10월 수령"]}},
+  "수령기간":{d:"문화상품권을 나눠 주는 날. 지금은 매주 금요일 하루씩(한 줄 = 한 번)이고, 여기 날짜에만 도서부 배부 단추가 열립니다. 쉬는 날·시험 기간이면 그 줄을 지우거나 날짜를 옮기세요.",edit:"날짜를 고치거나 줄을 지우세요",
+    c:{"시작":["수령 날(금요일)","2026-10-16"],"끝":["같은 날","2026-10-16"],"메모":["안내용 이름","금요일 수령"]}},
   "수령대상":{d:"그 기간에 받을 학생 명단과 배부·수령 확인(앱이 자동으로 채웁니다). 도서부가 배부를 누르면 '배부 완료', 학생이 앱에서 확인을 누르면 '수령확인'에 '확인'. 배부 대장으로 인쇄해 쓰세요.",edit:"보기만 하세요",
     c:{"수령":["기간 이름","10월 수령"],"시작":["기간 첫날",""],"끝":["기간 마지막 날",""],
        "학번":["학생","1101"],"이름":["이름","김서준"],"반":["학급","1-1"],
@@ -929,7 +930,7 @@ function make(db,env){
   function pubConf(c){
     return {name:c["프로그램명"],sub:c["부제"],round:c["차수"],approve:approveMode(c),
       goal:Number(c["주간도장"])||5,weekCap:Number(c["주간도장"])||5,monthCap:Number(c["월간도장"])||0,
-      quote:todayQuote(),giftOn:S(c["상품권공개"])==="Y",giftNote:S(c["상품권안내"]),dayCap:Number(c["하루제출상한"])||2,writeWeek:Number(c["주간라벨문장글"])||0,voteGroup:(function(){var m=/(\d{4}-\d{2})\s*~\s*(\d{4}-\d{2})/.exec(S(c["투표묶음"]));return m?{from:m[1],to:m[2]}:null;})(),voteN:Number(c["투표후보수"])||8,giftMin:Number(c["상품권기준"])||5,giftTypes:S(c["상품권세종류"])!=="N",limit:LIMIT,areas:S(c["추천방식"])==="장르"?GENRE_NAMES:TEEN_NAMES,lib:libConf(c),libChecked:S(c["도서확인"]),libResult:S(c["도서확인결과"]),loginMode:S(c["로그인방식"])==="구글"?"google":"pin",subjects:S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean),giftWins:giftWindows(c),recvSheet:(function(){try{return db.rows("수령기간").length>0;}catch(e){return false;}})(),giftPlace:S(c["상품권배부장소"]),selVer:S(c["선별판"]),upToDate:S(c["선별판"])==="3"&&S(c["퀴즈판"])==="4"&&S(c["문장판"])==="2",quizBooks:Number(c["퀴즈책수"])||2,leafWeek:Number(c["주간책갈피"])||5,comicRule:comicRule(c),comicKeys:comicKeys(c),monthN:Number(c["이달의권수"])||40,holdings:S(c["장서"]),month:S(c["이달"]),
+      quote:todayQuote(),giftOn:S(c["상품권공개"])==="Y",giftNote:S(c["상품권안내"]),dayCap:Number(c["하루제출상한"])||2,writeWeek:Number(c["주간라벨문장글"])||0,voteGroup:(function(){var m=/(\d{4}-\d{2})\s*~\s*(\d{4}-\d{2})/.exec(S(c["투표묶음"]));return m?{from:m[1],to:m[2]}:null;})(),voteN:Number(c["투표후보수"])||8,giftMin:Number(c["상품권기준"])||5,giftTypes:S(c["상품권세종류"])!=="N",limit:LIMIT,areas:S(c["추천방식"])==="장르"?GENRE_NAMES:TEEN_NAMES,lib:libConf(c),libChecked:S(c["도서확인"]),libResult:S(c["도서확인결과"]),loginMode:S(c["로그인방식"])==="구글"?"google":"pin",subjects:S(c["추천분야"]).split(/[,\n]+/).map(S).filter(Boolean),giftWins:giftWindows(c),recvWeekly:(function(){try{return weeklyRecv(c);}catch(e){return false;}})(),recvSheet:(function(){try{return db.rows("수령기간").length>0;}catch(e){return false;}})(),giftPlace:S(c["상품권배부장소"]),selVer:S(c["선별판"]),upToDate:S(c["선별판"])==="3"&&S(c["퀴즈판"])==="4"&&S(c["문장판"])==="2",quizBooks:Number(c["퀴즈책수"])||2,leafWeek:Number(c["주간책갈피"])||5,comicRule:comicRule(c),comicKeys:comicKeys(c),monthN:Number(c["이달의권수"])||40,holdings:S(c["장서"]),month:S(c["이달"]),
       period:S(c["이달"])?periodOf(S(c["이달"]),c["추천묶음"]):null,
       privacy:{keep:S(c["보유기간"]),owner:S(c["개인정보담당"])},quizBar:Number(c["퀴즈품질기준"])||6,quizTarget:Number(c["퀴즈문항수"])||5};
   }
@@ -1230,6 +1231,14 @@ function make(db,env){
     if(S(conf()["무인증판"])!=="1"){setConf("교사등록무인증","N");setConf("무인증판","1");}
     /* 북퀴즈는 2권 이내(2026-09-28 회장님 지시): 옛 기본값 3 → 2 를 한 번만(나중에 시트에서 고치면 그대로) */
     if(S(conf()["퀴즈책판"])!=="2"){if(S(conf()["퀴즈책수"])==="3"||!S(conf()["퀴즈책수"]))setConf("퀴즈책수","2");setConf("퀴즈책판","2");}
+    /* 상품권(2026-10-09 회장님 지시): 별 1개 = 1매, 매주 금요일 수령. 공지 '문화상품권'도 새 문구로 */
+    if(S(conf()["금요수령판"])!=="1"){
+      setConf("상품권당별","1");
+      try{fridayWindows();}catch(e){}
+      try{var gt=giftNoticeText(conf());db.rows("공지").forEach(function(r){
+        if(S(r["제목"])==="문화상품권"&&/별 \d+개 =|수령 기간에/.test(S(r["내용"])))db.set("공지","id",S(r["id"]),{"내용":gt});});}catch(e){}
+      setConf("금요수령판","1");
+    }
     /* 별 규칙(2026-09-20)부터 한 달 도장 상한은 없음: 옛 기본값 20 → 0 을 한 번만 */
     if(S(conf()["별규칙판"])!=="1"){if(S(conf()["월간도장"])==="20")setConf("월간도장","0");setConf("별규칙판","1");}
     /* 시상 규칙(2026-09-22): 독후감 10위까지 별 1개, 라벨·문장 10위까지 만능 도장 */
@@ -2355,7 +2364,7 @@ function make(db,env){
   }
   /* ── 별과 상품권 ──
      도장(한 주 최대 주간도장)은 누적으로 쌓이고, 별당도장(5)개마다 별 1개.
-     수령 기간(설정 상품권배부, 비우면 매달 첫 월~목)마다 지금 가진 별로 상품권: 별 상품권당별(2)개에 1매, 한 번에 월최대매수(3)매까지.
+     수령 날(수령기간 시트 — 2026-10-09부터 매주 금요일)마다 지금 가진 별로 상품권: 별 상품권당별(1)개에 1매, 한 번에 월최대매수(3)매까지.
      별은 상품권으로 바꿀 때만 빠진다. 기간 안에 못 받아도 그대로 남아 다음 수령에 쓸 수 있고, 기간 중에 새로 생긴 별도 쓸 수 있다 */
   function giftRule(c){c=c||conf();return {per:Number(c["별당도장"])||5,pair:Number(c["상품권당별"])||2,max:Number(c["월최대매수"])||3,won:Number(c["상품권금액"])||5000};}
   function monLabel(m){var x=/^(\d{4})-(\d{2})/.exec(S(m));return x?Number(x[2])+"월":S(m);}
@@ -2369,7 +2378,23 @@ function make(db,env){
     for(var i=0;i<36&&m<=end;i++){var f=firstMonday(m);out.push({from:f,to:addDays(f,3)});m=nextMonthKey(m);}
     return out;
   }
-  function winLabel(w){return Number(w.from.slice(5,7))+"월 수령";}
+  function winLabel(w){return w.from===w.to?Number(w.from.slice(5,7))+"월 "+Number(w.from.slice(8,10))+"일 수령":Number(w.from.slice(5,7))+"월 수령";}
+  /* 매주 금요일 수령인가(앞으로의 수령 날이 모두 하루짜리 금요일) */
+  function weeklyRecv(c){
+    var t=today(env.now()),up=recvWindows(c).filter(function(x){return x.to>=t;}).slice(0,3);
+    return up.length>0&&up.every(function(x){return x.from===x.to&&new Date(x.from+"T00:00:00Z").getUTCDay()===5;});
+  }
+  function placePhrase(c){var p=S((c||conf())["상품권배부장소"]);return /도서관/.test(p)&&/점심/.test(p)?"점심시간에 도서관에서":p?p.replace(/\s*·\s*/g," ")+"에서":"도서관에서";}
+  /* 수령기간 시트를 매주 금요일 한 줄씩으로(다음 금요일부터 학년말까지). 이미 준 기록이 있는 지난 기간 줄은 남긴다 */
+  function fridayWindows(end){
+    if(!db.replace)return 0;
+    var d=addDays(today(env.now()),1);while(new Date(d+"T00:00:00Z").getUTCDay()!==5)d=addDays(d,1);
+    var paid={},out=[];db.rows("지급").forEach(function(r){if(S(r["처리"])==="지급")paid[S(r["월"])]=1;});
+    db.rows("수령기간").forEach(function(r){if(paid[S(r["시작"])])out.push({"시작":S(r["시작"]),"끝":S(r["끝"]),"메모":S(r["메모"])});});
+    for(var i=0;i<60&&d<=(end||"2027-02-19");i++,d=addDays(d,7))out.push({"시작":d,"끝":d,"메모":"금요일 수령"});
+    db.replace("수령기간",out);
+    return out.length;
+  }
   var STARS=null,AWARDS=null;
   /* ── 이달의 부문 시상 ──
      달마다(말일) 부문별로 뽑는다. 독후감 시상탑독후감(10)위까지는 별 시상별(1)개,
@@ -2516,8 +2541,10 @@ function make(db,env){
   function syncRecvSheet(){
     if(!db.replace)return 0;
     var wins=recvWindows(),t=today(env.now()),pick=[],out=[];
-    wins.forEach(function(w,i){if(w.from<=addDays(t,35))pick.push(i);});
-    pick=pick.slice(-3);
+    var wk=false;try{wk=weeklyRecv();}catch(e){}
+    /* 매주 금요일이면 지난 4번 + 다음 1번, 달마다면 지금·다가오는 것과 지난 두 번 */
+    wins.forEach(function(w,i){if(w.from<=addDays(t,wk?7:35))pick.push(i);});
+    pick=pick.slice(wk?-5:-3);
     pick.slice().reverse().forEach(function(i){
       var w=wins[i];
       giftRows(ALL_CLS,w.from).forEach(function(x){   /* 관리자만 보는 수령대상 시트 — 전교생 기록 */
@@ -2641,8 +2668,14 @@ function make(db,env){
       ["한 주 도장은 다섯 칸","라벨·문장은 합쳐서 "+caps.kind.write+"개, 독후감 "+caps.kind.review+"개, 퀴즈 "+caps.kind.quiz+"개까지. 선생님이 주시는 만능 도장은 제한이 없어요."+
         (wcap?" 라벨·문장은 한 주에 "+wcap+"편까지 낼 수 있고, 첫 편이 도장·나머지는 책갈피예요.":"")],
       ["책갈피","상한을 넘겨 쓴 글은 책갈피가 돼요. "+caps.leaf+"장이 모이면 어느 자리든 채우는 만능 도장 1개!"],
-      ["문화상품권","별 "+R.pair+"개 = "+R.won.toLocaleString()+"원 1매, 한 번에 최대 "+R.max+"매. 수령 기간에 도서관에서 받아요(그때만 받을 수 있어요)."],
+      ["문화상품권",giftNoticeText(c)],
       ["로그인이 안 되면","담임 선생님이나 도서관에 말해 주세요."]];
+  }
+  function giftNoticeText(c){
+    var R=giftRule(c);
+    return "별 "+R.pair+"개 = "+R.won.toLocaleString()+"원 1매(한 번에 최대 "+R.max+"매). "+
+      (weeklyRecv(c)?"매주 금요일 "+placePhrase(c)+" 받아요. 이번 금요일에 못 받으면 별은 그대로 남아 다음 주 금요일에 받을 수 있어요."
+        :"수령 기간에 "+placePhrase(c)+" 받아요. 못 받아도 별은 그대로 남아 다음 수령 때 받을 수 있어요.");
   }
   function moveNotice(){
     var txt=S(conf()["공지사항"]);if(!txt)return 0;
