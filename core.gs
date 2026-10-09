@@ -872,7 +872,7 @@ function make(db,env){
   /* 설정은 한 화면에서 수백 번 읽히는데 60줄을 매번 훑을 까닭이 없다.
      setConf 로 고칠 때만 다시 읽는다(고치는 곳은 모두 아래 setConf 를 지난다) */
   var CONF_=null;
-  function setConf(k,v){CONF_=null;return db.setConf(k,v);}
+  function setConf(k,v){CONF_=null;RWIN=null;return db.setConf(k,v);}
   function conf(){
     if(CONF_)return CONF_;
     var c={};CONF0.forEach(function(r){c[r[0]]=r[1];});
@@ -2206,7 +2206,9 @@ function make(db,env){
      상한을 넘겨 한 활동은 책갈피가 되고, 책갈피는 한 주에 주간책갈피(5)장까지 쌓인다(그 뒤는 기록만).
      책갈피 책갈피당도장(5)장은 만능 도장 1개가 된다. 만능은 개수 제한이 없고, 그 주 다섯 칸이 차 있으면 다음 주로 넘어간다.
      도장은 달이 바뀌어도 이어져 쌓이고 별당도장(5)개마다 별 1개 */
-  function stampCaps(c){c=c||conf();
+  var CAPS=null,CAPC=null;   /* 한 요청에 한 번(2026-10-09: 반별 통계가 학생마다 다시 계산하던 것) */
+  function stampCaps(c){c=c||conf();if(CAPS&&CAPC===c)return CAPS;CAPC=c;return CAPS=stampCaps0(c);}
+  function stampCaps0(c){
     function n(k,d){var v=Number(c[k]);return v>0?v:d;}
     return {week:Number(c["주간도장"])||5,month:Number(c["월간도장"])||1e9,
       gift:Number(c["상품권기준"])||5,types:S(c["상품권세종류"])!=="N",leaf:Number(c["책갈피당도장"])||5,
@@ -2404,12 +2406,16 @@ function make(db,env){
   function monthEnd(m){var x=/^(\d{4})-(\d{2})/.exec(S(m));return x?ymd(new Date(Date.UTC(Number(x[1]),Number(x[2]),0))):"";}
   function nextMonthKey(m){var x=/^(\d{4})-(\d{2})/.exec(S(m));if(!x)return "";var y=Number(x[1]),mm=Number(x[2])+1;if(mm>12){mm=1;y++;}return y+"-"+p2(mm);}
   function firstMonday(m){var x=/^(\d{4})-(\d{2})/.exec(m),d=new Date(Date.UTC(Number(x[1]),Number(x[2])-1,1));while(d.getUTCDay()!==1)d=new Date(d.getTime()+86400000);return ymd(d);}
+  var RWIN=null,RWC=null;   /* 한 요청 안에서 수령 날 목록을 한 번만(2026-10-09: 학생 화면이 수령기간을 630번 읽던 것) */
   function recvWindows(c){
-    c=c||conf();var w=giftWindows(c);
-    if(w.length)return w.map(function(x){return {from:x.from,to:x.to};}).sort(function(a,b){return a.from<b.from?-1:1;});
-    var out=[],m=S(c["수령시작월"])||"2026-10",end=nextMonthKey(monthKey(env.now()));
-    for(var i=0;i<36&&m<=end;i++){var f=firstMonday(m);out.push({from:f,to:addDays(f,3)});m=nextMonthKey(m);}
-    return out;
+    c=c||conf();
+    if(RWIN&&RWC===c)return RWIN.map(function(x){return {from:x.from,to:x.to};});
+    var w=giftWindows(c),out=[];
+    if(w.length)out=w.map(function(x){return {from:x.from,to:x.to};}).sort(function(a,b){return a.from<b.from?-1:1;});
+    else{var m=S(c["수령시작월"])||"2026-10",end=nextMonthKey(monthKey(env.now()));
+      for(var i=0;i<36&&m<=end;i++){var f=firstMonday(m);out.push({from:f,to:addDays(f,3)});m=nextMonthKey(m);}}
+    RWIN=out;RWC=c;
+    return out.map(function(x){return {from:x.from,to:x.to};});
   }
   function winLabel(w){return w.from===w.to?Number(w.from.slice(5,7))+"월 "+Number(w.from.slice(8,10))+"일 수령":Number(w.from.slice(5,7))+"월 수령";}
   /* 매주 금요일 수령인가(앞으로의 수령 날이 모두 하루짜리 금요일) */
@@ -2425,7 +2431,7 @@ function make(db,env){
     var paid={},out=[];db.rows("지급").forEach(function(r){if(S(r["처리"])==="지급")paid[S(r["월"])]=1;});
     db.rows("수령기간").forEach(function(r){if(paid[S(r["시작"])])out.push({"시작":S(r["시작"]),"끝":S(r["끝"]),"메모":S(r["메모"])});});
     for(var i=0;i<60&&d<=(end||"2027-02-19");i++,d=addDays(d,7))out.push({"시작":d,"끝":d,"메모":"금요일 수령"});
-    db.replace("수령기간",out);
+    db.replace("수령기간",out);RWIN=null;
     return out.length;
   }
   var STARS=null,AWARDS=null;
@@ -2479,14 +2485,11 @@ function make(db,env){
     return (STARS[hb]||[]).concat(awardStarTimes(hb)).sort();
   }
   /* 지금까지 상품권으로 바꾼 별 수(지급 시트에 남은 기록) */
+  var USED=null;   /* 학생별로 한 번에(2026-10-09: 학생 화면이 지급 시트를 1,900번 읽던 것) */
   function starsUsed(hb){
-    var n=0;
-    db.rows("지급").forEach(function(r){
-      if(S(r["처리"])!=="지급")return;
-      if(S(r["학번"])!==S(hb))return;
-      n+=Number(r["별"])||0;
-    });
-    return n;
+    if(!USED){USED={};db.rows("지급").forEach(function(r){
+      if(S(r["처리"])!=="지급")return;var h0=S(r["학번"]);USED[h0]=(USED[h0]||0)+(Number(r["별"])||0);});}
+    return USED[S(hb)]||0;
   }
   var PAIDW=null;
   function paidInfo(from,hb){
@@ -2567,7 +2570,7 @@ function make(db,env){
         add.push({"키":key,"월":from,"학번":hb,"이름":s0?S(s0["이름"]):"","반":s0?S(s0["반"]):"","도장":(stampMap()[hb]||{stamps:[]}).stamps.length,"처리":"지급","시각":now,"처리자":by,"매수":cl.vouchers,"별":cl.vouchers*giftRule().pair});}
     });
     if(add.length){if(db.addMany)db.addMany("지급",add);else add.forEach(function(o){db.add("지급",o);});}
-    PAIDW=null;
+    PAIDW=null;USED=null;STARS=null;
     try{syncRecvSheet();}catch(e){}
   }
   /* 수령대상 시트: 지금·다가오는 수령 기간과 지난 두 번의 대상자를 관리자가 시트에서 보도록 통째로 다시 쓴다 */
@@ -2631,14 +2634,14 @@ function make(db,env){
     return Object.keys(m).sort().reverse();
   }
   /* 학급별: 이번 달 참여(도장 1개 이상)·지금 별 2개 이상 */
-  function classStats(c,mon){
+  function classStats(c,mon,noStars){   /* noStars: 학생 화면은 가입 수만 쓰므로 별 계산을 건너뛴다 */
     var per={},pair=giftRule(c).pair;
     db.rows("명단").forEach(function(s){
       var k=S(s["반"]);if(!k)return;
       per[k]=per[k]||{cls:k,total:0,joined:0,done:0};per[k].total++;
       var hb=S(s["학번"]),mo=monthOf(hb,mon);
       if(mo.count>0)per[k].joined++;
-      if(starState(hb,c).shown>=pair)per[k].done++;
+      if(!noStars&&starsNow(hb)>=pair)per[k].done++;   /* 수령 날 계산 없이 지금 별만 */
     });
     return Object.keys(per).sort().map(function(k){return per[k];});
   }
@@ -3116,7 +3119,7 @@ function make(db,env){
       today:today(now),canWrite:canWrite(a),covers:covers,quizLog:quizLog,stampTotals:totals,classFull:classFull,
       awards:(awardList()[a.id]||[]).map(function(x){return {mon:x.mon,kind:x.kind,rank:x.rank,votes:x.votes,stars:x.stars,wild:x.wild};}).reverse(),
       awardTops:awardTops(c),awardStars:Number(c["시상별"])||AWARD_STARS,
-      classes:classStats(c,mon).map(function(x){return {cls:x.cls,total:x.total,joined:x.joined};}),
+      classes:classStats(c,mon,true).map(function(x){return {cls:x.cls,total:x.total,joined:x.joined};}),
       board:board,mine:mine,voteOpen:voteOpen(now),voteMon:votePeriod(now),voteDays:VOTE_DAYS,voteTop:VOTE_TOP,
       voteL:vb("label"),voteQ:vb("quote"),voteR:vb("review"),
       quiz:{items:quiz,done:done&&!retake?Number(done["점수"]):null,retake:retake?{prev:Number(done["점수"])||0,total:Number(done["문항수"])||0}:null,next:nextQuizBooks(),books:weekBooksOf(wk),bookInfo:(function(){var bl={};bookList().forEach(function(b){bl[tkey(b.t)]=b;});
@@ -3460,7 +3463,7 @@ function make(db,env){
         if(S(r["학번"])!==a.id||S(r["처리"])!=="지급"||S(r["수령확인"])==="확인")return;
         if(p.from&&S(r["월"])!==S(p.from))return;
         up[S(r["키"])]={"수령확인":"확인","확인시각":now};n++;});
-      if(n){db.setMany("지급","키",up);PAIDW=null;try{syncRecvSheet();}catch(e){}}
+      if(n){db.setMany("지급","키",up);PAIDW=null;USED=null;try{syncRecvSheet();}catch(e){}}
       return {ok:true,n:n};},
     newsSeen:function(a){staff(a);if(S(a.name))db.set("교사","이름",S(a.name),{"마지막확인":stamp(env.now())});},
     /* 계정 관리(관리자·학년 담당): 조회 → 등록 풀기(다시 등록하게) */
@@ -3883,7 +3886,7 @@ function make(db,env){
     te.forEach(function(r,i){
       var a=staffOf(r);a.id=a.email=lower(r["이메일"])||"x"+i;a.name=S(r["이름"]);a.seen="";a.rowEmail=S(r["이메일"]);
       var s0=Date.now();
-      try{STAMPS=null;STARS=null;AWARDS=null;PAIDW=null;var v=teacherState(a);if(!v.me)throw new Error("빈 화면");}catch(e){tErr.push("줄"+(i+2)+":"+e.message);}
+      try{STAMPS=null;STARS=null;AWARDS=null;PAIDW=null;USED=null;var v=teacherState(a);if(!v.me)throw new Error("빈 화면");}catch(e){tErr.push("줄"+(i+2)+":"+e.message);}
       tMax=Math.max(tMax,Date.now()-s0);
     });
     out.timing.teacherAvgMs=Math.round((Date.now()-t1)/Math.max(te.length,1));out.timing.teacherMaxMs=tMax;
