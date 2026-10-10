@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261009-234542";
+var CODE_VERSION="20261010-134938";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -139,6 +139,17 @@ function doGet(e){
       }
     }catch(x){pk={error:String(x&&x.message||x)};}}
     return ContentService.createTextOutput(JSON.stringify(pk)).setMimeType(ContentService.MimeType.JSON);
+  }
+  /* 작가별 소장 종수(읽기만, 열쇠 필요): ?libauth=<열쇠> — 작가 이름은 공개 정보 */
+  if(e&&e.parameter&&e.parameter.libauth){
+    var la={};
+    if(!keyOk_(e.parameter.libauth))la={error:"열쇠가 맞지 않습니다."};
+    else{try{var cL=Core.make(makeDb_(),makeEnv_()),L2=cL.libAuthors(2),prof={};
+      makeDb_().rows("작가").forEach(function(r){if(String(r["소개"]).trim())prof[String(r["이름"]).replace(/\s/g,"")]=1;});
+      la={n2:L2.length,n3:L2.filter(function(x){return x.n>=3;}).length,n5:L2.filter(function(x){return x.n>=5;}).length,n10:L2.filter(function(x){return x.n>=10;}).length,
+        withProfile:L2.filter(function(x){return prof[String(x.name).replace(/\s/g,"")];}).length,top:L2.slice(0,60),tail:L2.slice(-15)};}
+      catch(x){la={error:String(x&&x.message||x)};}}
+    return ContentService.createTextOutput(JSON.stringify(la)).setMimeType(ContentService.MimeType.JSON);
   }
   /* 상품권 규칙 견주기(읽기만, 숫자만, 열쇠 필요): ?giftsim=<열쇠> */
   if(e&&e.parameter&&e.parameter.giftsim){

@@ -1787,6 +1787,17 @@ function make(db,env){
     }
     return {list:rows.map(function(r){return authorCard(r,false);})};
   }
+  /* 우리 도서관(장서목록)에 책이 min 종 이상 있는 작가(단체·편집부 등은 뺌). [{name,n}] 많은 순 */
+  var ORG_RE=/편집부|위원회|연구소|연구원|제작팀|출판|학회|협회|재단|교육청|교육부|센터|기획|편찬|공저|외\s*지음|팀$|사$|회$|부$/;
+  function libAuthors(min){
+    var by={},nm={};
+    try{db.rows("장서목록").forEach(function(r){
+      var a=authorKey(r["지은이"]),k=bare(a);if(!k||k.length<2||ORG_RE.test(a))return;
+      var t=norm(shownTitle(r["제목"]));if(!t)return;
+      (by[k]=by[k]||{})[t]=1;if(!nm[k])nm[k]=a;});}catch(e){}
+    return Object.keys(by).map(function(k){return {name:nm[k],n:Object.keys(by[k]).length};})
+      .filter(function(x){return x.n>=(min||2);}).sort(function(x,y){return y.n-x.n||(x.name<y.name?-1:1);});
+  }
   /* 작가 이야기 검색 칸 아래 '주요 작가': 소개가 있는(숨김 아님) 작가를 우리 도서관 권장도서가 많은 순으로 */
   function majorAuthors(n){
     var cnt={};db.rows("권장도서").forEach(function(r){if(S(r["뺌"])==="Y")return;var k=bare(authorKey(r["지은이"]));if(k)cnt[k]=(cnt[k]||0)+1;});
@@ -3985,7 +3996,7 @@ function make(db,env){
       posts:db.rows("글").length,copyDist:(function(){var h={};db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y"){var n=Number(b["권수"])||0;h[n]=(h[n]||0)+1;}});return h;})(),
       maxCopies:(function(){var m=0;db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y")m=Math.max(m,Number(b["권수"])||0);});return m;})(),loginMode:S(c["로그인방식"]),students:db.rows("명단").length,teachers:db.rows("교사").length};
   }
-  return {trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
+  return {libAuthors:libAuthors,trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
 }
 
 return {SHEET_DOC:SHEET_DOC,TEEN:TEEN,GENRES:GENRES,make:make,HEAD:HEAD,CONF0:CONF0,CONF_DESC:CONF_DESC,AREAS:AREAS,seedBooks:seedBooks,weekKey:weekKey,libMatch:libMatch,libSearchUrl:libSearchUrl,periodOf:periodOf,seedQuotes:seedQuotes,QUOTES:QUOTES,weekOfYmd:weekOfYmd,prevMonth:prevMonth,quizQuality:quizQuality,shownTitle:shownTitle,shownAuthor:shownAuthor,AREA_CATS:AREA_CATS};
