@@ -267,7 +267,8 @@ th{font-size:12px;color:var(--muted);font-weight:500}
 /* 도서 검색 탭: 이주의 작가 · 권장도서 · 작가 이야기(2026-10-09) */
 .major{margin:4px 0 16px}
 .major .mh{display:block;font-size:13.5px;font-weight:700;margin:0 0 6px}.major .mh small{font-weight:400;color:var(--muted);margin-left:4px}
-.major .chips{gap:6px}.major .chip small{color:var(--muted);margin-left:2px}
+.major .chips{gap:6px}
+.major.libm summary{cursor:pointer;list-style:revert}.major.libm .chips{max-height:260px;overflow:auto;padding:2px}.major .chip small{color:var(--muted);margin-left:2px}
 button,.chip,a{touch-action:manipulation}   /* 두 번 눌러 확대 기다림 없이 바로 */
 button.is-busy{opacity:.6;cursor:progress;pointer-events:none}
 .wabar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid #E9D39A;border-radius:12px;padding:10px 14px;margin:0 0 14px;background:linear-gradient(135deg,#FFF8E6,#FFFDF6)}
@@ -1649,12 +1650,19 @@ function majorHTML(){
   return '<div class="major"><span class="mh">주요 작가 <small>우리 도서관 권장도서가 많은 순</small></span><div class="chips">'+
     M.map(function(x){return '<button class="chip" data-aname="'+esc(x.name)+'" aria-pressed="'+(x.name===cur)+'">'+esc(x.name)+(x.n>1?' <small>'+x.n+'</small>':'')+'</button>';}).join("")+'</div></div>';
 }
+/* 우리 도서관에 책이 5종 이상 있는 작가(가나다순, 2026-10-10) */
+function libMajorHTML(){
+  var L=(FH&&FH.libMajor)||[];if(!L.length)return "";
+  var cur=AF&&AF.list&&AF.list[0]?AF.list[0].name:"";
+  return '<details class="major libm" open><summary class="mh">우리 도서관에 5종 이상 있는 작가 <small>'+L.length+'명 · 가나다순 · 숫자는 소장 종수</small></summary><div class="chips">'+
+    L.map(function(x){return '<button class="chip" data-aname="'+esc(x.name)+'" aria-pressed="'+(x.name===cur)+'">'+esc(x.name)+' <small>'+x.n+'</small></button>';}).join("")+'</div></details>';
+}
 function pAuthor(){
   return '<h3 class="sec">작가 이야기</h3>'+
     '<p class="sub">작가 이름을 찾으면 <b>짧은 열전</b>(어떤 사람인지·태어난 해·생일)과 <b>우리 도서관에 있는 그 작가의 책</b>이 나와요. 매주 한 명은 위의 <b>이주의 작가</b>로 소개해요(그 주에 생일인 작가가 먼저).</p>'+
     '<div class="sbar"><input type="search" id="af-q" placeholder="예) 박경리, 김초엽, 헤르만 헤세" value="'+esc(ui.afQ||"")+'" enterkeyhint="search" autocomplete="off">'+
     '<button class="btn" id="af-go" type="button">찾기</button></div>'+
-    majorHTML()+
+    majorHTML()+libMajorHTML()+
     (AF?(AF.error?'<div class="empty">'+esc(AF.error)+'</div>':AF.list.length?AF.list.map(authorCardHTML).join(""):woong("hi","‘"+esc(ui.afQ||"")+"’ 작가를 찾지 못했어. 우리 도서관에 그 작가 책이 있는지 ‘도서 검색’ 탭에서도 찾아봐."))
       :'');
 }

@@ -1788,11 +1788,12 @@ function make(db,env){
     return {list:rows.map(function(r){return authorCard(r,false);})};
   }
   /* 우리 도서관(장서목록)에 책이 min 종 이상 있는 작가(단체·편집부 등은 뺌). [{name,n}] 많은 순 */
-  var ORG_RE=/편집부|위원회|연구소|연구원|제작팀|출판|학회|협회|재단|교육청|교육부|센터|기획|편찬|공저|외\s*지음|팀$|사$|회$|부$/;
+  var ORG_RE=/편집부|위원회|연구소|연구원|제작팀|출판|학회|협회|재단|교육청|교육부|센터|기획|편찬|공저|외\s*지음|팀$|사$|회$|부$|co\.|^by\s|코리아|알앤디|멘토|모임|뉴턴|스토리$|프레스/i;
+  var NOT_PERSON={"삼촌":1,"쑨자위글":1,"젤리빈":1};   /* 사람이 아닌 이름·잘못 읽힌 이름(2026-10-10 실제 장서목록에서 확인) */
   function libAuthors(min){
     var by={},nm={};
     try{db.rows("장서목록").forEach(function(r){
-      var a=authorKey(r["지은이"]),k=bare(a);if(!k||k.length<2||ORG_RE.test(a))return;
+      var a=authorKey(r["지은이"]),k=bare(a);if(!k||k.length<2||ORG_RE.test(a)||NOT_PERSON[k])return;
       var t=norm(shownTitle(r["제목"]));if(!t)return;
       (by[k]=by[k]||{})[t]=1;if(!nm[k])nm[k]=a;});}catch(e){}
     return Object.keys(by).map(function(k){return {name:nm[k],n:Object.keys(by[k]).length};})
@@ -3848,7 +3849,8 @@ function make(db,env){
       var fk="findHome|"+weekKey(env.now(),0)+"|"+db.rows("작가").length,fh=env.cacheGet?env.cacheGet(fk):null;
       if(fh)try{return JSON.parse(fh);}catch(e){}
       var mj=majorAuthors(24),byN={};db.rows("작가").forEach(function(r){byN[S(r["이름"])]=r;});
-      var out={person:personOfWeek(),rec:recBooks(),major:mj,cards:mj.map(function(x){return byN[x.name]?authorCard(byN[x.name],false):null;}).filter(Boolean)};
+      var lm=libAuthors(5).sort(function(x,y){return x.name.localeCompare(y.name,"ko");});
+      var out={person:personOfWeek(),rec:recBooks(),major:mj,libMajor:lm,cards:mj.map(function(x){return byN[x.name]?authorCard(byN[x.name],false):null;}).filter(Boolean)};
       if(env.cachePut)try{env.cachePut(fk,JSON.stringify(out),600);}catch(e){}   /* 너무 크면 못 넣어도 그만 */
       return out;
     }

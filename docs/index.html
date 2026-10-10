@@ -267,7 +267,8 @@ th{font-size:12px;color:var(--muted);font-weight:500}
 /* 도서 검색 탭: 이주의 작가 · 권장도서 · 작가 이야기(2026-10-09) */
 .major{margin:4px 0 16px}
 .major .mh{display:block;font-size:13.5px;font-weight:700;margin:0 0 6px}.major .mh small{font-weight:400;color:var(--muted);margin-left:4px}
-.major .chips{gap:6px}.major .chip small{color:var(--muted);margin-left:2px}
+.major .chips{gap:6px}
+.major.libm summary{cursor:pointer;list-style:revert}.major.libm .chips{max-height:260px;overflow:auto;padding:2px}.major .chip small{color:var(--muted);margin-left:2px}
 button,.chip,a{touch-action:manipulation}   /* 두 번 눌러 확대 기다림 없이 바로 */
 button.is-busy{opacity:.6;cursor:progress;pointer-events:none}
 .wabar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid #E9D39A;border-radius:12px;padding:10px 14px;margin:0 0 14px;background:linear-gradient(135deg,#FFF8E6,#FFFDF6)}
@@ -2426,6 +2427,18 @@ function make(db,env){
     }
     return {list:rows.map(function(r){return authorCard(r,false);})};
   }
+  /* 우리 도서관(장서목록)에 책이 min 종 이상 있는 작가(단체·편집부 등은 뺌). [{name,n}] 많은 순 */
+  var ORG_RE=/편집부|위원회|연구소|연구원|제작팀|출판|학회|협회|재단|교육청|교육부|센터|기획|편찬|공저|외\s*지음|팀$|사$|회$|부$|co\.|^by\s|코리아|알앤디|멘토|모임|뉴턴|스토리$|프레스/i;
+  var NOT_PERSON={"삼촌":1,"쑨자위글":1,"젤리빈":1};   /* 사람이 아닌 이름·잘못 읽힌 이름(2026-10-10 실제 장서목록에서 확인) */
+  function libAuthors(min){
+    var by={},nm={};
+    try{db.rows("장서목록").forEach(function(r){
+      var a=authorKey(r["지은이"]),k=bare(a);if(!k||k.length<2||ORG_RE.test(a)||NOT_PERSON[k])return;
+      var t=norm(shownTitle(r["제목"]));if(!t)return;
+      (by[k]=by[k]||{})[t]=1;if(!nm[k])nm[k]=a;});}catch(e){}
+    return Object.keys(by).map(function(k){return {name:nm[k],n:Object.keys(by[k]).length};})
+      .filter(function(x){return x.n>=(min||2);}).sort(function(x,y){return y.n-x.n||(x.name<y.name?-1:1);});
+  }
   /* 작가 이야기 검색 칸 아래 '주요 작가': 소개가 있는(숨김 아님) 작가를 우리 도서관 권장도서가 많은 순으로 */
   function majorAuthors(n){
     var cnt={};db.rows("권장도서").forEach(function(r){if(S(r["뺌"])==="Y")return;var k=bare(authorKey(r["지은이"]));if(k)cnt[k]=(cnt[k]||0)+1;});
@@ -4476,7 +4489,8 @@ function make(db,env){
       var fk="findHome|"+weekKey(env.now(),0)+"|"+db.rows("작가").length,fh=env.cacheGet?env.cacheGet(fk):null;
       if(fh)try{return JSON.parse(fh);}catch(e){}
       var mj=majorAuthors(24),byN={};db.rows("작가").forEach(function(r){byN[S(r["이름"])]=r;});
-      var out={person:personOfWeek(),rec:recBooks(),major:mj,cards:mj.map(function(x){return byN[x.name]?authorCard(byN[x.name],false):null;}).filter(Boolean)};
+      var lm=libAuthors(5).sort(function(x,y){return x.name.localeCompare(y.name,"ko");});
+      var out={person:personOfWeek(),rec:recBooks(),major:mj,libMajor:lm,cards:mj.map(function(x){return byN[x.name]?authorCard(byN[x.name],false):null;}).filter(Boolean)};
       if(env.cachePut)try{env.cachePut(fk,JSON.stringify(out),600);}catch(e){}   /* 너무 크면 못 넣어도 그만 */
       return out;
     }
@@ -4624,7 +4638,7 @@ function make(db,env){
       posts:db.rows("글").length,copyDist:(function(){var h={};db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y"){var n=Number(b["권수"])||0;h[n]=(h[n]||0)+1;}});return h;})(),
       maxCopies:(function(){var m=0;db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y")m=Math.max(m,Number(b["권수"])||0);});return m;})(),loginMode:S(c["로그인방식"]),students:db.rows("명단").length,teachers:db.rows("교사").length};
   }
-  return {trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
+  return {libAuthors:libAuthors,trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
 }
 
 return {SHEET_DOC:SHEET_DOC,TEEN:TEEN,GENRES:GENRES,make:make,HEAD:HEAD,CONF0:CONF0,CONF_DESC:CONF_DESC,AREAS:AREAS,seedBooks:seedBooks,weekKey:weekKey,libMatch:libMatch,libSearchUrl:libSearchUrl,periodOf:periodOf,seedQuotes:seedQuotes,QUOTES:QUOTES,weekOfYmd:weekOfYmd,prevMonth:prevMonth,quizQuality:quizQuality,shownTitle:shownTitle,shownAuthor:shownAuthor,AREA_CATS:AREA_CATS};
@@ -5802,12 +5816,19 @@ function majorHTML(){
   return '<div class="major"><span class="mh">주요 작가 <small>우리 도서관 권장도서가 많은 순</small></span><div class="chips">'+
     M.map(function(x){return '<button class="chip" data-aname="'+esc(x.name)+'" aria-pressed="'+(x.name===cur)+'">'+esc(x.name)+(x.n>1?' <small>'+x.n+'</small>':'')+'</button>';}).join("")+'</div></div>';
 }
+/* 우리 도서관에 책이 5종 이상 있는 작가(가나다순, 2026-10-10) */
+function libMajorHTML(){
+  var L=(FH&&FH.libMajor)||[];if(!L.length)return "";
+  var cur=AF&&AF.list&&AF.list[0]?AF.list[0].name:"";
+  return '<details class="major libm" open><summary class="mh">우리 도서관에 5종 이상 있는 작가 <small>'+L.length+'명 · 가나다순 · 숫자는 소장 종수</small></summary><div class="chips">'+
+    L.map(function(x){return '<button class="chip" data-aname="'+esc(x.name)+'" aria-pressed="'+(x.name===cur)+'">'+esc(x.name)+' <small>'+x.n+'</small></button>';}).join("")+'</div></details>';
+}
 function pAuthor(){
   return '<h3 class="sec">작가 이야기</h3>'+
     '<p class="sub">작가 이름을 찾으면 <b>짧은 열전</b>(어떤 사람인지·태어난 해·생일)과 <b>우리 도서관에 있는 그 작가의 책</b>이 나와요. 매주 한 명은 위의 <b>이주의 작가</b>로 소개해요(그 주에 생일인 작가가 먼저).</p>'+
     '<div class="sbar"><input type="search" id="af-q" placeholder="예) 박경리, 김초엽, 헤르만 헤세" value="'+esc(ui.afQ||"")+'" enterkeyhint="search" autocomplete="off">'+
     '<button class="btn" id="af-go" type="button">찾기</button></div>'+
-    majorHTML()+
+    majorHTML()+libMajorHTML()+
     (AF?(AF.error?'<div class="empty">'+esc(AF.error)+'</div>':AF.list.length?AF.list.map(authorCardHTML).join(""):woong("hi","‘"+esc(ui.afQ||"")+"’ 작가를 찾지 못했어. 우리 도서관에 그 작가 책이 있는지 ‘도서 검색’ 탭에서도 찾아봐."))
       :'');
 }

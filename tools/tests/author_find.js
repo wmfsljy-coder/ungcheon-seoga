@@ -89,3 +89,13 @@ must(mj.length>=2&&mj[0].name==="박경리"&&mj[0].n===2&&!mj.some(x=>x.name==="
 const ttok=C().api("login",{role:"teacher",name:"사서",newPin:"713900"}).token;
 const tst=C().api("state",{_t:ttok});
 must(tst.weekAuthor&&tst.weekAuthor.name==="박경리","선생님 첫 화면에도 이주의 작가");
+
+/* 우리 도서관에 5종 이상 있는 작가(가나다순) — 사람이 아닌 이름은 뺌 */
+for(let i=0;i<6;i++)T["장서목록"].push({"제목":"하루키 책"+i,"지은이":"무라카미 하루키 지음","청구기호":"833","권수":"1"});
+for(let i=0;i<5;i++)T["장서목록"].push({"제목":"가나 책"+i,"지은이":"가나다 글","청구기호":"813","권수":"1"});
+for(let i=0;i<7;i++)T["장서목록"].push({"제목":"만화 "+i,"지은이":"곰돌이 co. 글","청구기호":"400","권수":"1"});
+for(let i=0;i<7;i++)T["장서목록"].push({"제목":"뉴턴 "+i,"지은이":"뉴턴코리아 편집부","청구기호":"400","권수":"1"});
+for(let i=0;i<4;i++)T["장서목록"].push({"제목":"적은 책"+i,"지은이":"네권만 지음","청구기호":"813","권수":"1"});
+const lm=as("findHome").libMajor||[];
+must(lm.map(x=>x.name).join()==="가나다,무라카미 하루키","5종 이상 작가만, 가나다순("+lm.map(x=>x.name+x.n).join(",")+")");
+must(!lm.some(x=>/co\.|뉴턴/.test(x.name)),"제작사·편집부 같은 이름은 뺀다");
