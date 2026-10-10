@@ -24,7 +24,7 @@ const C=()=>Core.make(db,env);
 /* 장서목록 시트(2026-09-20): 독서로 대분류 모든 쪽 → 같은 책(speciesKey)끼리 묶어 권수 */
 db.replace=(t,l)=>{T[t]=[];l.forEach(o=>db.add(t,o));};
 const must=(c,m)=>{if(!c){console.log("✗",m);process.exitCode=1;}else console.log("✓",m);};
-let calls=0;const http0=env.http;env.http=reqs=>{calls+=reqs.filter(q=>!/wikipedia|wikidata/.test(q.url)).length;   /* 작가 이야기(위키백과) 요청은 세지 않는다 */return reqs.map(q=>{
+let calls=0;const http0=env.http;env.http=reqs=>{calls+=reqs.filter(q=>!/wikipedia|wikidata/.test(q.url)&&!(q.body&&q.body.searchKeyword!=null)).length;   /* 장서 보충(음절 검색) 요청도 세지 않는다 — catalog_sweep.js */   /* 작가 이야기(위키백과) 요청은 세지 않는다 */return reqs.map(q=>{
   if(q.body&&q.body.categoryCode){const g=q.body.categoryCode.slice(0,3),pg=q.body.page;if(q.body.display===1)return http0([q])[0];
     return ok({totalCount:120,bookList:Array.from({length:pg<3?50:20},(_,k)=>({speciesKey:"s"+g+"-"+(k%25),title:"책"+g+"-"+(k%25),author:"지은이"+k%25,publisher:"출판",pubYear:"2021",
       isbn:"9791100000"+String(k%25).padStart(3,"0"),callNo:"813.6 가"+(k%25)+" c."+(pg*100+k),locationName:"자료실",categoryInfo:{ldesc:"분류"+g,mdesc:"중"+g}}))});}

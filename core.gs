@@ -81,6 +81,7 @@ var CONF_DESC={
   "장서변화":"(자동 기록) 지난번 받아 온 장서와 견준 결과",
   "장서종":"(자동 기록) 장서목록 시트의 책 종 수",
   "장서목록일":"(자동 기록) 장서목록 시트를 마지막으로 받은 날(매달 한 번 새로 받음)",
+  "장서보충":"(자동 기록) 분류 없는 책 보충 진행(다음 음절 자리|다 돈 달). 손대지 마세요",
   "교사등록무인증":"(쓰지 않음) 옛 메일 인증 방식에서 쓰던 값입니다",
   "금칙어":"글 점검에서 거친 말로 볼 낱말(쉼표로 구분). 비워 두면 기본 목록만",
   "백업폴더":"백업 사본을 넣을 드라이브 폴더(주소를 그대로 붙여 넣으면 됩니다). 비우면 ‘웅천 서가 백업’ 폴더를 찾거나 새로 만듭니다",
@@ -846,7 +847,7 @@ var SHEET_DOC={
        "처리":["지급이면 '지급'","지급"],"시각":["준 때",""],"처리자":["준 사람","도서부 이도윤"],
        "매수":["준 상품권 매수","2"],"별":["그때 쓴 별(매수×2)","4"],
        "수령확인":["학생이 앱에서 '확인'을 누르면 '확인'","확인"],"확인시각":["학생이 확인한 때",""]}},
-  "장서목록":{d:"학교 도서관 전체 장서(독서로에서 매달 받아 옵니다). 찾아보기용입니다.",edit:"보기만 하세요",
+  "장서목록":{d:"학교 도서관 전체 장서(독서로에서 매달 받아 옵니다). 독서로에서 분류가 비어 있는 책은 하루 세 번 조금씩 찾아 '분야: 분류 없음'으로 더합니다. 찾아보기용입니다.",edit:"보기만 하세요",
     c:{"제목":["책 제목",""],"지은이":["지은이",""],"출판사":["출판사",""],"발행년":["펴낸 해",""],
        "청구기호":["서가 번호",""],"권수":["같은 책 권수","3"],"분야":["독서로 대분류","소설"],
        "중분류":["더 자세한 갈래","한국소설"],"ISBN":["책 번호",""],"자료실":["어디에 있는지","자료실"]}},
@@ -1853,11 +1854,49 @@ function make(db,env){
       return {"제목":o.t,"지은이":o.a,"출판사":o.pub,"발행년":o.year,"청구기호":cn,"권수":o.n,"분야":o.cat,"중분류":o.mid,"ISBN":o.isbn,"자료실":o.loc};})
       .sort(function(x,y){return x["청구기호"]<y["청구기호"]?-1:x["청구기호"]>y["청구기호"]?1:0;});
     var was=Number(conf()["장서"])||0;
+    /* 장서 보충으로 찾은 '분류 없음' 책은 분류별 받기에 안 나오므로 지우지 않고 남긴다 */
+    var hv={};rows.forEach(function(r){if(S(r["ISBN"]))hv["i"+S(r["ISBN"])]=1;hv["t"+norm(r["제목"])+"|"+norm(r["지은이"])]=1;});
+    db.rows("장서목록").forEach(function(r){if(S(r["분야"])!=="분류 없음")return;
+      if((S(r["ISBN"])&&hv["i"+S(r["ISBN"])])||hv["t"+norm(r["제목"])+"|"+norm(r["지은이"])])return;
+      rows.push({"제목":S(r["제목"]),"지은이":S(r["지은이"]),"출판사":S(r["출판사"]),"발행년":S(r["발행년"]),"청구기호":S(r["청구기호"]),"권수":S(r["권수"]),"분야":"분류 없음","중분류":"","ISBN":S(r["ISBN"]),"자료실":S(r["자료실"])});});
     db.replace("장서목록",rows);
     setConf("장서",String(n));setConf("장서종",String(rows.length));setConf("장서목록일",today(env.now()));
     var diff=was?n-was:0;
     setConf("장서변화",today(env.now())+" · "+n+"권"+(was?(diff>0?" (지난번보다 +"+diff+"권 늘었습니다)":diff<0?" ("+(-diff)+"권 줄었습니다)":" (지난번과 같습니다)"):""));
     return {copies:n,titles:rows.length,diff:diff};
+  }
+  /* ── 장서 보충(2026-10-10): 독서로에서 분류가 비어 있는 책(약 3천 종)은 분류별 받기에 안 잡혀 장서목록에서 빠진다.
+     자주 쓰는 음절(한글 600개 + 영문·숫자)로 학교 장서를 검색해 분류 없는 책을 찾아 장서목록에 더한다.
+     하루 세 번 n 음절씩, 한 바퀴 다 돌면 다음 달에 다시. 설정 장서보충 = "다음 음절 자리|다 돈 달" ── */
+  var SWEEP_SYL="지음김이옮의리는사스다기정한아가그하나영에로인수미은어시고라글림학서을자대진공마세박주경우희일상오소과트유현원드전도성선야제화조를문신게만부강생외니구들교국연최보재윤위편민르무장레호명노동바모카프여해토계와비양안코석타용크래임간내운식역권남까터루치작키승요물러태철종혜더행배디중으저실버홍말관법읽업알준살있할피베회랑병집형환심브데너히면숙린산파년술설거금즈복순람훈개열적것규언백천송건엮애티본되네않클길근황책테청페처케번필당광방각름예란창울감완통독난포없후욱쓰옥발두뉴턴달육허손론단습존슨속력든별잘려머체슈류초블차떻밀꿈엘분메불입츠함직찬엄왜먼질워날새늘죽록매왕반찾택빈효커플험혼혁퍼쿠었삼얼돌힘좋꽃채평슬덕누른풀활추섭능탐런답억웅님때투결범등친담눈점싶특앤렌월온움녀삶헌합꾸걸엔꾼십북링립께춘밤향판팀캐급헤된쟁절끝변돈했랜목망악럽령색표엇약막봉윌품쉬줄멘틴던빛골벽몸빠씨격릭패벨족빅익탄따폴올맥샤료셀균갈콜럼킹놀탁충귀탈션벌씀느딩튜엽찰견뇌잡흔군짜쇼븐즐앨센논겨웨롤쉽칙칼떠축곰랭갑콘몬첫긴괴항먹렇았곽빌짓윈틀겐못풍궁째굴릿볼침끼홀싱킨극검밥컬락받컴웃될숨숲암휴몽곤접찮참량련걷묵출푸쁜닉괜잠같벗닝흐잉협잔앙깨섯퓨렉넘휘농벤겠폰듀몰착즘헬헨뒤묻증응뜨며례꼭맛쑨넬맨샘셜캠텔팅녕릴젠맞뮈털델률젝웰땅댄쳐톨곱봄늬펜념톰널쓴폭확톤낸핀득럴칠낙랙촌염슴섬룡쩌쓸맹낭많잭욕밖롬틱빨솔렬밌팔큐샌힐욤뢰셰봐핑픈밍abcdefghijklmnopqrstuvwxyz0123456789";
+  function sweepCatalog(n){
+    var c=conf(),st=S(c["장서보충"]).split("|"),i=Number(st[0])||0,mon=monthKey(env.now());
+    if(i>=SWEEP_SYL.length){if(S(st[1])===mon)return {done:true,added:0};i=0;}
+    var kws=SWEEP_SYL.slice(i,i+(n||120)).split(""),L=libConf(c);
+    var first=httpAll(kws.map(function(k){return libSearchReq(L,k,1);})).map(libData);
+    if(first.some(function(x){return !x;}))return {failed:true};   /* 다음 차례에 같은 자리부터 */
+    var reqs=[];
+    first.forEach(function(r,j){var pages=Math.min(Math.ceil((Number(r.totalCount)||0)/50),80);for(var pg=2;pg<=pages;pg++)reqs.push(libSearchReq(L,kws[j],pg));});
+    var rest=httpAll(reqs).map(libData);
+    if(rest.some(function(x){return !x;}))return {failed:true};
+    var have={};
+    db.rows("장서목록").forEach(function(r){var i13=S(r["ISBN"]);if(i13)have["i"+i13]=1;have["t"+norm(r["제목"])+"|"+norm(r["지은이"])]=1;});
+    var by={},order=[];
+    function take(list){(list||[]).forEach(function(b){
+      if(S(b.categoryInfo&&b.categoryInfo.lcode))return;   /* 분류가 있는 책은 분류별 받기에 이미 있다 */
+      var isbn=S(b.isbn).slice(0,13),kt="t"+norm(b.title)+"|"+norm(b.author);
+      if((isbn&&have["i"+isbn])||have[kt])return;
+      var k=S(b.speciesKey)||kt,o=by[k];
+      if(!o){o=by[k]={t:S(b.title),a:S(b.author),pub:S(b.publisher),year:S(b.pubYear),isbn:isbn,loc:S(b.locationName),call:"",copies:{}};order.push(k);}
+      if(!o.call)o.call=S(b.callNo).replace(/\s+c\.\s*\d+\s*$/i,"");
+      o.copies[S(b.callNo)]=1;});}
+    first.forEach(function(r){take(r.bookList);});rest.forEach(function(r){take(r.bookList);});
+    var rows=order.map(function(k){var o=by[k];
+      return {"제목":o.t,"지은이":o.a,"출판사":o.pub,"발행년":o.year,"청구기호":o.call,"권수":Object.keys(o.copies).length,"분야":"분류 없음","중분류":"","ISBN":o.isbn,"자료실":o.loc};});
+    if(rows.length){addRows("장서목록",rows);AIDX=null;
+      var cc=conf();setConf("장서종",String((Number(cc["장서종"])||0)+rows.length));}
+    var ni=i+kws.length;setConf("장서보충",ni+"|"+(ni>=SWEEP_SYL.length?mon:S(st[1])));
+    return {added:rows.length,next:ni,of:SWEEP_SYL.length,reqs:kws.length+reqs.length};
   }
   function libCount(){
     var d=libData(httpAll([{url:LIB+"/alpasq/api/category/list?type=B",method:"get"}])[0]);
@@ -1865,6 +1904,8 @@ function make(db,env){
     if(!codes.length)return null;
     var res=httpAll(codes.map(function(code){var q=libCatReq(L,code,1);q.body.display=1;return q;})),n=0;
     for(var i=0;i<res.length;i++){var x=libData(res[i]);if(!x)return null;n+=Number(x.totalCount)||0;}
+    /* 분류 없는 책(장서 보충으로 찾은 것)의 권수도 더한다 */
+    try{db.rows("장서목록").forEach(function(r){if(S(r["분야"])==="분류 없음")n+=Number(r["권수"])||1;});}catch(e){}
     return n;
   }
   /* 목록에 없는 책으로 쓴 글의 청구기호·표지를 나중에 채운다(제출할 때 기다리지 않게). 표지 "-" = 찾아봤지만 없음 */
@@ -1893,6 +1934,7 @@ function make(db,env){
     try{syncRecvSheet();}catch(e){}
     /* 장서목록 시트는 달마다 한 번 새로 */
     if(S(conf()["장서목록일"]).slice(0,7)!==monthKey(env.now()))try{crawlCatalog();}catch(e){}
+    else try{sweepCatalog(120);}catch(e){}   /* 분류 없는 책 보충(장서목록을 새로 받은 날은 쉰다) */
     setConf("도서확인결과",stamp(env.now())+" · "+(l.suspect?"책 제목 조회가 한 권도 맞지 않음 — 지난 값을 그대로 둠":"정상 · "+(r&&r.picked?"이번 달 추천 도서 "+r.picked+"권 새로 뽑음"+(l.checked?", ":""):"")+(l.checked||!(r&&r.picked)?l.checked+"권 대출 상태 확인":"")+(l.failed?", "+l.failed+"권 응답 없음":"")));
     if(r&&r.picked)try{renewWeekAuto();}catch(e){}
     /* 퀴즈판 3(2026-09-20): 이번 주 문제를 부수 많은 책에서 한 번 다시 낸다 */
@@ -3998,7 +4040,7 @@ function make(db,env){
       posts:db.rows("글").length,copyDist:(function(){var h={};db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y"){var n=Number(b["권수"])||0;h[n]=(h[n]||0)+1;}});return h;})(),
       maxCopies:(function(){var m=0;db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y")m=Math.max(m,Number(b["권수"])||0);});return m;})(),loginMode:S(c["로그인방식"]),students:db.rows("명단").length,teachers:db.rows("교사").length};
   }
-  return {libAuthors:libAuthors,trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
+  return {sweepCatalog:sweepCatalog,crawlCatalog:crawlCatalog,libAuthors:libAuthors,trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
 }
 
 return {SHEET_DOC:SHEET_DOC,TEEN:TEEN,GENRES:GENRES,make:make,HEAD:HEAD,CONF0:CONF0,CONF_DESC:CONF_DESC,AREAS:AREAS,seedBooks:seedBooks,weekKey:weekKey,libMatch:libMatch,libSearchUrl:libSearchUrl,periodOf:periodOf,seedQuotes:seedQuotes,QUOTES:QUOTES,weekOfYmd:weekOfYmd,prevMonth:prevMonth,quizQuality:quizQuality,shownTitle:shownTitle,shownAuthor:shownAuthor,AREA_CATS:AREA_CATS};

@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261010-141404";
+var CODE_VERSION="20261010-142205";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -58,7 +58,11 @@ function doGet(e){
       try{applySheetUi_();}catch(x){m.시트모양=x.message;}
       try{Core.make(makeDb_(),makeEnv_()).maintain();}catch(x){m.정리=x.message;}
       try{tidySheets_();}catch(x){}   /* 옮기고 비운 옛 탭을 그 자리에서 정리 */
-      if(e.parameter.recv)markRecvDirty_();   /* &recv=1: 수령대상 시트를 1분 안에 다시 쓰게 */
+      if(e.parameter.recv)markRecvDirty_();
+      /* &sweep=N: 장서 보충(분류 없는 책 찾기)을 지금 N 음절 */
+      if(e.parameter.sweep){var lks=LockService.getScriptLock();
+        try{lks.waitLock(20000);LOCK_HELD_=true;m.장서보충=Core.make(makeDb_(),makeEnv_()).sweepCatalog(Number(e.parameter.sweep)||120);}catch(x){m.장서보충=x.message;}
+        finally{LOCK_HELD_=false;try{lks.releaseLock();}catch(x){}}}   /* &recv=1: 수령대상 시트를 1분 안에 다시 쓰게 */
       /* &authors=1: 작가 이야기 소개를 지금 25명 받아 보기(위키백과가 막는지 확인용). 쓰기라 잠그고 */
       if(e.parameter.authors){var lka=LockService.getScriptLock();
         try{lka.waitLock(20000);LOCK_HELD_=true;var cA=Core.make(makeDb_(),makeEnv_());m.작가=cA.fillAuthors(25);
