@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261010-134938";
+var CODE_VERSION="20261010-135604";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -139,6 +139,14 @@ function doGet(e){
       }
     }catch(x){pk={error:String(x&&x.message||x)};}}
     return ContentService.createTextOutput(JSON.stringify(pk)).setMimeType(ContentService.MimeType.JSON);
+  }
+  /* 학교 장서목록 내려받기(읽기만, 열쇠 필요): ?catalog=<열쇠> — 서명·지은이·출판사·ISBN(소장 도서 목록, 개인정보 없음). 미소장 추천도서 대조용 */
+  if(e&&e.parameter&&e.parameter.catalog){
+    var cg={};
+    if(!keyOk_(e.parameter.catalog))cg={error:"열쇠가 맞지 않습니다."};
+    else{try{cg={rows:makeDb_().rows("장서목록").map(function(r){return [String(r["제목"]),String(r["지은이"]),String(r["출판사"]),String(r["ISBN"])];})};}
+      catch(x){cg={error:String(x&&x.message||x)};}}
+    return ContentService.createTextOutput(JSON.stringify(cg)).setMimeType(ContentService.MimeType.JSON);
   }
   /* 작가별 소장 종수(읽기만, 열쇠 필요): ?libauth=<열쇠> — 작가 이름은 공개 정보 */
   if(e&&e.parameter&&e.parameter.libauth){
