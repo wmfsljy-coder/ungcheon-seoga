@@ -109,6 +109,7 @@ var CONF_DESC={
   "학교명":"독서로 학교 이름",
   "이달의권수":"이번 달 추천 도서 권수(20, 2026-10-09부터). 권장도서 시트의 12개 영역에 나눠 뽑음. 바꾼 뒤 도서 관리의 '다시 뽑기'",
   "추천20판":"(자동 기록) 손대지 마세요",
+  "작가고침판":"(자동 기록) 손대지 마세요",
   "추천방식":"권장 = 권장도서 시트(인터넷 서점·권장 목록의 청소년 도서 중 우리 학교에 있는 책)에서 뽑음 / 장르 = 예전처럼 장서 대분류에서 무작위",
   "권장도서판":"(자동 기록) 손대지 마세요",
   "추천묶음":"여러 달을 한 번의 추천으로 묶기. 예: 2026-09~2026-10 (9월 추천을 10월 말까지). 여러 개는 쉼표로",
@@ -1261,6 +1262,11 @@ function make(db,env){
     if(S(conf()["퀴즈책판"])!=="2"){if(S(conf()["퀴즈책수"])==="3"||!S(conf()["퀴즈책수"]))setConf("퀴즈책수","2");setConf("퀴즈책판","2");}
     /* 이달 추천도서 20권(2026-10-09 회장님 지시 — 권장도서 탭이 따로 있으니). 지금 달 책도 바로 20권으로 줄인다 */
     if(S(conf()["추천20판"])!=="1"){setConf("이달의권수","20");try{trimShelf(20);}catch(e){}setConf("추천20판","1");}
+    /* 김수현: 위키백과에서 같은 이름의 드라마 작가(1943~)가 잡혔는데, 학교 책은 『나는 나로 살기로 했다』를 쓰고 그린 김수현(2026-10-11) */
+    if(S(conf()["작가고침판"])!=="1"){try{db.rows("작가").forEach(function(r){if(S(r["이름"])==="김수현"&&/드라마/.test(S(r["직업"])))
+      db.set("작가","이름","김수현",{"생몰":"","생일":"","직업":"대한민국의 작가, 일러스트레이터","소개":"김수현은 대한민국의 작가이자 일러스트레이터이다. 글과 그림을 함께 담은 에세이 『나는 나로 살기로 했다』(2016)를 썼다.",
+        "사진":"https://image.aladin.co.kr/Author/Photo/2268761/2268761_2.jpg","출처":"https://www.aladin.co.kr/author/wauthor_overview.aspx?AuthorSearch=@2268761","확인":today(env.now())});});}catch(e){}
+      setConf("작가고침판","1");}
     /* 하루 합계 3편(2026-10-09 회장님 지시: 라벨 1 + 문장 1 + 독후감 1 을 하루에 낼 수 있게). 한 번만 — 나중에 시트에서 고치면 그대로 */
     if(S(conf()["하루합계판"])!=="1"){setConf("하루제출상한","3");setConf("하루합계판","1");}
     /* 라벨·문장·독후감 종류마다 하루 1편(2026-10-09 회장님 지시). 하루 합계가 2면 3으로(종류마다 하나씩 낼 수 있게) */
@@ -1742,8 +1748,11 @@ function make(db,env){
   /* 작가 얼굴(2026-10-11): 한국어 위키백과 문서에 사진이 없어도 위키데이터(대표 사진 P18, 위키미디어 공용)나
      영어 위키백과 문서에 자유 이용 사진이 있으면 빈 사진 칸을 채운다. 하루 한 번(force 면 지금). 손으로 넣은 사진은 건드리지 않는다.
      영어 위키백과의 '공정 이용' 사진(…/wikipedia/en/…)은 쓰지 않는다 — 공용(commons) 사진만 */
-  /* 눈으로 확인한 공용 사진(이름 검색은 동명이인이 걸려 자동으로 안 함: 조세희→레이싱 모델, 대니얼 키스→남북전쟁 군인) */
-  var PHOTO_FIX={"채만식":"Чхе Мансік.png"};
+  /* 눈으로 확인한 사진(이름 검색은 동명이인이 걸려 자동으로 안 함: 조세희→레이싱 모델, 대니얼 키스→남북전쟁 군인).
+     값이 파일 이름이면 위키미디어 공용, 주소면 그대로. 공용에 없는 작가는 알라딘 작가 파일 사진(2026-10-11 회장님 지시,
+     대표작으로 동명이인을 가려 고름 · 김상욱=떨림과 울림, 정지아=아버지의 해방일지, 김수영=멈추지 마 다시 꿈부터 써봐) */
+  var AL="https://image.aladin.co.kr/Author/Photo/";
+  var PHOTO_FIX={"채만식":"Чхе Мансік.png","염상섭":AL+"27915/27915_1.jpg","조세희":AL+"41469/41469_1.gif","최명희":AL+"44819/44819_1.jpg","조남주":AL+"2329461/2329461_2.jpg","이문구":AL+"160369/160369_2.jpg","정세랑":AL+"1720627/1720627_4.jpg","김초엽":AL+"6165280/6165280_9.jpg","천선란":AL+"7303025/7303025_10.jpg","최진영":AL+"1692294/1692294_6.jpg","정지아":AL+"75492/75492_3.jpg","조창인":AL+"42071/42071_1.jpg","히가시노 게이고":AL+"64100/64100_1.jpg","오가와 요코":AL+"190206/190206_1.jpg","온다 리쿠":AL+"213836/213836_3.jpg","유은실":AL+"202853/202853_3.jpg","김려령":AL+"290815/290815_4.jpg","손원평":AL+"5615294/5615294_1.jpg","이희영":AL+"5572127/5572127_1.jpg","김중미":AL+"78547/78547_2.jpg","백세희":AL+"6315742/6315742_2.jpg","장영희":AL+"37660/37660_1.gif","한비야":AL+"50270/50270_2.jpg","이병률":AL+"155983/155983_2.jpg","고미숙":AL+"1758/1758_3.jpg","이지성":AL+"161029/161029_3.jpg","에릭 와이너":AL+"346498/346498_1.jpg","기시미 이치로":AL+"3673288/3673288_1.jpg","문유석":AL+"3285785/Authorid_1.jpg","김난도":AL+"120209/120209_5.jpg","정재승":AL+"2458240/2458240_2.jpg","김상욱":AL+"946262/946262_4.jpg","혜민":AL+"1664282/1664282_04.jpg","김수영":AL+"1660527/1660527_3.jpg","정혜신":AL+"63118/63118_3.jpg","윤홍균":AL+"2424902/2424902_2.jpg"};
   function fillPhotos(force){
     var td=today(env.now());
     if(!force&&S(conf()["작가사진"]).split("|")[0]===td)return null;
@@ -1768,12 +1777,12 @@ function make(db,env){
     if(en.length){var r2=httpAll(en.map(function(x){return {url:"https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(x.t.replace(/ /g,"_")),method:"get"};}));
       en.forEach(function(x,i){var d=js(r2[i]),src=d&&d.thumbnail&&S(d.thumbnail.source);
         if(src&&/\/wikipedia\/commons\//.test(src))found[x.name]=src;});}
-    want.forEach(function(w){if(!found[w.name]&&PHOTO_FIX[w.name])found[w.name]=fp(PHOTO_FIX[w.name]);});
+    want.forEach(function(w){if(!found[w.name]&&PHOTO_FIX[w.name])found[w.name]=/^https?:/.test(PHOTO_FIX[w.name])?PHOTO_FIX[w.name]:fp(PHOTO_FIX[w.name]);});
     var upd={},n=0;Object.keys(found).forEach(function(k){upd[k]={"사진":found[k]};n++;});
     if(n){db.setMany("작가","이름",upd);AIDX=null;}
     var left=rows.length-n;
     if(!failed)setConf("작가사진",td+"|"+n+"|"+left);
-    return {checked:rows.length,filled:n,left:left,failed:failed,leftNames:want.filter(function(w){return !found[w.name];}).map(function(w){return w.name;})};
+    return {checked:rows.length,filled:n,left:left,failed:failed,leftNames:want.filter(function(w){return !found[w.name];}).map(function(w){var r=rows.filter(function(x){return S(x["이름"])===w.name;})[0]||{};return w.name+" · "+S(r["직업"])+" · "+S(r["생몰"])+" · "+w.t;})};
   }
   /* 우리 도서관에 있는 그 작가의 책(권장도서 먼저, 그다음 장서목록) */
   var AIDX=null;
