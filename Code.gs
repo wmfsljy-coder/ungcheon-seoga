@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261010-142205";
+var CODE_VERSION="20261011-110106";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -69,6 +69,12 @@ function doGet(e){
           var dbA=makeDb_(),rA=dbA.rows("작가");m.작가줄=rA.length;m.작가소개=rA.filter(function(r){return String(r["소개"]).trim();}).length;}
         catch(x){m.작가=x.message;}
         finally{LOCK_HELD_=false;try{lka.releaseLock();}catch(x){}}}
+      /* &photos=1: 빈 작가 얼굴을 지금 채우기(위키데이터·영어 위키백과). 쓰기라 잠그고 */
+      if(e.parameter.photos){var lkp=LockService.getScriptLock();
+        try{lkp.waitLock(20000);LOCK_HELD_=true;m.작가사진=Core.make(makeDb_(),makeEnv_()).fillPhotos(true);
+          var rP=makeDb_().rows("작가").filter(function(r){return String(r["소개"]).trim();});m.소개있는작가=rP.length;m.사진있는작가=rP.filter(function(r){return String(r["사진"]).trim();}).length;}
+        catch(x){m.작가사진=x.message;}
+        finally{LOCK_HELD_=false;try{lkp.releaseLock();}catch(x){}}}
       /* &quiz=1: 이번 주 북퀴즈 채우기·다음 주 책 정하기를 지금(시계를 기다리지 않고). 쓰기라 잠그고 */
       if(e.parameter.quiz){var lkq=LockService.getScriptLock();
         try{lkq.waitLock(20000);LOCK_HELD_=true;m.퀴즈=Core.make(makeDb_(),makeEnv_()).ensureWeeklyQuiz();}catch(x){m.퀴즈=x.message;}

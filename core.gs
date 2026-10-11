@@ -82,6 +82,7 @@ var CONF_DESC={
   "장서종":"(자동 기록) 장서목록 시트의 책 종 수",
   "장서목록일":"(자동 기록) 장서목록 시트를 마지막으로 받은 날(매달 한 번 새로 받음)",
   "장서보충":"(자동 기록) 분류 없는 책 보충 진행(다음 음절 자리|다 돈 달). 손대지 마세요",
+  "작가사진":"(자동 기록) 빈 작가 얼굴 채우기(마지막 날|채운 수|아직 없는 수). 손대지 마세요",
   "교사등록무인증":"(쓰지 않음) 옛 메일 인증 방식에서 쓰던 값입니다",
   "금칙어":"글 점검에서 거친 말로 볼 낱말(쉼표로 구분). 비워 두면 기본 목록만",
   "백업폴더":"백업 사본을 넣을 드라이브 폴더(주소를 그대로 붙여 넣으면 됩니다). 비우면 ‘웅천 서가 백업’ 폴더를 찾거나 새로 만듭니다",
@@ -1707,7 +1708,7 @@ function make(db,env){
     /* 생일·생몰년: 위키데이터(한 번에 여러 사람) */
     var ids=[],life={};got.forEach(function(x){if(x&&x.wikibase_item)ids.push(S(x.wikibase_item));});
     for(var a=0;a<ids.length;a+=40){
-      var rw=httpAll([{url:"https://www.wikidata.org/w/api.php?action=wbgetentities&props=claims&format=json&ids="+ids.slice(a,a+40).join("|"),method:"get"}])[0],d=js(rw);
+      var rw=httpAll([{url:"https://www.wikidata.org/w/api.php?action=wbgetentities&props=claims&format=json&ids="+ids.slice(a,a+40).join("%7C"),method:"get"}])[0],d=js(rw);
       if(!d||!d.entities)continue;
       Object.keys(d.entities).forEach(function(q){var cl=d.entities[q].claims||{};
         function t(p){try{var v=cl[p][0].mainsnak.datavalue.value;return {y:v.time.slice(1,5).replace(/^0+/,""),md:v.precision>=11?v.time.slice(6,11):""};}catch(e){return null;}}
@@ -1737,6 +1738,42 @@ function make(db,env){
     var out=fetchAuthors(todo.map(function(k){return {name:k,book:W.m[k]};}));
     addRows("작가",out);
     return out.filter(function(r){return S(r["소개"]);}).length;
+  }
+  /* 작가 얼굴(2026-10-11): 한국어 위키백과 문서에 사진이 없어도 위키데이터(대표 사진 P18, 위키미디어 공용)나
+     영어 위키백과 문서에 자유 이용 사진이 있으면 빈 사진 칸을 채운다. 하루 한 번(force 면 지금). 손으로 넣은 사진은 건드리지 않는다.
+     영어 위키백과의 '공정 이용' 사진(…/wikipedia/en/…)은 쓰지 않는다 — 공용(commons) 사진만 */
+  /* 눈으로 확인한 공용 사진(이름 검색은 동명이인이 걸려 자동으로 안 함: 조세희→레이싱 모델, 대니얼 키스→남북전쟁 군인) */
+  var PHOTO_FIX={"채만식":"Чхе Мансік.png"};
+  function fillPhotos(force){
+    var td=today(env.now());
+    if(!force&&S(conf()["작가사진"]).split("|")[0]===td)return null;
+    var rows=db.rows("작가").filter(function(r){return S(r["소개"])&&!S(r["사진"])&&S(r["숨김"])!=="Y";});
+    function js(r){try{return r&&r.code===200?JSON.parse(r.text):null;}catch(e){return null;}}
+    function titleOf(r){var u=S(r["출처"]),m=/\/wiki\/([^?#]+)/.exec(u);
+      try{return m?decodeURIComponent(m[1]).replace(/_/g," "):S(r["이름"]);}catch(e){return S(r["이름"]);}}
+    function fp(file){return "https://commons.wikimedia.org/wiki/Special:FilePath/"+encodeURIComponent(S(file).replace(/ /g,"_"))+"?width=320";}
+    var want=rows.map(function(r){return {name:S(r["이름"]),t:titleOf(r)};}),byT={};
+    want.forEach(function(w){byT[bare(w.t)]=w;});
+    var reqs=[];
+    for(var a=0;a<want.length;a+=50)reqs.push({url:"https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=claims%7Csitelinks&sitefilter=kowiki%7Cenwiki&sites=kowiki&titles="+
+      want.slice(a,a+50).map(function(w){return encodeURIComponent(w.t);}).join("%7C"),method:"get"});
+    var res=httpAll(reqs),found={},en=[],failed=0;
+    res.forEach(function(r){var d=js(r);if(!d||!d.entities){failed++;return;}
+      Object.keys(d.entities).forEach(function(q){var E=d.entities[q],sl=E.sitelinks||{},kt=sl.kowiki&&S(sl.kowiki.title),w=kt&&byT[bare(kt)];
+        if(!w)return;
+        var img=null;try{img=E.claims.P18[0].mainsnak.datavalue.value;}catch(e){}
+        if(img)found[w.name]=fp(img);
+        else if(sl.enwiki&&S(sl.enwiki.title))en.push({name:w.name,t:S(sl.enwiki.title)});});});
+    en=en.slice(0,80);
+    if(en.length){var r2=httpAll(en.map(function(x){return {url:"https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(x.t.replace(/ /g,"_")),method:"get"};}));
+      en.forEach(function(x,i){var d=js(r2[i]),src=d&&d.thumbnail&&S(d.thumbnail.source);
+        if(src&&/\/wikipedia\/commons\//.test(src))found[x.name]=src;});}
+    want.forEach(function(w){if(!found[w.name]&&PHOTO_FIX[w.name])found[w.name]=fp(PHOTO_FIX[w.name]);});
+    var upd={},n=0;Object.keys(found).forEach(function(k){upd[k]={"사진":found[k]};n++;});
+    if(n){db.setMany("작가","이름",upd);AIDX=null;}
+    var left=rows.length-n;
+    if(!failed)setConf("작가사진",td+"|"+n+"|"+left);
+    return {checked:rows.length,filled:n,left:left,failed:failed,leftNames:want.filter(function(w){return !found[w.name];}).map(function(w){return w.name;})};
   }
   /* 우리 도서관에 있는 그 작가의 책(권장도서 먼저, 그다음 장서목록) */
   var AIDX=null;
@@ -1927,6 +1964,7 @@ function make(db,env){
     var r=rotateMonth(S(conf()["선별판"])!=="3"),l=refreshLibrary(null,r&&r.ids),filled=0,cc=conf();
     try{fillDetails(60);}catch(e){}
     try{fillAuthors(25);}catch(e){}   /* 작가 이야기: 한 번에 25명씩 */
+    try{fillPhotos(false);}catch(e){}   /* 빈 작가 얼굴: 하루 한 번 위키데이터·영어 위키백과에서 */
     if(S(cc["장서확인"])!==today(env.now())){
       try{var hn=libCount();if(hn){setConf("장서",String(hn));setConf("장서확인",today(env.now()));}}catch(e){}
     }
@@ -4040,7 +4078,7 @@ function make(db,env){
       posts:db.rows("글").length,copyDist:(function(){var h={};db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y"){var n=Number(b["권수"])||0;h[n]=(h[n]||0)+1;}});return h;})(),
       maxCopies:(function(){var m=0;db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y")m=Math.max(m,Number(b["권수"])||0);});return m;})(),loginMode:S(c["로그인방식"]),students:db.rows("명단").length,teachers:db.rows("교사").length};
   }
-  return {sweepCatalog:sweepCatalog,crawlCatalog:crawlCatalog,libAuthors:libAuthors,trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
+  return {sweepCatalog:sweepCatalog,crawlCatalog:crawlCatalog,libAuthors:libAuthors,trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fillPhotos:fillPhotos,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
 }
 
 return {SHEET_DOC:SHEET_DOC,TEEN:TEEN,GENRES:GENRES,make:make,HEAD:HEAD,CONF0:CONF0,CONF_DESC:CONF_DESC,AREAS:AREAS,seedBooks:seedBooks,weekKey:weekKey,libMatch:libMatch,libSearchUrl:libSearchUrl,periodOf:periodOf,seedQuotes:seedQuotes,QUOTES:QUOTES,weekOfYmd:weekOfYmd,prevMonth:prevMonth,quizQuality:quizQuality,shownTitle:shownTitle,shownAuthor:shownAuthor,AREA_CATS:AREA_CATS};
