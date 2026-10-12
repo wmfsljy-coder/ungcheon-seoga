@@ -14,7 +14,9 @@ T["교사"].push({"이메일":"lib@x","이름":"사서","담당":"관리자"},{"
 [["3101","가"],["3102","나"]].forEach(([h,n])=>T["명단"].push({"학번":h,"이름":n,"반":"3-1","이메일":"s"+h+"@x","동의":"y"}));
 T["도서"].push({"id":"b1","제목":"침묵의 봄","지은이":"레이첼 카슨","영역":"과학","월":"2026-10","소장":"Y","출처":"자동"});
 T["도서"].push({"id":"b2","제목":"완득이","지은이":"김려령","영역":"청소년","월":"2026-10","소장":"Y","출처":"자동"});
-db.setConf("이달","2026-10");   /* 다음 주 퀴즈 책이 아직 없으면 이달 추천도서로만 */
+db.setConf("이달","2026-10");
+const plan=(wk,books)=>db.setConf("다음주퀴즈책",wk+"|2026-10|"+books);   /* 문제는 다음 주 퀴즈 책으로만 */
+plan("2026-10-26","침묵의 봄;완득이");
 const as=(em,op,p)=>{EMAIL=em;try{return C().api(op,p||{});}catch(x){return {ERR:x.message};}};
 const qs=hb=>as("s"+hb+"@x","state").week.stamps.filter(x=>x.slot==="quiz"||x.k==="quizmk").length;
 
@@ -49,11 +51,14 @@ must(as("s3101@x","state").quizRejected.length===0,"확인 뒤에는 안내가 �
 must(/학생/.test((as("lib@x","quizRejectAck",{}).ERR)||""),"확인은 학생만");
 
 /* 북퀴즈에 뽑혀서 받은 도장(품질 미달)도 출제 취소하면 회수 */
-NOW=new Date("2026-10-26T03:00:00Z");
+NOW=new Date("2026-10-26T03:00:00Z");plan("2026-11-02","침묵의 봄");
 const p2=as("s3102@x","quizSubmit",{book:"침묵의 봄",page:"",q:"침묵의 봄을 쓴 사람은?",o1:"레이첼 카슨",o2:"제인 구달",o3:"다윈",o4:"파브르",ans:1,why:""});
 const id2=as("lib@x","state").quiz.find(q=>q.q.startsWith("침묵의 봄을")).id;
-as("lib@x","quizPick",{id:id2});
-must(qs("3102")===1,"북퀴즈에 뽑히면 도장");
+must(/다음 주 출제/.test((as("lib@x","quizPick",{id:id2}).ERR)||""),"학생 문제는 '이번 주 출제' 안 됨");
+as("lib@x","quizPick",{id:id2,next:1});
+must(T["퀴즈"].find(q=>q["id"]===id2)["주"]==="2026-11-02","학생 문제는 다음 주로 출제");
+NOW=new Date("2026-11-02T03:00:00Z");
+must(qs("3102")===1,"북퀴즈에 뽑혀 그 주가 오면 도장");
 must(as("lib@x","quizDrop",{id:id2}).stampTaken===true&&qs("3102")===0,"출제 취소도 도장 회수");
 must(as("s3102@x","state").quizRejected.length===1,"출제 취소된 학생에게도 반려 안내");
 /* 문제 낸 책 위치 표시(2026-10-12): 옛 문제(제한 전)는 이달 추천도서 아님 / 교내 소장 도서 아님 으로 구분 */
@@ -69,7 +74,10 @@ must(mq.find(q=>q.book==="코스모스").where==="lib"&&mq.find(q=>q.book==="우
 
 /* 출제는 다음 주 퀴즈 책으로만(2026-10-12 회장님) */
 NOW=new Date("2026-10-28T03:00:00Z");
-const nwk=Core.make(db,env).api?"2026-11-02":"";db.setConf("다음주퀴즈책",nwk+"|2026-10|침묵의 봄");
+db.setConf("다음주퀴즈책","");
+must(as("s3101@x","state").quiz.allowed.kind==="none","다음 주 책이 아직 없으면 낼 수 있는 책 없음");
+must(/아직 정해지지 않았어요/.test((as("s3101@x","quizSubmit",{book:"침묵의 봄",page:"1쪽",q:"1쪽에서 나오는 것은 무엇?",o1:"가",o2:"나",o3:"다",o4:"라",ans:1,why:"1쪽"}).ERR)||""),"그때는 이달 추천도서여도 제출이 막힌다");
+plan("2026-11-02","침묵의 봄");
 let al=as("s3101@x","state").quiz.allowed;
 must(al.kind==="next"&&al.books.join()==="침묵의 봄","낼 수 있는 책 = 다음 주 퀴즈 책");
 const no=as("s3101@x","quizSubmit",{book:"완득이",page:"10쪽",q:"10쪽에서 완득이가 한 일은?",o1:"가",o2:"나다",o3:"라마",o4:"바사아",ans:1,why:"10쪽에 나옵니다"});

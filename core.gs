@@ -1673,11 +1673,11 @@ function make(db,env){
   }
   /* 다음 주 퀴즈 책(미리 알림) */
   function nextQuizBooks(){var nwk=weekKey(env.now(),1),b=planOf(nwk,conf()["이달"]);return b.length?{week:nwk,books:b}:null;}
-  /* 학생이 문제를 낼 수 있는 책(2026-10-12 회장님: 다음 주 퀴즈 책으로만). 다음 주 책이 아직 없으면 이번 주 퀴즈 책, 그것도 없으면 이달 추천도서 */
+  /* 학생이 문제를 낼 수 있는 책(2026-10-12 회장님: 다음 주 퀴즈 책으로만 — 다른 길 없음).
+     다음 주 책은 하루 세 번 도는 tick 이 정해 둔다. 아직 없으면 kind "none"(제출 막음) */
   function quizAllowed(){
     var nx=nextQuizBooks();if(nx)return {kind:"next",week:nx.week,books:nx.books};
-    var wb=weekBooksOf(weekKey(env.now(),0));if(wb.length)return {kind:"this",books:wb};
-    return {kind:"month",books:bookList().map(function(b){return b.t;})};
+    return {kind:"none",books:[]};
   }
   /* ── 작가 이야기(2026-10-09 회장님 지시): 짧은 열전·생일·이주의 작가 ──
      권장도서·추천 도서의 지은이를 위키백과 요약(+위키데이터 생일)으로 '작가' 시트에 조금씩 모은다.
@@ -3459,7 +3459,8 @@ function make(db,env){
     if(BADWORDS.test([p.q,p.why].concat(o).join(" ")))fail("문제에 쓸 수 없는 말이 들어 있습니다.");
     if(db.rows("퀴즈").some(function(q){return norm(q["문제"])===norm(p.q)&&S(q["상태"])!=="반려";}))fail("같은 문제가 이미 있습니다.");
     var QA=quizAllowed(),ok=QA.books.filter(function(t){return tkey(t)===tkey(p.book);})[0];
-    if(!ok)fail(QA.kind==="month"?"문제는 이달 추천도서에서만 낼 수 있어요.":"문제는 "+(QA.kind==="next"?"다음 주":"이번 주")+" 퀴즈 책("+QA.books.map(function(t){return "『"+t+"』";}).join(", ")+")에서만 낼 수 있어요.");
+    if(QA.kind==="none")fail("다음 주 퀴즈 책이 아직 정해지지 않았어요. 정해지면(퀴즈 탭에 보라색으로 보여요) 그 책으로 문제를 낼 수 있어요.");
+    if(!ok)fail("문제는 다음 주 퀴즈 책("+QA.books.map(function(t){return "『"+t+"』";}).join(", ")+")에서만 낼 수 있어요.");
     p.book=ok;
     var shelf=onShelf(p.book),qq=quizQuality(p),lib=shelf?"Y":inLib(p.book);
     db.add("퀴즈",{"id":"q"+env.uid(),"시각":stamp(now),"차수":c["차수"],"주":"","상태":"대기","책제목":S(p.book),"쪽수":S(p.page),
@@ -3955,7 +3956,11 @@ function make(db,env){
     /* 확인만(2026-10-12 회장님): 선생님이 본 학생 문제. 도장은 그대로 두고 북퀴즈 자동 출제(대기만 고름)에서는 빠진다. undo 면 대기로 */
     quizCheck:function(a,p){admin(a);var q=db.rows("퀴즈").filter(function(x){return S(x["id"])===S(p.id);})[0];if(!q)fail("문제를 찾을 수 없습니다.");
       db.set("퀴즈","id",S(p.id),{"상태":p.undo?"대기":"확인","주":""});return {ok:true};},
-    quizPick:function(a,p){admin(a);db.set("퀴즈","id",S(p.id),{"상태":"출제","주":weekKey(env.now(),p.next?1:0)});},
+    /* 학생 문제는 다음 주 퀴즈 책으로 낸 것이라 '다음 주 출제'만(2026-10-12 회장님) */
+    quizPick:function(a,p){admin(a);var q=db.rows("퀴즈").filter(function(x){return S(x["id"])===S(p.id);})[0];
+      var stu=q&&S(q["학번"])&&S(q["출처"])!=="자동"&&S(q["출처"])!=="교사";
+      if(stu&&!p.next)fail("학생 문제는 다음 주 퀴즈 책으로 낸 것이라 ‘다음 주 출제’만 할 수 있어요.");
+      db.set("퀴즈","id",S(p.id),{"상태":"출제","주":weekKey(env.now(),p.next?1:0)});},
     /* 반려(출제 취소 포함): 학생 문제로 받은 도장은 그 문제가 '반려'가 되는 순간 도장 계산에서 빠진다(회수).
        도장을 받았던 문제면 반려시각을 남겨 학생 화면에 '문제 출제 도장이 반려되었다'는 안내를 띄운다(2026-10-12) */
     quizDrop:function(a,p){admin(a);

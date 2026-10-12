@@ -2165,7 +2165,7 @@ function quizForm(prefix,adminMode){
     '<div class="two" style="gap:12px"><div class="field"><label for="'+prefix+'a">정답 번호</label><select id="'+prefix+'a"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>'+
     '<div class="field"><label for="'+prefix+'w">해설 한 줄</label><input type="text" id="'+prefix+'w"></div></div>'+
     (adminMode?'<div class="row"><button class="btn" data-qadd="0">이번 주에 출제</button><button class="btn ghost" data-qadd="1">다음 주에 출제</button></div>'
-              :'<button class="btn" id="qs-send">문제 내기</button>')+'</div>';
+              :((D.quiz&&D.quiz.allowed&&D.quiz.allowed.kind==="next")?'<button class="btn" id="qs-send">문제 내기</button>':'<button class="btn" disabled>다음 주 퀴즈 책이 정해지면 낼 수 있어요</button>'))+'</div>';
 }
 function quizPayload(prefix){
   return {book:val(prefix+"b"),page:val(prefix+"p"),q:val(prefix+"q"),o1:val(prefix+"o1"),o2:val(prefix+"o2"),
@@ -2173,7 +2173,7 @@ function quizPayload(prefix){
 }
 function whereTag(w){return w==="none"?"교내 소장 도서 아님":"이달 추천도서 아님";}
 function pQuiz(){
-  var QA=(D.quiz&&D.quiz.allowed)||{kind:"month",books:[]},nextQ=QA.books||[],QW=QA.kind==="next"?"다음 주 퀴즈 책":QA.kind==="this"?"이번 주 퀴즈 책":"이달 추천도서";
+  var QA=(D.quiz&&D.quiz.allowed)||{kind:"none",books:[]},nextQ=QA.books||[],QW="다음 주 퀴즈 책";
   var Q=D.quiz,qs=Q.items.map(function(q,i){
     var o=q.o.map(function(x,j){return '<label class="opt"><input type="radio" name="qz-'+q.id+'" value="'+j+'"'+(Q.done!=null?' disabled':'')+'><span>'+esc(x)+'</span></label>';}).join("");
     return '<div class="q-box"><p class="src">'+(q.book?'『'+esc(q.book)+'』':'소개글 보고 책 맞히기')+(q.page?' '+esc(q.page):'')+'</p><p class="qt">'+(i+1)+'. '+esc(q.q)+'</p>'+o+'<div class="fb" hidden id="fb-'+q.id+'"></div></div>';
@@ -2193,9 +2193,9 @@ function pQuiz(){
     (qs?qs+(Q.done==null?'<button class="btn" id="q-send">채점하기</button>':'')
        :'<div class="empty">이번 주 퀴즈는 준비 중입니다. 아래에서 직접 문제를 내 보세요.</div>')+
     '<h3 class="sec gap">내가 문제 내기</h3>'+
-    (QA.kind!=="month"?'<div class="qbooks next"><span>📚 문제는 <strong>'+QW+'</strong>으로만 낼 수 있어요 — 책 이름을 누르면 아래 칸에 바로 들어가요</span>'+nextQ.map(function(t){return '<button type="button" class="qbk" data-qbook="'+esc(t)+'">『'+esc(t)+'』</button>';}).join("")+
-      '<small class="hint">'+(QA.kind==="next"?'이 책 문제 가운데 점수가 높은 것이 다음 주 북퀴즈로 뽑혀요.':'다음 주 퀴즈 책이 정해지면 그 책으로 바뀌어요.')+'</small></div>'
-      :'<div class="guidebanner"><span>📚 다음 주 퀴즈 책이 아직 정해지지 않아, 지금은 <b>이달 추천도서</b>에서 낼 수 있어요.</span></div>')+
+    (QA.kind==="next"?'<div class="qbooks next"><span>📚 문제는 <strong>'+QW+'</strong>으로만 낼 수 있어요 — 책 이름을 누르면 아래 칸에 바로 들어가요</span>'+nextQ.map(function(t){return '<button type="button" class="qbk" data-qbook="'+esc(t)+'">『'+esc(t)+'』</button>';}).join("")+
+      '<small class="hint">이 책 문제 가운데 점수가 높은 것이 다음 주 북퀴즈로 뽑혀요.</small></div>'
+      :'<div class="guidebanner"><span>📚 문제는 <b>다음 주 퀴즈 책</b>으로만 낼 수 있어요. 다음 주 퀴즈 책이 아직 정해지지 않았어요 — 정해지면 여기에 보라색으로 보여요.</span></div>')+
     '<p class="sub"><b>성의껏 낸 문제(품질 '+(D.conf.quizBar||6)+'점 이상)는 그 자리에서 도장 1개</b>를 받아요(한 주 '+(D.conf.weekCap||5)+'칸 안에서). <b>점수가 높아도 선생님이 반려하면 도장은 회수</b>되고, 선생님이 확인만 하고 북퀴즈에 내지 않을 수도 있어요. 매주 월요일에는 <b>퀴즈 책 문제 가운데 점수가 높은 것부터</b> 북퀴즈로 뽑히고, 뽑히면 도장판에 퀴즈 칸이 찹니다. 쪽수를 적고 책을 읽어야 풀 수 있는 문제일수록 점수가 높아요.</p>'+
     woong("read","좋은 문제 점수표(10점) 알려 줄게.<br><b>쪽수</b> 적기 3 · 서로 다르고 짧은 <b>보기</b> 3 · 정답만 길게 튀지 않기 1 · <b>해설</b> 한 줄 2 · 문제 길이 1. <b>"+(D.conf.quizBar||6)+"점 이상</b>이면 도장 받고 출제 후보야!")+
     quizForm("qs-",false)+(mine?'<div style="margin-top:14px">'+mine+'</div>':'');
@@ -2772,8 +2772,8 @@ function pQuizAdm(){
       '<ol style="margin:0 0 8px;padding-left:20px;font-size:13.5px">'+q.o.map(function(x,i){
         return '<li'+(i+1===q.ans?' style="font-weight:600"':'')+'>'+esc(x)+(i+1===q.ans?' ← 정답':'')+'</li>';}).join("")+'</ol>'+
       (q.why?'<p class="hint" style="margin:0 0 8px">'+esc(q.why)+'</p>':'')+
-      '<div class="row">'+(q.status==="대기"?'<button class="btn sm" data-qpick="'+q.id+'">이번 주 출제</button>'+
-        '<button class="btn ghost sm" data-qpick="'+q.id+'" data-next="1">다음 주 출제</button>'+
+      '<div class="row">'+(q.status==="대기"?(q.src==="학생"?'':'<button class="btn sm" data-qpick="'+q.id+'">이번 주 출제</button>')+
+        '<button class="btn '+(q.src==="학생"?'':'ghost ')+'sm" data-qpick="'+q.id+'" data-next="1">다음 주 출제</button>'+
         (q.src==="학생"?'<button class="btn ghost sm" data-qcheck="'+q.id+'" title="도장은 그대로, 북퀴즈에는 내지 않아요">확인만(출제 안 함)</button>':''):'')+
         (q.status==="확인"?'<button class="btn ghost sm" data-qcheck="'+q.id+'" data-undo="1">다시 대기로</button>':'')+
       '<button class="btn ghost sm" data-qdrop="'+q.id+'"'+(q.stamped?' data-stamped="1"':'')+'>'+(q.status==="출제"?"출제 취소":"반려")+'</button>'+
@@ -2860,7 +2860,7 @@ function guideLibrarian(){
     ["상품권 공개","설정 <b>상품권공개</b>가 N 이면 학생 화면에 상품권 이야기가 나오지 않고 별만 쌓입니다. Y 로 바꾸면 별 "+rule().pair+"개 = 문화상품권 안내, 수령 알림·공지가 켜집니다."],
     ["상품권","수령 기간을 골라 대상 학생의 별·매수·배부 여부를 봅니다. ‘배부 완료’/‘대상 모두 배부 완료’, CSV(수령 서명 칸). 기준은 설정 별당도장·상품권당별·월최대매수·상품권금액."],
     ["도서 관리","서가의 책마다 소장·대출 가능 권수·청구기호. <b>빼기</b>로 서가에서 내리고, <b>이번 달 추천 도서 다시 뽑기</b>로 이번 달 책을 새로 뽑습니다. 자동으로 못 찾은 책은 ‘검색해 보기’ 후 체크. 이번 달 추천 도서에 한 권 더하기(학교에 있는 책만)도 여기서."],
-    ["퀴즈 관리","이번 주 북퀴즈는 추천 도서 가운데 "+(D.conf.quizBooks||2)+"권 이하에서 나옵니다. 아래쪽 <b>문제 은행</b>에서 달마다 미리 만든 문제를 보고 뺄 수 있습니다. 학생은 <b>다음 주 퀴즈 책으로만</b> 낼 수 있고(다음 주 책이 아직 없으면 이번 주 퀴즈 책), 제출할 때 품질 점수(10점: 쪽수 3, 보기 3, 정답 안 튐 1, 해설 2, 문제 길이 1)가 매겨져 점수순으로 보입니다. 자동 출제를 기다리지 않고 직접 ‘이번 주 출제’해도 됩니다(뽑힌 학생은 퀴즈 칸이 찹니다). 검색으로 풀리는 문제는 반려. <b>도장을 받은 학생 문제를 반려(출제 취소)하면 그 문제 출제 도장은 회수되고, 학생 화면에 ‘반려되었다’는 안내가 떠서 학생이 확인을 누릅니다.</b> <b>‘확인만(출제 안 함)’</b>은 학생 문제를 보았다는 표시로, 도장은 그대로 두고 북퀴즈 자동 출제에서는 뺍니다(‘다시 대기로’로 되돌릴 수 있음). ‘이번 주 빈자리 지금 채우기’로 바로 채울 수도 있습니다."],
+    ["퀴즈 관리","이번 주 북퀴즈는 추천 도서 가운데 "+(D.conf.quizBooks||2)+"권 이하에서 나옵니다. 아래쪽 <b>문제 은행</b>에서 달마다 미리 만든 문제를 보고 뺄 수 있습니다. 학생은 <b>다음 주 퀴즈 책으로만</b> 낼 수 있고(그래서 학생 문제는 ‘다음 주 출제’만 됩니다), 제출할 때 품질 점수(10점: 쪽수 3, 보기 3, 정답 안 튐 1, 해설 2, 문제 길이 1)가 매겨져 점수순으로 보입니다. 자동 출제를 기다리지 않고 직접 ‘다음 주 출제’로 골라 둬도 됩니다(출제된 주가 오면 뽑힌 학생은 퀴즈 칸이 찹니다). 검색으로 풀리는 문제는 반려. <b>도장을 받은 학생 문제를 반려(출제 취소)하면 그 문제 출제 도장은 회수되고, 학생 화면에 ‘반려되었다’는 안내가 떠서 학생이 확인을 누릅니다.</b> <b>‘확인만(출제 안 함)’</b>은 학생 문제를 보았다는 표시로, 도장은 그대로 두고 북퀴즈 자동 출제에서는 뺍니다(‘다시 대기로’로 되돌릴 수 있음). ‘이번 주 빈자리 지금 채우기’로 바로 채울 수도 있습니다."],
     ["시트","<b>설정</b> 탭에서 프로그램 이름(겨울엔 ‘웅천 겨울 서가’), 게시 방식(바로/확인), 주간·월간 도장 수, 상품권 기준, 이달의 권수, 개인정보 보유 기간을 바꿉니다. <b>교사</b> 탭에 담임을 이메일·이름·담당(3-2)으로, 담당 교사는 담당 ‘전체’로 넣습니다."]
   ])+
   '<h4>도서부(학생 운영진)</h4>'+todo([["매주 금요일 점심","도서관에서 문화상품권 배부. 앱 <b>배부 확인</b>에 대상 학생이 학번 순으로 나오고(30초마다 새로), 준 뒤 이름 옆 <b>배부</b>를 누릅니다. 학생이 앱에서 확인을 누르면 ‘수령 확인 ✓’."],["매달 첫 주","이달의 한 줄 포스터와 이달의 글을 도서관 게시판에 붙입니다. 3~4명이 20분."]]);
