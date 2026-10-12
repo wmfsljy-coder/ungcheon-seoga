@@ -11,7 +11,7 @@ var HEAD={
   "도서":["id","제목","지은이","영역","추천","추천사","소장","청구기호","권수","대출가능","반납예정","확인","수동","출처","월","숨김","표지","확인권수","ISBN","소개","핵심어","추천교사","만화"],
   "글":["id","시각","주","차수","종류","학번","이름","반","도서id","책제목","지은이","머리글","본문","계기","쪽수","상태","메모","인쇄","수상","확인","청구기호","표지","명예","만화"],
   "반응":["시각","갈래","부문","주","글id","누구"],
-  "퀴즈":["id","시각","차수","주","상태","책제목","쪽수","문제","보기1","보기2","보기3","보기4","정답","해설","학번","반","출처","품질","품질근거","월","반려시각","반려확인"],
+  "퀴즈":["id","시각","차수","주","상태","책제목","쪽수","문제","보기1","보기2","보기3","보기4","정답","해설","학번","반","출처","품질","품질근거","월","반려시각","반려확인","교내소장"],
   "퀴즈응답":["주","학번","점수","시각","차수","문항수"],
   "문장":["문장","출처","종류","숨김"],
   "공지":["id","시작","끝","제목","내용","대상","고정","숨김","시각"],
@@ -29,7 +29,7 @@ var HEAD={
   "작가":["이름","생몰","생일","직업","소개","사진","출처","확인","숨김"]
 };
 var CONF0=[["프로그램명","웅천 서가"],["부제","한 권 읽고, 한 줄 남기기"],["차수","1"],
-  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","N"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","1"],["월최대매수","0"],["라벨문장따로","2026-10-19"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","3"],["하루종류상한","1"],["투표묶음","2026-09~2026-10"],["주간투표","5"],["백업주기","주"],["백업보관","12"],["백업폴더","https://drive.google.com/drive/folders/1Nw-1moQpxXHkeuHYo0kMJjNVtvueqF_a"],["주간라벨문장글","3"],["만화규칙","라벨만"],["만화청구기호","만, 만화, 657"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
+  ["게시방식","바로"],["주간도장","5"],["월간도장","0"],["상품권기준","5"],["상품권세종류","Y"],["상품권메일","N"],["상품권공개","Y"],["공지사항",""],["금칙어",""],["교사등록무인증","N"],["별당도장","5"],["책갈피당도장","5"],["주간책갈피","5"],["주간라벨문장","1"],["주간독후감","2"],["주간퀴즈","2"],["상품권당별","1"],["월최대매수","0"],["라벨문장따로","2026-10-19"],["퀴즈책독후감","2026-10-12"],["상품권금액","5000"],["수령시작월","2026-10"],["상품권배부",""],["상품권배부장소","도서관 · 점심시간"],["상품권안내",""],["하루제출상한","3"],["하루종류상한","1"],["투표묶음","2026-09~2026-10"],["주간투표","5"],["백업주기","주"],["백업보관","12"],["백업폴더","https://drive.google.com/drive/folders/1Nw-1moQpxXHkeuHYo0kMJjNVtvueqF_a"],["주간라벨문장글","2"],["만화규칙","라벨만"],["만화청구기호","만, 만화, 657"],["교사도장주간","30"],["시상별","1"],["시상탑라벨","10"],["시상탑문장","10"],["시상탑독후감","10"],["투표후보수","8"],["참여학년","3"],["허용도메인",""],["로그인방식","핀"],["추천분야","소설, 시·에세이, 인문, 철학, 역사, 사회·정치, 경제·경영, 과학, 기술·IT, 예술, 자기계발, 청소년"],["기기기억일","120"],["핀자릿수","6"],
   ["학교코드","S100000673"],["교육청코드","S10"],["학교명","웅천고등학교"],
   ["이달의권수","20"],["추천방식","권장"],["추천묶음","2026-09~2026-10"],["퀴즈문항수","5"],["퀴즈책수","2"],["퀴즈품질기준","6"],["보유기간","3학년은 졸업식 날까지, 1·2학년은 학년말(2월)까지"],["개인정보담당","도서관 담당 교사"]];
 /* 설정 시트 '설명' 칸에 들어가는 뜻풀이 */
@@ -53,7 +53,7 @@ var CONF_DESC={
   "투표묶음":"여러 달을 한 투표 기간으로 묶기(예: 2026-09~2026-10). 그 사이에는 표를 새로 세지 않고 이어 모으며, 묶음의 마지막 달 말에 한 번 시상합니다. 묶음 안에서는 첫 달에 올라온 글도 계속 투표 후보입니다. 비우면 달마다",
   "주간라벨문장":"한 주에 라벨·문장으로 받을 수 있는 도장 수(둘을 합쳐서)",
   "주간라벨문장글":"한 주에 낼 수 있는 라벨·문장 편수(둘을 합쳐서). 첫 편은 도장, 나머지는 책갈피가 됩니다. 0 이면 제한 없음",
-  "주간독후감":"한 주에 독후감으로 받을 수 있는 도장 수(이 주의 주제·추천 도서 덤 도장 포함)",
+  "주간독후감":"한 주에 독후감으로 받을 수 있는 도장 수(퀴즈 책 덤 도장 포함)",
   "주간퀴즈":"한 주에 퀴즈로 받을 수 있는 도장 수(출제와 풀이를 합쳐서)",
   "만화규칙":"만화·웹툰을 어떻게 볼지. 라벨만 = 라벨·문장만 쓸 수 있고 독후감 도장은 없음(기본) / 허용 = 줄글과 똑같이 / 금지 = 아예 못 냄",
   "만화청구기호":"청구기호가 이 글자로 시작하면 만화로 봅니다(쉼표로 여러 개). 학교 분류에 맞게 고치세요. 예: 만, 만화, 657",
@@ -63,6 +63,7 @@ var CONF_DESC={
   "상품권당별":"별 몇 개에 문화상품권 1매. 1이면 별 1개 = 1매(2026-10-09부터)",
   "금요수령판":"(자동 기록) 손대지 마세요",
   "월최대매수":"한 번 수령에 받을 수 있는 최대 매수. 0 이면 제한 없음(2026-10-09부터 0)",
+  "퀴즈책독후감":"이 날부터 낸 독후감은 그 주·다음 주 북퀴즈 책일 때만 도장 2배(덤 도장). 그 전 독후감은 예전대로(이달 추천 도서·이 주의 주제). 비우면 예전 규칙",
   "라벨문장따로":"이 날(월요일)이 든 주부터 라벨과 문장 도장을 따로 셉니다(라벨 1개·문장 1개). 비우면 둘을 합쳐 한 칸. 그 전 주는 예전대로",
   "무제한판":"(자동 기록) 손대지 마세요",
   "상품권금액":"상품권 1매 금액(원). 학생 화면 안내에 쓰임",
@@ -110,6 +111,7 @@ var CONF_DESC={
   "이달의권수":"이번 달 추천 도서 권수(20, 2026-10-09부터). 권장도서 시트의 12개 영역에 나눠 뽑음. 바꾼 뒤 도서 관리의 '다시 뽑기'",
   "추천20판":"(자동 기록) 손대지 마세요",
   "작가고침판":"(자동 기록) 손대지 마세요",
+  "라벨문장2판":"(자동 기록) 손대지 마세요",
   "추천방식":"권장 = 권장도서 시트(인터넷 서점·권장 목록의 청소년 도서 중 우리 학교에 있는 책)에서 뽑음 / 장르 = 예전처럼 장서 대분류에서 무작위",
   "권장도서판":"(자동 기록) 손대지 마세요",
   "추천묶음":"여러 달을 한 번의 추천으로 묶기. 예: 2026-09~2026-10 (9월 추천을 10월 말까지). 여러 개는 쉼표로",
@@ -724,15 +726,16 @@ function josa(w,a,b){
 var KDC={"0":"총류(백과사전·도서관)","1":"철학·심리","2":"종교","3":"사회과학","4":"자연과학","5":"기술과학","6":"예술","7":"언어","8":"문학","9":"역사·지리"};
 var BADWORDS=/씨발|시발|병신|개새|존나|좆|꺼져|닥쳐|느금|애미|애비/;
 /* 학생이 낸 문제의 품질(10점). 책을 펴야 풀리는 문제일수록 높다. onShelf = 지금 서가(추천 도서)에 있는 책 */
-function quizQuality(q,onShelf){
+/* 문제 점수(10점). 2026-10-12 회장님: 출제를 다음 주 퀴즈 책으로만 받으니 '추천 도서 2점'은 없애고(책은 제출할 때 막음)
+   쪽수 3 · 보기 3 · 정답 안 튐 1 · 해설 2 · 문제 길이 1 */
+function quizQuality(q){
   var sc=0,why=[],o=[q.o1,q.o2,q.o3,q.o4].map(S),ans=Number(q.ans);
   if(/\d/.test(S(q.page))){sc+=3;why.push("쪽수");}
-  if(onShelf){sc+=2;why.push("추천 도서");}
   var distinct=o.filter(function(x,i){return x&&o.map(norm).indexOf(norm(x))===i;}).length===4;
-  if(distinct&&o.every(function(x){return x.length<=40;})){sc+=2;why.push("보기");}
+  if(distinct&&o.every(function(x){return x.length<=40;})){sc+=3;why.push("보기");}
   var lens=o.map(function(x){return x.length;}),avg=(lens.reduce(function(a,b){return a+b;},0)-lens[ans-1])/3;
   if(ans>=1&&ans<=4&&lens[ans-1]<=Math.max(avg*1.8,avg+8)){sc+=1;why.push("정답 안 튐");}
-  if(S(q.why).length>=10){sc+=1;why.push("해설");}
+  if(S(q.why).length>=10){sc+=2;why.push("해설");}
   var ql=S(q.q).length;if(ql>=12&&ql<=150){sc+=1;why.push("문제 길이");}
   return {score:sc,why:why};
 }
@@ -816,7 +819,7 @@ var SHEET_DOC={
        "정답":["정답 번호(1~4)","1"],"해설":["한 줄 해설",""],"학번":["낸 학생(자동 문제는 빈칸)","1101"],
        "반":["학급","1-1"],"출처":["학생 / 교사 / 자동","학생"],"품질":["문제 점수(10점)","7"],
        "품질근거":["점수를 준 까닭",""],"월":["문제 은행의 달","2026-09"],
-       "반려시각":["도장을 받았던 학생 문제를 반려한 때(이 칸이 차면 학생에게 반려 안내가 뜸)",""],"반려확인":["학생이 반려 안내에서 확인을 누른 때",""]}},
+       "반려시각":["도장을 받았던 학생 문제를 반려한 때(이 칸이 차면 학생에게 반려 안내가 뜸)",""],"반려확인":["학생이 반려 안내에서 확인을 누른 때",""],"교내소장":["문제 낸 책이 우리 학교 장서에 있는지(Y/N, 앱이 채움)","Y"]}},
   "퀴즈응답":{d:"학생이 북퀴즈를 푼 기록. 절반 이상 맞히면 도장.",edit:"보기만 하세요",
     c:{"주":["그 주 월요일","2026-09-21"],"학번":["학생","1101"],"점수":["맞힌 개수","4"],
        "문항수":["전체 문항","5"],"시각":["푼 때",""],"차수":["운영 차수","1"]}},
@@ -1268,6 +1271,10 @@ function make(db,env){
       db.set("작가","이름","김수현",{"생몰":"","생일":"","직업":"대한민국의 작가, 일러스트레이터","소개":"김수현은 대한민국의 작가이자 일러스트레이터이다. 글과 그림을 함께 담은 에세이 『나는 나로 살기로 했다』(2016)를 썼다.",
         "사진":"https://image.aladin.co.kr/Author/Photo/2268761/2268761_2.jpg","출처":"https://www.aladin.co.kr/author/wauthor_overview.aspx?AuthorSearch=@2268761","확인":today(env.now())});});}catch(e){}
       setConf("작가고침판","1");}
+    /* 라벨·문장은 한 주에 합쳐 2편까지(2026-10-12 회장님 지시 — 10/19부터 라벨 첫 편·문장 첫 편이 도장이라 딱 2칸). 한 번만 */
+    if(S(conf()["라벨문장2판"])!=="1"){setConf("주간라벨문장글","2");
+      try{var wt12=weekNoticeText(conf());db.rows("공지").forEach(function(r){if(S(r["제목"])==="한 주 도장은 다섯 칸")db.set("공지","id",S(r["id"]),{"내용":wt12});});}catch(e){}
+      setConf("라벨문장2판","1");}
     /* 하루 합계 3편(2026-10-09 회장님 지시: 라벨 1 + 문장 1 + 독후감 1 을 하루에 낼 수 있게). 한 번만 — 나중에 시트에서 고치면 그대로 */
     if(S(conf()["하루합계판"])!=="1"){setConf("하루제출상한","3");setConf("하루합계판","1");}
     /* 라벨·문장·독후감 종류마다 하루 1편(2026-10-09 회장님 지시). 하루 합계가 2면 3으로(종류마다 하나씩 낼 수 있게) */
@@ -1666,6 +1673,12 @@ function make(db,env){
   }
   /* 다음 주 퀴즈 책(미리 알림) */
   function nextQuizBooks(){var nwk=weekKey(env.now(),1),b=planOf(nwk,conf()["이달"]);return b.length?{week:nwk,books:b}:null;}
+  /* 학생이 문제를 낼 수 있는 책(2026-10-12 회장님: 다음 주 퀴즈 책으로만). 다음 주 책이 아직 없으면 이번 주 퀴즈 책, 그것도 없으면 이달 추천도서 */
+  function quizAllowed(){
+    var nx=nextQuizBooks();if(nx)return {kind:"next",week:nx.week,books:nx.books};
+    var wb=weekBooksOf(weekKey(env.now(),0));if(wb.length)return {kind:"this",books:wb};
+    return {kind:"month",books:bookList().map(function(b){return b.t;})};
+  }
   /* ── 작가 이야기(2026-10-09 회장님 지시): 짧은 열전·생일·이주의 작가 ──
      권장도서·추천 도서의 지은이를 위키백과 요약(+위키데이터 생일)으로 '작가' 시트에 조금씩 모은다.
      확인 칸이 찬 줄은 다시 받지 않는다(사서 선생님이 고친 소개가 그대로 남게) */
@@ -1971,6 +1984,7 @@ function make(db,env){
   }
   function tick(){
     maintain();
+    try{fillQuizLib();}catch(e){}   /* 학생 문제 책의 교내 소장 여부(독서로가 안 돼도 시트만 보면 됨) */
     var p=libProbe();
     /* 독서로가 안 되면 퀴즈만(지난번에 받아 둔 청구기호로 만든다) */
     if(!p.ok){setConf("도서확인결과",stamp(env.now())+" · "+p.why);
@@ -2378,6 +2392,12 @@ function make(db,env){
     });
     var perConf=conf()["추천묶음"],cmRule=comicRule(),cmBook={};
     db.rows("도서").forEach(function(b){if(S(b["만화"]))cmBook[S(b["id"])]=S(b["만화"]);});
+    /* 북퀴즈 책(2026-10-12 회장님): 그 주·다음 주 퀴즈 책 독후감이면 도장 2배. 주마다 출제된 책 + 지금 정해 둔 다음 주 책 */
+    var qbFrom=S(conf()["퀴즈책독후감"]),qWk={},curWk=weekKey(env.now(),0);
+    if(qbFrom){
+      db.rows("퀴즈").forEach(function(q){if(S(q["상태"])==="출제"&&S(q["주"]))(qWk[S(q["주"])]=qWk[S(q["주"])]||{})[tkey(q["책제목"])]=1;});
+      try{var nx0=nextQuizBooks();if(nx0)nx0.books.forEach(function(t){(qWk[nx0.week]=qWk[nx0.week]||{})[tkey(t)]=1;});}catch(e){}
+    }
     db.rows("글").forEach(function(r){
       if(!posted(r))return;
       var kind=writeKind(r["종류"]);
@@ -2385,7 +2405,11 @@ function make(db,env){
       if(kind==="review"&&cmRule!=="허용"&&(S(r["만화"])==="Y"||cmBook[S(r["도서id"])]==="Y"))kind="label";
       put(S(r["학번"]),{k:kind,t:S(r["책제목"]),at:S(r["시각"])});
       /* 덤 책갈피: 그달 추천 도서이거나 이 주의 주제에 맞는 독후감(겹쳐도 한 장) */
-      if(kind==="review"){
+      if(kind==="review"&&qbFrom&&S(r["시각"]).slice(0,10)>=qbFrom){
+        var qk=tkey(r["책제목"]),qw=weekOfYmd(S(r["시각"])),qn=addDays(qw,7),inT=!!(qWk[qw]&&qWk[qw][qk]),inN=!!(qWk[qn]&&qWk[qn][qk]);
+        if(inT||inN)put(S(r["학번"]),{k:"theme",free:true,src:S(r["시각"]),t:S(r["책제목"])+" · "+(inT?"이번 주":"다음 주")+" 퀴즈 책",at:S(r["시각"])+"1"});
+      }
+      else if(kind==="review"){
         var key=norm(shownTitle(r["책제목"])),at=S(r["시각"]);
         var th=themeOf(weekOfYmd(at)),onTheme=!!(th&&(!th.area||th.area===bArea[key]));
         var pk="";try{pk=periodOf(S(at).slice(0,7),perConf).key;}catch(e){pk=S(at).slice(0,7);}
@@ -3253,7 +3277,7 @@ function make(db,env){
         o:[S(q["보기1"]),S(q["보기2"]),S(q["보기3"]),S(q["보기4"])]};});
     var sk=shelfKeys();
     var myQuiz=db.rows("퀴즈").filter(function(q){return S(q["학번"])===a.id;}).map(function(q){
-      return {q:S(q["문제"]),book:S(q["책제목"]),status:S(q["상태"]),score:S(q["품질"]),why:S(q["품질근거"]),onShelf:onShelf(q["책제목"],sk),
+      return {q:S(q["문제"]),book:S(q["책제목"]),status:S(q["상태"]),score:S(q["품질"]),why:S(q["품질근거"]),onShelf:onShelf(q["책제목"],sk),where:bookWhere(q,sk,false),
         date:S(q["시각"]).slice(0,10),page:S(q["쪽수"]),o:[S(q["보기1"]),S(q["보기2"]),S(q["보기3"]),S(q["보기4"])],ans:Number(q["정답"])};});
     /* 내 서재: 책마다 표지(서가 책이면 서가 표지, 아니면 글에 저장된 표지) */
     var covers={},areas={};
@@ -3275,7 +3299,7 @@ function make(db,env){
       classes:classStats(c,mon,true).map(function(x){return {cls:x.cls,total:x.total,joined:x.joined};}),
       board:board,mine:mine,voteOpen:voteOpen(now),voteMon:votePeriod(now),voteDays:VOTE_DAYS,voteTop:VOTE_TOP,
       voteL:vb("label"),voteQ:vb("quote"),voteR:vb("review"),
-      quiz:{items:quiz,done:done&&!retake?Number(done["점수"]):null,retake:retake?{prev:Number(done["점수"])||0,total:Number(done["문항수"])||0}:null,next:nextQuizBooks(),books:weekBooksOf(wk),bookInfo:(function(){var bl={};bookList().forEach(function(b){bl[tkey(b.t)]=b;});
+      quiz:{items:quiz,done:done&&!retake?Number(done["점수"]):null,retake:retake?{prev:Number(done["점수"])||0,total:Number(done["문항수"])||0}:null,next:nextQuizBooks(),allowed:quizAllowed(),books:weekBooksOf(wk),bookInfo:(function(){var bl={};bookList().forEach(function(b){bl[tkey(b.t)]=b;});
         return weekBooksOf(wk).map(function(t){var b=bl[tkey(t)]||{};return {t:t,total:b.total||0,avail:b.avail,call:b.call||""};});})()},myQuiz:myQuiz,
       hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftAck:ackWaiting(a.id),quizRejected:quizRejected(a.id),weekAuthor:(function(){try{return personOfWeek(true);}catch(e){return null;}})(),giftDesk:a.club?deskView(c,ALL_CLS):null};
   }
@@ -3404,6 +3428,27 @@ function make(db,env){
   /* 지금 서가에 있는 책인가(제목을 본제목으로 맞춰 비교) */
   function shelfKeys(){var m={};bookList().forEach(function(b){m[norm(shownTitle(b.t))]=b;});return m;}
   function onShelf(title,keys){return !!(keys||shelfKeys())[norm(shownTitle(title))];}
+  /* 장서목록(교내 소장) 서명 열쇠 — '(청소년을 위한)코스모스'·'코스모스 : 부제'도 '코스모스'로 */
+  var LIBT=null;
+  function libTitleKeys(){
+    if(LIBT)return LIBT;var m={};
+    try{db.rows("장서목록").forEach(function(r){var t=S(r["제목"]);m[norm(shownTitle(t))]=1;m[norm(t)]=1;m[norm(t.replace(/[(\[][^)\]]*[)\]]/g,""))]=1;});}catch(e){}
+    return LIBT=m;
+  }
+  /* 교내 장서에 있는가: "Y"/"N", 장서목록을 아직 못 받았으면 "" (단정하지 않음) */
+  function inLib(title){var L=libTitleKeys();if(!Object.keys(L).length)return "";return L[norm(shownTitle(title))]||L[norm(title)]?"Y":"N";}
+  /* 문제 낸 책이 어디 있는지: shelf = 이달 추천도서, lib = 교내에 있지만 이달 추천도서는 아님, none = 교내 장서에 없음.
+     학생 화면은 장서목록(9천여 줄)을 읽지 않도록 퀴즈 시트 '교내소장' 칸(낼 때·tick 에서 채움)만 본다 */
+  function bookWhere(q,keys,live){
+    if(onShelf(q["책제목"],keys))return "shelf";
+    var y=S(q["교내소장"]);if(!y&&live)y=inLib(q["책제목"]);
+    return y==="N"?"none":"lib";
+  }
+  /* 학생 문제의 교내소장 칸 채우기(tick) */
+  function fillQuizLib(){
+    var up={},n=0;db.rows("퀴즈").forEach(function(q){if(!S(q["학번"])||S(q["교내소장"]))return;var y=inLib(q["책제목"]);if(y){up[S(q["id"])]={"교내소장":y};n++;}});
+    if(n)db.setMany("퀴즈","id",up);return n;
+  }
 
   function quizSubmit(a,p){
     student(a);
@@ -3413,12 +3458,15 @@ function make(db,env){
     if(o.some(function(x){return !x;})||!(ans>=1&&ans<=4))fail("보기 네 개와 정답 번호를 적어 주세요.");
     if(BADWORDS.test([p.q,p.why].concat(o).join(" ")))fail("문제에 쓸 수 없는 말이 들어 있습니다.");
     if(db.rows("퀴즈").some(function(q){return norm(q["문제"])===norm(p.q)&&S(q["상태"])!=="반려";}))fail("같은 문제가 이미 있습니다.");
-    var shelf=onShelf(p.book),qq=quizQuality(p,shelf);
+    var QA=quizAllowed(),ok=QA.books.filter(function(t){return tkey(t)===tkey(p.book);})[0];
+    if(!ok)fail(QA.kind==="month"?"문제는 이달 추천도서에서만 낼 수 있어요.":"문제는 "+(QA.kind==="next"?"다음 주":"이번 주")+" 퀴즈 책("+QA.books.map(function(t){return "『"+t+"』";}).join(", ")+")에서만 낼 수 있어요.");
+    p.book=ok;
+    var shelf=onShelf(p.book),qq=quizQuality(p),lib=shelf?"Y":inLib(p.book);
     db.add("퀴즈",{"id":"q"+env.uid(),"시각":stamp(now),"차수":c["차수"],"주":"","상태":"대기","책제목":S(p.book),"쪽수":S(p.page),
       "문제":S(p.q),"보기1":o[0],"보기2":o[1],"보기3":o[2],"보기4":o[3],"정답":ans,"해설":S(p.why),"학번":a.id,"반":a.cls,
-      "출처":"학생","품질":qq.score,"품질근거":qq.why.join(",")});
+      "출처":"학생","품질":qq.score,"품질근거":qq.why.join(","),"교내소장":lib});
     var bar=Number(c["퀴즈품질기준"])||6;
-    return {ok:true,score:qq.score,why:qq.why,bar:bar,onShelf:shelf,stamped:qq.score>=bar};
+    return {ok:true,score:qq.score,why:qq.why,bar:bar,onShelf:shelf,where:shelf?"shelf":lib==="N"?"none":"lib",stamped:qq.score>=bar};
   }
 
   /* ── 교사 ── */
@@ -3519,7 +3567,7 @@ function make(db,env){
     res.quiz=db.rows("퀴즈").filter(function(q){return S(q["상태"])!=="반려";}).map(function(q){
       return {id:S(q["id"]),status:S(q["상태"]),week:S(q["주"]),book:S(q["책제목"]),page:S(q["쪽수"]),q:S(q["문제"]),
         o:[S(q["보기1"]),S(q["보기2"]),S(q["보기3"]),S(q["보기4"])],ans:Number(q["정답"]),why:S(q["해설"]),cls:S(q["반"]),
-        src:S(q["출처"])||(S(q["학번"])?"학생":"교사"),score:S(q["품질"]),reason:S(q["품질근거"]),onShelf:onShelf(q["책제목"],sk),month:S(q["월"]),stamped:quizStamped(q)};});
+        src:S(q["출처"])||(S(q["학번"])?"학생":"교사"),score:S(q["품질"]),reason:S(q["품질근거"]),onShelf:onShelf(q["책제목"],sk),where:bookWhere(q,sk,true),month:S(q["월"]),stamped:quizStamped(q)};});
     res.thisWeek=weekKey(now,0);res.weekBooks=weekBooksOf(res.thisWeek);res.nextQuiz=nextQuizBooks();
     var nk=nextPeriodKey();
     res.next=nk?{month:nk,books:db.rows("도서").filter(function(b){return S(b["월"])===nk&&S(b["숨김"])!=="Y";}).map(function(b){return {id:S(b["id"]),t:S(b["제목"]),a:S(b["지은이"]),s:S(b["영역"])};})}:null;

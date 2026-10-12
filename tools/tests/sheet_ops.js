@@ -17,17 +17,17 @@ const tok=C().api("login",{role:"student",hakbun:"1101",name:"가온",agree:true
 const as=(op,p)=>{try{return C().api(op,Object.assign({_t:tok},p||{}));}catch(x){return {ERR:x.message};}};
 const text=n=>"이 책은 정말 좋았다. ".repeat(Math.ceil(n/12)).slice(0,n);
 
-/* ── 라벨·문장은 한 주 3편(첫 편 도장, 나머지 책갈피) ── */
+/* ── 라벨·문장은 한 주 2편(2026-10-12 회장님: 3 → 2. 첫 편 도장, 나머지 책갈피) ── */
+must(T["설정"].find(r=>r["항목"]==="주간라벨문장글")["값"]==="2","설정 주간라벨문장글 = 2");
 must(!as("submit",{kind:"label",bookId:"m1",text:text(60),why:"도서관에서 빌려 읽었다"}).ERR,"첫 편(라벨)");
 NOW=new Date("2026-10-08T01:00:00Z");
 must(!as("submit",{kind:"quote",bookId:"m2",page:"45쪽",text:"오래 기억하고 싶은 한 문장이 여기에 있다.",why:"수업에서 듣고 읽었다"}).ERR,"둘째 편(문장)");
 NOW=new Date("2026-10-09T01:00:00Z");
-must(!as("submit",{kind:"quote",bookId:"m3",page:"12쪽",text:"두 번째로 옮겨 적는 문장도 여기에 남긴다.",why:"친구가 권해서 읽었다"}).ERR,"셋째 편(문장)");
-const over=as("submit",{kind:"label",bookId:"m4",text:text(60),why:"도서관에서 또 빌렸다"});
-must(/한 주에 합쳐서 3편/.test(over.ERR||""),"넷째 편은 막힌다");
+const over=as("submit",{kind:"quote",bookId:"m3",page:"12쪽",text:"두 번째로 옮겨 적는 문장도 여기에 남긴다.",why:"친구가 권해서 읽었다"});
+must(/한 주에 합쳐서 2편/.test(over.ERR||""),"셋째 편은 막힌다");
 const w=as("state").week;
-must(w.stamps.filter(x=>x.slot==="write").length===1,"라벨·문장 도장은 한 주 1개");
-must(w.leaf&&w.leaf.have===2,"나머지 두 편은 책갈피 2장 ("+(w.leaf&&w.leaf.have)+")");
+must(w.stamps.filter(x=>x.slot==="write").length===1,"라벨·문장 도장은 한 주 1개(10/19 전)");
+must(w.leaf&&w.leaf.have===1,"나머지 한 편은 책갈피 1장 ("+(w.leaf&&w.leaf.have)+")");
 NOW=new Date("2026-10-12T01:00:00Z");   /* 다음 주 월요일 */
 must(!as("submit",{kind:"label",bookId:"m4",text:text(60),why:"새 주가 되어 다시 쓴다"}).ERR,"다음 주에는 다시 쓸 수 있다");
 

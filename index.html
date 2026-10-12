@@ -529,6 +529,8 @@ body.role-staff .news{background:#FFFBF0}
 @keyframes stampIn{0%{transform:scale(2) rotate(-24deg);opacity:0}55%{transform:scale(.9) rotate(-5deg);opacity:1}100%{transform:scale(1) rotate(-7deg);opacity:1}}
 @keyframes slotGlow{0%{box-shadow:0 0 0 0 rgba(217,169,58,.55)}100%{box-shadow:0 0 0 12px rgba(217,169,58,0)}}
 /* 화면 어디서든 보이게 잠깐 떠오르는 웅이 */
+.qbooks .qbk{border:1px solid #B9A6D9;background:#fff;color:#4B2E83;border-radius:999px;padding:4px 12px;font:inherit;font-weight:600;cursor:pointer}
+.qbooks .qbk.on,.qbooks .qbk:hover{background:#EFE8FA}
 .ackpop{position:fixed;inset:0;z-index:90;background:rgba(30,24,20,.45);display:flex;align-items:center;justify-content:center;padding:16px}
 .ackbox{background:#FFFDF8;border-radius:16px;max-width:380px;width:100%;padding:22px 20px 18px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.25)}
 .ackbox .wface{display:block;width:64px;height:64px;margin:0 auto 6px}
@@ -1081,7 +1083,7 @@ var SEAL={write:{c:"#9E3B24",ch:"讀",sub:"라벨·문장",name:"라벨·문장"
   label:{c:"#9E3B24",ch:"讀",sub:"라벨",name:"라벨"},
   quote:{c:"#9E3B24",ch:"句",sub:"문장",name:"문장"},
   review:{c:"#2B4C7E",ch:"感",sub:"독후감",name:"독후감"},
-  theme:{c:"#3C5A32",ch:"主",sub:"주제",name:"이 주의 주제 독후감"},
+  theme:{c:"#3C5A32",ch:"倍",sub:"2배",name:"독후감 덤 도장(퀴즈 책)"},
   quizmk:{c:"#2F6B3A",ch:"問",sub:"출제",name:"퀴즈 출제"},
   quizsv:{c:"#1F6F6B",ch:"答",sub:"풀이",name:"퀴즈 풀이"},
   quiz:{c:"#2F6B3A",ch:"問",sub:"퀴즈",name:"퀴즈"},
@@ -1831,10 +1833,10 @@ function guideHTML(){
     woong("read","<b>읽고 → 한 줄 남기고 → 도장 받기.</b> 이게 전부야. 아래는 궁금할 때만 봐도 돼.")+
     sec("1. 도장은 이렇게 받아요",seals+'<ul>'+
       '<li><b>讀 라벨·문장</b>: <b>라벨</b>('+L.label.join("~")+'자)은 이 책을 집어 들게 만드는 한 줄 소개예요. <b>문장</b>('+L.quote.join("~")+'자)은 책에서 마음에 남은 한 줄을 그대로 옮겨 적는 거예요. '+(c.writeSplit?'<u>한 주에 라벨 '+(kcap("write")/2)+'개·문장 '+(kcap("write")/2)+'개가 따로 도장</u>이고, 더 내면 책갈피 한 장이 돼요.':'<u>둘을 합쳐 한 주 '+kcap("write")+'개</u>, 더 내면 책갈피 한 장이 돼요.')+'</li>'+
-      '<li><b>感 독후감</b>('+L.review.join("~")+'자): 읽고 남은 생각. 웹 게시판에 올라가요. <u>한 주 '+kcap("review")+'개</u>까지(이 주의 주제·추천 도서 덤 도장도 여기에 들어가요).</li>'+
+      '<li><b>感 독후감</b>('+L.review.join("~")+'자): 읽고 남은 생각. 웹 게시판에 올라가요. <u>한 주 '+kcap("review")+'개</u>까지(퀴즈 책 덤 도장도 여기에 들어가요).</li>'+
       '<li><b>問 퀴즈</b>: 문제를 <b>성의껏</b> 내면(품질 '+(c.quizBar||6)+'점 이상) 그 자리에서 도장 1개, 이번 주 북퀴즈를 <b>절반 이상</b> 맞히면 또 1개. <u>출제와 풀이를 합쳐 한 주 '+kcap("quiz")+'개</u>까지.</li>'+
       '<li><b>萬 만능 도장</b>: 모은 <b>책갈피 '+((D.stars&&D.stars.leaf&&D.stars.leaf.per)||5)+'장</b>이 만능 도장 1개가 되고, <b>선생님이 직접 찍어 주시기도</b> 해요. <u>라벨·문장 / 독후감 / 퀴즈 어느 것이든 대신할 수 있고</u>, 개수 제한이 없어요. 그 주 칸이 차 있으면 <b>다음 주로 넘어가</b> 쌓입니다.</li>'+
-      '<li><b>이 주의 주제</b>: 그 주 주제에 맞는 책이나 이달의 추천 도서로 <b>독후감</b>을 쓰면 도장 <b>2개</b>. 주제는 서가 맨 위에 나와요.</li>'+
+      '<li><b>퀴즈 책 독후감은 도장 2배</b>: <b>이번 주·다음 주 북퀴즈 책</b>을 읽고 독후감을 쓰면 도장 <b>2개</b>. 퀴즈 책은 퀴즈 탭과 서가에 초록(이번 주)·보라(다음 주)로 보여요.</li>'+
       '<li><b>이벤트</b>: 기간을 정해 열려요. <b>도장 2배</b>, <b>추첨권</b>(글 한 편이 표 한 장), <b>반 대항</b>(우리 반 참여율), <b>미션</b>(목표를 채우면 도장 더) 네 가지가 있어요. 서가 맨 위 띠에서 지금 열린 이벤트를 봐요.</li>'+
       '<li><b>별 1개 = 도장 '+R.per+'개.</b> 한 주 '+c.weekCap+'칸을 다 채우면 별 하나가 되는 셈이에요. 라벨만 이어 쓰면 도장은 한 개고 나머지는 책갈피로 모여요.</li></ul>')+
     sec("2. 글쓰기 약속",'<ul>'+
@@ -2097,11 +2099,13 @@ function quizBar(){
     '<button class="btn sm" data-tab="quiz">풀러 가기</button></div>';
 }
 function themeBar(){
+  return "";   /* 2026-10-12 회장님: 주제 관련 독서 안내는 일단 뺀다(덤 도장은 퀴즈 책 독후감으로) */
   var T=D.theme;if(!T||!T.title)return "";
   return '<div class="themebar"><span class="tp">이 주의 주제</span><b>'+esc(T.title)+'</b>'+(T.area?'<span class="ta">'+esc(T.area)+'</span>':'')+
     (T.body?'<span class="tb">'+esc(T.body)+'</span>':'')+'<span class="tb"><b>이 주제 책으로 독후감</b>을 쓰면 도장 <b>2개</b>(한 주 '+(D.conf.weekCap||5)+'개까지)</span></div>';
 }
 function isTheme(l){
+  return false;   /* 2026-10-12: 주제 표시도 일단 뺀다 */
   var T=D.theme;if(!T||!T.title||!l||!l.date)return false;
   if(l.date<T.week||l.date>addDaysStr(T.week,6))return false;
   if(!T.area)return true;
@@ -2151,8 +2155,10 @@ function pVote(){
 /* ── 학생: 퀴즈 ── */
 function quizForm(prefix,adminMode){
   return '<div class="form" style="max-width:620px">'+
-    '<div class="two" style="gap:12px"><div class="field"><label for="'+prefix+'b">책 제목</label><input type="text" id="'+prefix+'b" list="'+prefix+'books" autocomplete="off">'+
-      '<datalist id="'+prefix+'books">'+D.books.map(function(b){return '<option value="'+esc(b.t)+'">';}).join("")+'</datalist></div>'+
+    '<div class="two" style="gap:12px"><div class="field"><label for="'+prefix+'b">책 제목</label>'+(function(){
+      var al=(!adminMode&&D.quiz&&D.quiz.allowed&&D.quiz.allowed.books)||[];
+      if(al.length)return '<select id="'+prefix+'b">'+al.map(function(t){return '<option value="'+esc(t)+'">'+esc(t)+'</option>';}).join("")+'</select>';
+      return '<input type="text" id="'+prefix+'b" list="'+prefix+'books" autocomplete="off"><datalist id="'+prefix+'books">'+D.books.map(function(b){return '<option value="'+esc(b.t)+'">';}).join("")+'</datalist>';})()+'</div>'+
     '<div class="field"><label for="'+prefix+'p">쪽수'+(adminMode?'':' (적으면 +3점)')+'</label><input type="text" id="'+prefix+'p" placeholder="예) 47쪽"></div></div>'+
     '<div class="field"><label for="'+prefix+'q">문제 — 그 쪽을 펴 봐야 풀 수 있게</label><input type="text" id="'+prefix+'q" placeholder="예) 47쪽에서 윤재가 가게에 처음 들여놓은 물건은?"></div>'+
     [1,2,3,4].map(function(i){return '<div class="field"><label for="'+prefix+'o'+i+'">보기 '+i+'</label><input type="text" id="'+prefix+'o'+i+'"></div>';}).join("")+
@@ -2165,14 +2171,16 @@ function quizPayload(prefix){
   return {book:val(prefix+"b"),page:val(prefix+"p"),q:val(prefix+"q"),o1:val(prefix+"o1"),o2:val(prefix+"o2"),
     o3:val(prefix+"o3"),o4:val(prefix+"o4"),ans:Number(val(prefix+"a")),why:val(prefix+"w")};
 }
+function whereTag(w){return w==="none"?"교내 소장 도서 아님":"이달 추천도서 아님";}
 function pQuiz(){
+  var QA=(D.quiz&&D.quiz.allowed)||{kind:"month",books:[]},nextQ=QA.books||[],QW=QA.kind==="next"?"다음 주 퀴즈 책":QA.kind==="this"?"이번 주 퀴즈 책":"이달 추천도서";
   var Q=D.quiz,qs=Q.items.map(function(q,i){
     var o=q.o.map(function(x,j){return '<label class="opt"><input type="radio" name="qz-'+q.id+'" value="'+j+'"'+(Q.done!=null?' disabled':'')+'><span>'+esc(x)+'</span></label>';}).join("");
     return '<div class="q-box"><p class="src">'+(q.book?'『'+esc(q.book)+'』':'소개글 보고 책 맞히기')+(q.page?' '+esc(q.page):'')+'</p><p class="qt">'+(i+1)+'. '+esc(q.q)+'</p>'+o+'<div class="fb" hidden id="fb-'+q.id+'"></div></div>';
   }).join("");
   var mine=D.myQuiz.map(function(q){
     var sc=q.score!==""?'<span class="pill '+(Number(q.score)>=D.conf.quizBar&&q.onShelf?'':'grey')+'">품질 '+esc(q.score)+'/10</span>':'';
-    if(q.status==="대기"&&!q.onShelf)sc+='<span class="hint">서가 밖 책이라 이번 주 북퀴즈 후보는 아니에요</span>';
+    if(q.status==="대기"&&!q.onShelf)sc+='<span class="pill grey">'+whereTag(q.where)+'</span><span class="hint">그래서 북퀴즈 후보는 아니에요</span>';
     return '<div class="meta" style="padding:6px 0"><span class="pill '+(q.status==="출제"?"gold":"grey")+'">'+esc(q.status==="대기"?"출제 대기":q.status)+'</span>'+sc+'<span>『'+esc(q.book)+'』 '+esc(q.q)+'</span></div>';}).join("");
   return '<h3 class="sec">이번 주 북퀴즈</h3>'+
     ((Q.bookInfo||[]).length?'<div class="qbooks"><span>이번 주 퀴즈 책</span>'+Q.bookInfo.map(function(b){return '<b>『'+esc(b.t)+'』'+(b.total?' <small>'+b.total+'권'+(b.avail!=null?' · 대출 가능 '+b.avail:'')+'</small>':'')+'</b>';}).join("")+'</div>':'')+
@@ -2185,8 +2193,11 @@ function pQuiz(){
     (qs?qs+(Q.done==null?'<button class="btn" id="q-send">채점하기</button>':'')
        :'<div class="empty">이번 주 퀴즈는 준비 중입니다. 아래에서 직접 문제를 내 보세요.</div>')+
     '<h3 class="sec gap">내가 문제 내기</h3>'+
-    '<p class="sub"><b>성의껏 낸 문제(품질 '+(D.conf.quizBar||6)+'점 이상)는 그 자리에서 도장 1개</b>를 받아요(한 주 '+(D.conf.weekCap||5)+'칸 안에서). 어떤 책이든, 몇 문제든 낼 수 있어요. 매주 월요일에는 <b>추천 도서에 대한 문제 가운데 점수가 높은 것부터</b> 이번 주 북퀴즈로 먼저 뽑히고(그 책이 이번 주 퀴즈 책이 돼요), 뽑히면 도장판에 퀴즈 칸이 찹니다. 쪽수를 적고 책을 읽어야 풀 수 있는 문제일수록 점수가 높아요.</p>'+
-    woong("read","좋은 문제 점수표(10점) 알려 줄게.<br><b>쪽수</b> 적기 3 · <b>서가에 있는 책</b> 2 · 서로 다르고 짧은 <b>보기</b> 2 · 정답만 길게 튀지 않기 1 · <b>해설</b> 1 · 문제 길이 1. 서가 책 문제가 <b>'+D.conf.quizBar+'점 이상</b>이면 출제 후보야!")+
+    (QA.kind!=="month"?'<div class="qbooks next"><span>📚 문제는 <strong>'+QW+'</strong>으로만 낼 수 있어요 — 책 이름을 누르면 아래 칸에 바로 들어가요</span>'+nextQ.map(function(t){return '<button type="button" class="qbk" data-qbook="'+esc(t)+'">『'+esc(t)+'』</button>';}).join("")+
+      '<small class="hint">'+(QA.kind==="next"?'이 책 문제 가운데 점수가 높은 것이 다음 주 북퀴즈로 뽑혀요.':'다음 주 퀴즈 책이 정해지면 그 책으로 바뀌어요.')+'</small></div>'
+      :'<div class="guidebanner"><span>📚 다음 주 퀴즈 책이 아직 정해지지 않아, 지금은 <b>이달 추천도서</b>에서 낼 수 있어요.</span></div>')+
+    '<p class="sub"><b>성의껏 낸 문제(품질 '+(D.conf.quizBar||6)+'점 이상)는 그 자리에서 도장 1개</b>를 받아요(한 주 '+(D.conf.weekCap||5)+'칸 안에서). 매주 월요일에는 <b>퀴즈 책 문제 가운데 점수가 높은 것부터</b> 북퀴즈로 뽑히고, 뽑히면 도장판에 퀴즈 칸이 찹니다. 쪽수를 적고 책을 읽어야 풀 수 있는 문제일수록 점수가 높아요.</p>'+
+    woong("read","좋은 문제 점수표(10점) 알려 줄게.<br><b>쪽수</b> 적기 3 · 서로 다르고 짧은 <b>보기</b> 3 · 정답만 길게 튀지 않기 1 · <b>해설</b> 한 줄 2 · 문제 길이 1. <b>"+(D.conf.quizBar||6)+"점 이상</b>이면 도장 받고 출제 후보야!")+
     quizForm("qs-",false)+(mine?'<div style="margin-top:14px">'+mine+'</div>':'');
 }
 function sendQuiz(){
@@ -2466,7 +2477,7 @@ function doNotice(){
     '<div class="steps"><div class="st"><b>1</b>도서관에서 책을 빌려요</div><div class="st"><b>2</b>QR로 들어가 로그인해요<br><small>학번·이름 → PIN 여섯 자리</small></div>'+
       '<div class="st"><b>3</b>라벨·문장·독후감을 써요</div><div class="st"><b>4</b>도장이 찍히고 별이 쌓여요</div></div>'+
     '<div class="row"><div class="bx"><h3>讀 라벨 · 句 문장</h3><p>라벨 40~90자 한 줄 소개.<br>문장은 책 속 한 줄 15~120자.<br>'+(D.conf.writeSplit?'<b>라벨 한 칸, 문장 한 칸</b>(한 주에 각각).':'둘을 합쳐 <b>한 주 한 칸</b>.')+'</p></div>'+
-      '<div class="bx"><h3>感 독후감</h3><p>300~700자.<br>추천 도서·이 주의 주제 책이면 <b>도장 2개</b>.</p></div>'+
+      '<div class="bx"><h3>感 독후감</h3><p>300~700자.<br>이번 주·다음 주 <b>퀴즈 책</b>이면 <b>도장 2개</b>.</p></div>'+
       '<div class="bx"><h3>問 答 북퀴즈</h3><p>문제를 내면 한 칸(問),<br>매주 월요일 5문제를 절반 이상 맞히면 한 칸(答).</p></div></div>'+
     '<div class="rule">· 한 주 도장은 <b>'+R.per+'칸</b> — 讀·句 라벨·문장 '+kcap("write")+' · 感 독후감 '+kcap("review")+' · 問 퀴즈 '+kcap("quiz")+' · 萬 만능(제한 없음)<br>'+
       '· 상한을 넘기면 <b>책갈피</b> 한 장. <b>책갈피 5장 = 만능 도장 1개</b>(선생님도 찍어 주세요)<br>'+
@@ -2755,7 +2766,7 @@ function pQuizAdm(){
   function item(q){
     var src=q.src==="자동"?'<span class="pill grey">도서관 자동</span>':q.src==="교사"?'<span class="pill grey">선생님</span>':'<span class="pill gold">학생 · '+esc(q.cls)+'</span>';
     var sc=q.src==="학생"&&q.score!==""?'<span class="pill'+(Number(q.score)>=bar&&q.onShelf?'':' grey')+'">품질 '+esc(q.score)+'/10</span>'+(q.reason?'<span class="hint">'+esc(q.reason.split(",").join(" · "))+'</span>':''):'';
-    if(!q.onShelf)sc+='<span class="pill grey">서가 밖 책</span>';
+    if(!q.onShelf)sc+='<span class="pill grey">'+whereTag(q.where)+'</span>';
     return '<div class="q-box"><div class="meta" style="margin-bottom:6px">'+src+sc+'</div><p class="src">『'+esc(q.book)+'』 '+esc(q.page)+' · '+
       (q.status==="출제"?esc(q.week)+' 주 출제':'대기')+'</p><p class="qt">'+esc(q.q)+'</p>'+
       '<ol style="margin:0 0 8px;padding-left:20px;font-size:13.5px">'+q.o.map(function(x,i){
@@ -2845,7 +2856,7 @@ function guideLibrarian(){
     ["상품권 공개","설정 <b>상품권공개</b>가 N 이면 학생 화면에 상품권 이야기가 나오지 않고 별만 쌓입니다. Y 로 바꾸면 별 "+rule().pair+"개 = 문화상품권 안내, 수령 알림·공지가 켜집니다."],
     ["상품권","수령 기간을 골라 대상 학생의 별·매수·배부 여부를 봅니다. ‘배부 완료’/‘대상 모두 배부 완료’, CSV(수령 서명 칸). 기준은 설정 별당도장·상품권당별·월최대매수·상품권금액."],
     ["도서 관리","서가의 책마다 소장·대출 가능 권수·청구기호. <b>빼기</b>로 서가에서 내리고, <b>이번 달 추천 도서 다시 뽑기</b>로 이번 달 책을 새로 뽑습니다. 자동으로 못 찾은 책은 ‘검색해 보기’ 후 체크. 이번 달 추천 도서에 한 권 더하기(학교에 있는 책만)도 여기서."],
-    ["퀴즈 관리","이번 주 북퀴즈는 추천 도서 가운데 "+(D.conf.quizBooks||2)+"권 이하에서 나옵니다. 아래쪽 <b>문제 은행</b>에서 달마다 미리 만든 문제를 보고 뺄 수 있습니다. 학생은 어떤 책이든 제한 없이 낼 수 있고, 제출할 때 품질 점수(10점: 쪽수 3, 서가 책 2, 보기 2, 정답 안 튐 1, 해설 1, 길이 1)가 매겨져 점수순으로 보입니다. 자동 출제를 기다리지 않고 직접 ‘이번 주 출제’해도 됩니다(뽑힌 학생은 퀴즈 칸이 찹니다). 검색으로 풀리는 문제는 반려. <b>도장을 받은 학생 문제를 반려(출제 취소)하면 그 문제 출제 도장은 회수되고, 학생 화면에 ‘반려되었다’는 안내가 떠서 학생이 확인을 누릅니다.</b> ‘이번 주 빈자리 지금 채우기’로 바로 채울 수도 있습니다."],
+    ["퀴즈 관리","이번 주 북퀴즈는 추천 도서 가운데 "+(D.conf.quizBooks||2)+"권 이하에서 나옵니다. 아래쪽 <b>문제 은행</b>에서 달마다 미리 만든 문제를 보고 뺄 수 있습니다. 학생은 <b>다음 주 퀴즈 책으로만</b> 낼 수 있고(다음 주 책이 아직 없으면 이번 주 퀴즈 책), 제출할 때 품질 점수(10점: 쪽수 3, 보기 3, 정답 안 튐 1, 해설 2, 문제 길이 1)가 매겨져 점수순으로 보입니다. 자동 출제를 기다리지 않고 직접 ‘이번 주 출제’해도 됩니다(뽑힌 학생은 퀴즈 칸이 찹니다). 검색으로 풀리는 문제는 반려. <b>도장을 받은 학생 문제를 반려(출제 취소)하면 그 문제 출제 도장은 회수되고, 학생 화면에 ‘반려되었다’는 안내가 떠서 학생이 확인을 누릅니다.</b> ‘이번 주 빈자리 지금 채우기’로 바로 채울 수도 있습니다."],
     ["시트","<b>설정</b> 탭에서 프로그램 이름(겨울엔 ‘웅천 겨울 서가’), 게시 방식(바로/확인), 주간·월간 도장 수, 상품권 기준, 이달의 권수, 개인정보 보유 기간을 바꿉니다. <b>교사</b> 탭에 담임을 이메일·이름·담당(3-2)으로, 담당 교사는 담당 ‘전체’로 넣습니다."]
   ])+
   '<h4>도서부(학생 운영진)</h4>'+todo([["매주 금요일 점심","도서관에서 문화상품권 배부. 앱 <b>배부 확인</b>에 대상 학생이 학번 순으로 나오고(30초마다 새로), 준 뒤 이름 옆 <b>배부</b>를 누릅니다. 학생이 앱에서 확인을 누르면 ‘수령 확인 ✓’."],["매달 첫 주","이달의 한 줄 포스터와 이달의 글을 도서관 게시판에 붙입니다. 3~4명이 20분."]]);
@@ -2990,6 +3001,8 @@ document.addEventListener("click",function(e){
   if(id==="af-go"){authorGo(val("af-q"));return;}
   if(d.giftok){if(d.paid==="1")put("ungcheon-seoga-gift2|"+D.me.id+"|"+d.giftok,"1");else ui.giftHide=d.giftok;renderBoard();return;}
   if(d.tkind){ui.tKind=d.tkind;renderPanel();return;}
+  if(d.qbook!=null){var ib=document.getElementById("qs-b");if(ib){ib.value=d.qbook;var iq=document.getElementById("qs-p");(iq||ib).focus();}
+    document.querySelectorAll(".qbk").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-qbook")===d.qbook);});return;}
   if(d.qrejack){act("quizRejectAck",{},"확인했어요.").then(function(){var o=document.querySelector(".ackpop");if(o)o.remove();}).catch(function(){});return;}
   if(d.giftack){act("giftAck",{from:d.giftack},"확인했어요. 즐겁게 읽어!").then(function(){var o=document.querySelector(".ackpop");if(o)o.remove();}).catch(function(){});return;}
   if(d.hellook){put("ungcheon-seoga-hello|"+D.me.id,"1");renderBoard();return;}
@@ -3069,8 +3082,9 @@ document.addEventListener("click",function(e){
   if(id==="q-send"){sendQuiz();return;}
   if(id==="q-tomake"){var el=document.getElementById("qs-b");if(el){el.scrollIntoView({behavior:"smooth",block:"center"});el.focus();}return;}
   if(id==="qs-send"){act("quizSubmit",quizPayload("qs-")).then(function(r){
-      toast(r.stamped?"문제를 냈습니다. 품질 "+r.score+"/10 — 도장 1개를 받았어요!"
-        :"문제를 냈습니다. 품질 "+r.score+"/10 — "+r.bar+"점이 넘으면 도장을 받아요. 쪽수와 해설을 채우면 점수가 올라가요.");}).catch(function(){});return;}
+      var wt=r.where==="none"?" (학교에 없는 책이라 북퀴즈 후보는 아니에요)":r.where==="lib"?" (이달 추천도서가 아니라 북퀴즈 후보는 아니에요)":"";
+      toast((r.stamped?"문제를 냈습니다. 품질 "+r.score+"/10 — 도장 1개를 받았어요!"
+        :"문제를 냈습니다. 품질 "+r.score+"/10 — "+r.bar+"점이 넘으면 도장을 받아요. 쪽수와 해설을 채우면 점수가 올라가요.")+wt);}).catch(function(){});return;}
 
   if(d.mode){act("setMode",{approve:d.mode==="approve"}).catch(function(){});return;}
   if(d.approve){act("approve",{id:d.approve},"도장을 찍었습니다.").catch(function(){});return;}
