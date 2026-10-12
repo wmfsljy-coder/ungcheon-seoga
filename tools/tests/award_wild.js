@@ -30,13 +30,14 @@ let s9=st("3104"),s10=st("3105");
 const aw9=(s9.awards||[]).find(x=>x.kind==="review"),aw10=(s10.awards||[]).find(x=>x.kind==="review");
 must(aw9&&aw9.stars===1&&aw9.wild===0,"9월 독후감 1위: 예전대로 별 1개");
 must(aw10&&aw10.stars===0&&aw10.wild===2,"10월 독후감 1위: 별 없이 만능 도장 2개");
-/* 도장 기록에서 시상 만능 도장 세기: 지난주(10/26 주)·이번 주(11/2 주) */
-NOW=new Date("2026-11-03T03:00:00Z");
-let thisW=st("3105").week.stamps.filter(x=>x.k==="award");
-must(thisW.length===0,"11/2 주에는 아직 둘째 만능 도장이 없다(11/7 에 들어옴)");
-NOW=new Date("2026-11-08T03:00:00Z");
-thisW=st("3105").week.stamps.filter(x=>x.k==="award");
-must(thisW.length===1&&/2\/2/.test(thisW[0].t||""),"11/7 부터 둘째 만능 도장(2/2)이 그 주 칸에");
+/* 첫째는 시상 날(10/31) 다음 주 월요일(11/2), 둘째는 그다음 주(11/9) */
 NOW=new Date("2026-10-31T15:30:00Z");   /* 11/1(일) 0시 30분 — 10/26 주 */
+must(st("3105").week.stamps.filter(x=>x.k==="award").length===0,"시상 날이 든 주(10/26 주)에는 찍히지 않는다");
+NOW=new Date("2026-11-03T03:00:00Z");
 let w1=st("3105").week.stamps.filter(x=>x.k==="award");
-must(w1.length===1&&/1\/2/.test(w1[0].t||""),"첫째 만능 도장(1/2)은 시상 날(10/31) 그 주 칸에");
+must(w1.length===1&&/1\/2/.test(w1[0].t||""),"첫째 만능 도장(1/2)은 다음 주(11/2 주) 칸에");
+NOW=new Date("2026-11-10T03:00:00Z");
+let w2=st("3105").week.stamps.filter(x=>x.k==="award");
+must(w2.length===1&&/2\/2/.test(w2[0].t||""),"둘째 만능 도장(2/2)은 그다음 주(11/9 주) 칸에");
+NOW=new Date("2026-11-04T03:00:00Z");
+must(st("3105").week.stamps.filter(x=>x.k==="award").length===1,"11/9 전에는 둘째가 미리 들어오지 않는다");
