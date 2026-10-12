@@ -72,6 +72,9 @@ db.setConf("이달","2026-10");db.setConf("다음주퀴즈책","2026-10-26|2026-
 const good=C().api("quizSubmit",{book:"침묵의 봄",page:"88쪽",q:"88쪽에서 저자가 경고한 것은 무엇인가요?",o1:"살충제가 생태계에 남긴 자취",o2:"도시의 소음",o3:"바다의 수온",o4:"철새의 이동",ans:1,why:"88쪽에 나옵니다"});
 must(good.stamped&&good.score>=good.bar,"성의껏 낸 문제: 품질 "+good.score+"/10 → 도장");
 must(wk("3102").week.stamps.some(x=>x.slot==="quiz"),"낸 그 자리에서 問 도장이 찍힌다");
+let pe="";try{C().api("quizSubmit",{book:"완득이",page:"3쪽",q:"3쪽에서 완득이가 만난 사람은?",o1:"가",o2:"나",o3:"다",o4:"라",ans:1,why:""});}catch(x){pe=x.message;}
+must(/한 주에 1개까지/.test(pe),"문제 내기는 한 주에 1개까지(2026-10-12)");
+db.setConf("주간문제출제","0");   /* 아래는 품질 미달 문제를 보려는 것이라 제한을 잠깐 끈다 */
 const poor=C().api("quizSubmit",{book:"완득이",page:"",q:"완득이는 누구인가요?",o1:"학생",o2:"교사",o3:"의사",o4:"군인",ans:1,why:""});
 must(!poor.stamped,"대충 낸 문제(품질 "+poor.score+")는 도장 없음");
 must(wk("3102").week.stamps.filter(x=>x.slot==="quiz").length===1,"도장은 성의껏 낸 문제 하나만");

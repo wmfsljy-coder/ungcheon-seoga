@@ -37,3 +37,20 @@ const all=hb=>{EMAIL="s"+hb+"@x";return C().api("state",{});};
 must(T["글"].length===4,"글 4편");
 const hist=Core.make(db,env);
 must(st("3102").week.stamps.length===0,"새 주에는 이번 주 도장판이 비어 있음");
+/* 한 주 5칸 고정(2026-10-12 회장님): 배수 이벤트가 있어도 10/12 주부터는 5칸, 넘치면 책갈피. 그 전 주는 예전대로(이벤트만큼 칸이 늘었음) */
+T["글"].length=0;T["퀴즈"].length=0;db.setConf("다음주퀴즈책","");
+db.add("이벤트",{"이름":"가을 독서 주간","방식":"배수","시작":"2026-10-05","끝":"2026-10-18","값":"2"});
+const day=["06","07","08","09","10","13","14","15","16","17"];
+let gid=100;
+const w=(hb,kind,title,d)=>T["글"].push({"id":"x"+(++gid),"시각":d+" 09:00:"+String(gid%60).padStart(2,"0"),"종류":kind,"학번":hb,"반":"3-1","책제목":title,"본문":"글","상태":"posted"});
+/* 지난주(10/5 주): 독후감 3 + 라벨 2 → ×2 */
+["2026-10-06","2026-10-07","2026-10-08"].forEach(d=>w("3101","review","추천책",d));["2026-10-09","2026-10-10"].forEach(d=>w("3101","label","추천책",d));
+/* 이번 주(10/12 주): 같은 양 */
+["2026-10-13","2026-10-14","2026-10-15"].forEach(d=>w("3101","review","추천책",d));["2026-10-16","2026-10-17"].forEach(d=>w("3101","label","추천책",d));
+NOW=new Date("2026-10-11T03:00:00Z");
+const last=st("3101").week;
+must(last.stamps.length>5,"10/5 주(예전 규칙): 이벤트 주엔 5칸을 넘을 수 있었음 ("+last.stamps.length+")");
+NOW=new Date("2026-10-18T03:00:00Z");
+const thisW=st("3101").week;
+must(thisW.stamps.length===5,"10/12 주: 이벤트가 있어도 도장은 5칸 ("+thisW.stamps.length+")");
+must(thisW.leaf&&thisW.leaf.got>0,"넘친 것은 책갈피로 ("+(thisW.leaf&&thisW.leaf.got)+"장)");

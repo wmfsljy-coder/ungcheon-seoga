@@ -2165,7 +2165,9 @@ function quizForm(prefix,adminMode){
     '<div class="two" style="gap:12px"><div class="field"><label for="'+prefix+'a">정답 번호</label><select id="'+prefix+'a"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>'+
     '<div class="field"><label for="'+prefix+'w">해설 한 줄</label><input type="text" id="'+prefix+'w"></div></div>'+
     (adminMode?'<div class="row"><button class="btn" data-qadd="0">이번 주에 출제</button><button class="btn ghost" data-qadd="1">다음 주에 출제</button></div>'
-              :((D.quiz&&D.quiz.allowed&&D.quiz.allowed.kind==="next")?'<button class="btn" id="qs-send">문제 내기</button>':'<button class="btn" disabled>다음 주 퀴즈 책이 정해지면 낼 수 있어요</button>'))+'</div>';
+              :(function(){var Qz=D.quiz||{};
+                if(Qz.weekMax>0&&(Qz.myWeek||0)>=Qz.weekMax)return '<button class="btn" disabled>이번 주 문제는 이미 냈어요 — 다음 주 월요일에 다시</button>';
+                return (Qz.allowed&&Qz.allowed.kind==="next")?'<button class="btn" id="qs-send">문제 내기</button>':'<button class="btn" disabled>다음 주 퀴즈 책이 정해지면 낼 수 있어요</button>';})())+'</div>';
 }
 function quizPayload(prefix){
   return {book:val(prefix+"b"),page:val(prefix+"p"),q:val(prefix+"q"),o1:val(prefix+"o1"),o2:val(prefix+"o2"),
@@ -2196,7 +2198,7 @@ function pQuiz(){
     (QA.kind==="next"?'<div class="qbooks next"><span>📚 문제는 <strong>'+QW+'</strong>으로만 낼 수 있어요 — 책 이름을 누르면 아래 칸에 바로 들어가요</span>'+nextQ.map(function(t){return '<button type="button" class="qbk" data-qbook="'+esc(t)+'">『'+esc(t)+'』</button>';}).join("")+
       '<small class="hint">이 책 문제 가운데 점수가 높은 것이 다음 주 북퀴즈로 뽑혀요.'+(QA.nextMonth?' 다음 달 추천도서로 미리 뽑아 둔 책이라 아직 서가에는 없을 수 있어요.':'')+'</small></div>'
       :'<div class="guidebanner"><span>📚 문제는 <b>다음 주 퀴즈 책</b>으로만 낼 수 있어요. 다음 주 퀴즈 책이 아직 정해지지 않았어요 — 정해지면 여기에 보라색으로 보여요.</span></div>')+
-    '<p class="sub"><b>성의껏 낸 문제(품질 '+(D.conf.quizBar||6)+'점 이상)는 그 자리에서 도장 1개</b>를 받아요(한 주 '+(D.conf.weekCap||5)+'칸 안에서). <b>점수가 높아도 선생님이 반려하면 도장은 회수</b>되고, 선생님이 확인만 하고 북퀴즈에 내지 않을 수도 있어요. 매주 월요일에는 <b>퀴즈 책 문제 가운데 점수가 높은 것부터</b> 북퀴즈로 뽑히고, 뽑히면 도장판에 퀴즈 칸이 찹니다. 쪽수를 적고 책을 읽어야 풀 수 있는 문제일수록 점수가 높아요.</p>'+
+    '<p class="sub"><b>성의껏 낸 문제(품질 '+(D.conf.quizBar||6)+'점 이상)는 그 자리에서 도장 1개</b>를 받아요(한 주 '+(D.conf.weekCap||5)+'칸 안에서). <b>문제는 한 주에 '+((D.quiz&&D.quiz.weekMax)||1)+'개까지</b> 낼 수 있어요(반려되면 다시 낼 수 있어요). <b>점수가 높아도 선생님이 반려하면 도장은 회수</b>되고, 선생님이 확인만 하고 북퀴즈에 내지 않을 수도 있어요. 매주 월요일에는 <b>퀴즈 책 문제 가운데 점수가 높은 것부터</b> 북퀴즈로 뽑히고, 뽑히면 도장판에 퀴즈 칸이 찹니다. 쪽수를 적고 책을 읽어야 풀 수 있는 문제일수록 점수가 높아요.</p>'+
     woong("read","좋은 문제 점수표(10점) 알려 줄게.<br><b>쪽수</b> 적기 3 · 서로 다르고 짧은 <b>보기</b> 3 · 정답만 길게 튀지 않기 1 · <b>해설</b> 한 줄 2 · 문제 길이 1. <b>"+(D.conf.quizBar||6)+"점 이상</b>이면 도장 받고 출제 후보야!")+
     quizForm("qs-",false)+(mine?'<div style="margin-top:14px">'+mine+'</div>':'');
 }
@@ -2660,7 +2662,7 @@ function pGift(){
 /* ── 담당: 도서 ── */
 /* 이 주의 주제(관리자): 이번 주와 다음 두 주를 미리 적어 둘 수 있다 */
 /* 이벤트(관리자): 배수·추첨·대항·미션을 시트 한 줄로 */
-var EV_WAY={"배수":["도장 배수","값 = 배수(2~5). 기간 안 활동의 도장을 그만큼. 그 주 상한도 같이 늘어납니다."],
+var EV_WAY={"배수":["도장 배수","값 = 배수(2~5). 기간 안 활동의 도장을 그만큼. 한 주 5칸은 그대로라 넘치면 책갈피가 됩니다."],
   "추첨":["추첨권","값 = 뽑을 인원, 보상 = 1인당 상품권 매수. 활동 한 건이 추첨권 한 장(많이 할수록 당첨 확률↑). 지출이 고정됩니다."],
   "대항":["반 대항","값 = 상 받을 반 수. 기간 안 반별 참여율 순위를 학생·교사 화면에 보여 줍니다(상품권 지출 없음)."],
   "미션":["미션","값 = 목표 건수, 보상 = 도장 수. 기간 안에 목표를 채우면 도장을 그만큼 더 찍습니다."]};

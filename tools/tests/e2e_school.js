@@ -56,7 +56,7 @@ for(let w=0;w<4;w++){
     if(w===0&&d<3)for(let k=0;k<80;k++){const hb=pick(STU),s=call("s"+hb+"@x","state");if(!s.voteL||!s.voteL.list.length||!s.voteL.left)continue;
       const r=call("s"+hb+"@x","vote",{kind:"label",id:s.voteL.list[0].id});if(!r.ERR)votes++;}
   }
-  if(w===0){NOW=new Date("2026-10-07T03:00:00Z");const al=call("s2105@x","state").quiz.allowed;const q=call("s2105@x","quizSubmit",{book:al.books[0],page:"45쪽",q:"45쪽에서 주인공이 처음 만난 사람은 누구인가요?",o1:"할머니",o2:"선장",o3:"친구",o4:"우체부",ans:2,why:"45쪽 첫 문단"});must(/다음 주 퀴즈 책|이번 주 퀴즈 책|이달 추천도서/.test(call("s2105@x","quizSubmit",{book:"서가에 없는 책",page:"1쪽",q:"1쪽에서 나온 것은 무엇인가요?",o1:"가",o2:"나",o3:"다",o4:"라",ans:1,why:"1쪽"}).ERR||""),"다른 책으로는 문제를 낼 수 없다("+al.kind+")");must(q.score>=6,"학생 문제 품질 "+q.score+"/10");}
+  if(w===0){NOW=new Date("2026-10-07T03:00:00Z");const al=call("s2105@x","state").quiz.allowed;const badBookErr=call("s2105@x","quizSubmit",{book:"서가에 없는 책",page:"1쪽",q:"1쪽에서 나온 것은 무엇인가요?",o1:"가",o2:"나",o3:"다",o4:"라",ans:1,why:"1쪽"}).ERR;const q=call("s2105@x","quizSubmit",{book:al.books[0],page:"45쪽",q:"45쪽에서 주인공이 처음 만난 사람은 누구인가요?",o1:"할머니",o2:"선장",o3:"친구",o4:"우체부",ans:2,why:"45쪽 첫 문단"});must(/다음 주 퀴즈 책|이번 주 퀴즈 책|이달 추천도서/.test(badBookErr||""),"다른 책으로는 문제를 낼 수 없다("+al.kind+")");must(q.score>=6,"학생 문제 품질 "+q.score+"/10");}
 }
 /* 이달의 투표: 새 달 1~7일에 지난달 글로 (2026-11-03) */
 NOW=new Date("2026-11-03T02:00:00Z");
