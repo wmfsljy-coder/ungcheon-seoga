@@ -2184,7 +2184,7 @@ function pQuiz(){
     return '<div class="meta" style="padding:6px 0"><span class="pill '+(q.status==="출제"?"gold":"grey")+'">'+esc(q.status==="대기"?"출제 대기":q.status==="확인"?"선생님 확인(출제 안 함)":q.status)+'</span>'+sc+'<span>『'+esc(q.book)+'』 '+esc(q.q)+'</span></div>';}).join("");
   return '<h3 class="sec">이번 주 북퀴즈</h3>'+
     ((Q.bookInfo||[]).length?'<div class="qbooks"><span>이번 주 퀴즈 책</span>'+Q.bookInfo.map(function(b){return '<b>『'+esc(b.t)+'』'+(b.total?' <small>'+b.total+'권'+(b.avail!=null?' · 대출 가능 '+b.avail:'')+'</small>':'')+'</b>';}).join("")+'</div>':'')+
-    (Q.next&&(Q.next.books||[]).length?'<div class="qbooks next"><span>다음 주 퀴즈 책 ('+esc(md(Q.next.week))+'부터)</span>'+Q.next.books.map(function(t){return '<b>『'+esc(t)+'』</b>';}).join("")+'<small class="hint">미리 읽어 두세요!</small></div>':'')+
+    (Q.next&&(Q.next.books||[]).length?'<div class="qbooks next"><span>다음 주 퀴즈 책 ('+esc(md(Q.next.week))+'부터'+(Q.next.nextMonth?' · 다음 달 추천도서 예정에서 먼저 공개':'')+')</span>'+Q.next.books.map(function(t){return '<b>『'+esc(t)+'』</b>';}).join("")+'<small class="hint">미리 읽어 두세요!</small></div>':'')+
     '<p class="sub">매주 월요일에 새 문제가 나와요. 이번 주 퀴즈 책을 읽었다면 쉽게 풀 수 있어요. <b>다음 주 퀴즈 책은 한 주 앞서</b> 보라색으로 알려 줘요. 한 주에 한 번, 절반 이상 맞히면 퀴즈 도장.</p>'+
     (Q.retake?'<div class="guidebanner"><span>🔁 <b>이번 주 퀴즈가 책 '+(D.conf.quizBooks||2)+'권으로 바뀌었어요.</b> 한 번 더 풀 수 있어요(지난 점수 '+Q.retake.prev+' / '+Q.retake.total+'). <b>더 좋은 점수만</b> 남아요.</span></div>':'')+
     '<div class="guidebanner"><span>📌 <b>퀴즈를 틀려도 괜찮아요.</b> 아래에서 <b>문제를 성의껏 내면 그 자리에서 도장 1개</b>(품질 '+(D.conf.quizBar||6)+'점 이상). 단, <b>선생님이 반려하면 그 도장은 회수</b>돼요.</span><button class="btn sm" id="q-tomake" type="button">문제 내러 가기</button></div>'+
@@ -2194,7 +2194,7 @@ function pQuiz(){
        :'<div class="empty">이번 주 퀴즈는 준비 중입니다. 아래에서 직접 문제를 내 보세요.</div>')+
     '<h3 class="sec gap">내가 문제 내기</h3>'+
     (QA.kind==="next"?'<div class="qbooks next"><span>📚 문제는 <strong>'+QW+'</strong>으로만 낼 수 있어요 — 책 이름을 누르면 아래 칸에 바로 들어가요</span>'+nextQ.map(function(t){return '<button type="button" class="qbk" data-qbook="'+esc(t)+'">『'+esc(t)+'』</button>';}).join("")+
-      '<small class="hint">이 책 문제 가운데 점수가 높은 것이 다음 주 북퀴즈로 뽑혀요.</small></div>'
+      '<small class="hint">이 책 문제 가운데 점수가 높은 것이 다음 주 북퀴즈로 뽑혀요.'+(QA.nextMonth?' 다음 달 추천도서로 미리 뽑아 둔 책이라 아직 서가에는 없을 수 있어요.':'')+'</small></div>'
       :'<div class="guidebanner"><span>📚 문제는 <b>다음 주 퀴즈 책</b>으로만 낼 수 있어요. 다음 주 퀴즈 책이 아직 정해지지 않았어요 — 정해지면 여기에 보라색으로 보여요.</span></div>')+
     '<p class="sub"><b>성의껏 낸 문제(품질 '+(D.conf.quizBar||6)+'점 이상)는 그 자리에서 도장 1개</b>를 받아요(한 주 '+(D.conf.weekCap||5)+'칸 안에서). <b>점수가 높아도 선생님이 반려하면 도장은 회수</b>되고, 선생님이 확인만 하고 북퀴즈에 내지 않을 수도 있어요. 매주 월요일에는 <b>퀴즈 책 문제 가운데 점수가 높은 것부터</b> 북퀴즈로 뽑히고, 뽑히면 도장판에 퀴즈 칸이 찹니다. 쪽수를 적고 책을 읽어야 풀 수 있는 문제일수록 점수가 높아요.</p>'+
     woong("read","좋은 문제 점수표(10점) 알려 줄게.<br><b>쪽수</b> 적기 3 · 서로 다르고 짧은 <b>보기</b> 3 · 정답만 길게 튀지 않기 1 · <b>해설</b> 한 줄 2 · 문제 길이 1. <b>"+(D.conf.quizBar||6)+"점 이상</b>이면 도장 받고 출제 후보야!")+
@@ -2787,7 +2787,7 @@ function pQuizAdm(){
       '매주 월요일 0시에 <b>이번 주 퀴즈 책을 '+(D.conf.quizBooks||2)+'권 이하</b>로 정하고 '+D.conf.quizTarget+'문제를 채웁니다: ① 그 책들의 <b>품질 '+bar+'점 이상 학생 문제</b>(점수 높은 순, 한 학생 한 문제, 학생 문제가 있는 책을 먼저 퀴즈 책으로) ② 모자라면 <b>문제 은행</b>에서(아직 안 나온 책·다른 장르 먼저). '+
       '선생님이 미리 골라 둔 문제는 그대로 두고 남는 자리만 채웁니다. 은행 문제는 아래 목록에서 미리 보고 이상하면 ‘빼기’하세요.</p>'+
     ((D.weekBooks||[]).length?'<div class="qbooks"><span>이번 주 퀴즈 책</span>'+D.weekBooks.map(function(t){return '<b>『'+esc(t)+'』</b>';}).join("")+'</div>':'')+
-    (D.nextQuiz&&(D.nextQuiz.books||[]).length?'<div class="qbooks next"><span>다음 주 퀴즈 책 ('+esc(md(D.nextQuiz.week))+'부터 · 학생에게 미리 안내 중)</span>'+D.nextQuiz.books.map(function(t){return '<b>『'+esc(t)+'』</b>';}).join("")+'</div>':'')+
+    (D.nextQuiz&&(D.nextQuiz.books||[]).length?'<div class="qbooks next"><span>다음 주 퀴즈 책 ('+esc(md(D.nextQuiz.week))+'부터 · 학생에게 미리 안내 중'+(D.nextQuiz.nextMonth?' · 다음 달 추천도서 예정에서':'')+')</span>'+D.nextQuiz.books.map(function(t){return '<b>『'+esc(t)+'』</b>';}).join("")+'</div>':'')+
     '<div class="row" style="margin-bottom:6px"><button class="btn" id="qz-auto">이번 주 빈자리 지금 채우기</button>'+
     '<span class="hint">이번 주 '+now+' / '+D.conf.quizTarget+'문제 · 문항 수와 품질 기준은 설정 시트(퀴즈문항수, 퀴즈품질기준)</span></div>'+
     '<h3 class="sec gap">학생이 낸 문제 (점수 높은 순)</h3>'+

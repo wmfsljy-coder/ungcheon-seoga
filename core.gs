@@ -1531,8 +1531,8 @@ function make(db,env){
     return n;
   }
   /* 그 주 퀴즈 책 고르기(최대 maxB권): 이미 출제된 책 → 미리 알린 책 → 품질 좋은 학생 문제가 있는 책 → 은행 문제가 있는 책 */
-  function chooseBooks(wk,rows,live,c,mon,maxB,bar,pin){
-    var keys=shelfKeys();
+  function chooseBooks(wk,rows,live,c,mon,maxB,bar,pin,keysOv){
+    var keys=keysOv||shelfKeys();
     /* 이번 주 퀴즈 책(최대 maxB권): 이미 출제된 책 → 품질 좋은 학생 문제가 있는 책 → 은행 문제가 있는 책(아직 안 나온 책, 다른 장르 먼저) */
     var wb={},books=[],genres={};
     function addB(t){var k=tkey(t);if(wb[k])return true;if(books.length>=maxB)return false;wb[k]=1;books.push(S(t));var b=keys[k];if(b)genres[b.s]=1;return true;}
@@ -1569,12 +1569,28 @@ function make(db,env){
     var m=S(conf()["다음주퀴즈책"]).split("|");
     return m[0]===wk&&m[1]===S(mon)&&m[2]?m[2].split(";").filter(Boolean):[];
   }
+  /* 그 주(월요일)의 추천 묶음. 월 마지막 주에 다음 주가 다음 달(묶음)로 넘어가면, 미리 뽑아 둔 다음 달 추천도서 예정이 있을 때 그 달(2026-10-12 회장님) */
+  function quizMonFor(wk){
+    var c=conf(),cur=S(c["이달"]),pk=periodOf(S(wk).slice(0,7),c["추천묶음"]).key;
+    return cur&&pk>cur&&periodBooks(pk).length?pk:cur;
+  }
+  /* 그 묶음 추천도서의 서명 열쇠(지금 달이면 서가와 같음) */
+  function monKeys(mon){
+    if(mon===S(conf()["이달"]))return shelfKeys();
+    var m={};periodBooks(mon).forEach(function(b){m[norm(shownTitle(b.t))]=b;});return m;
+  }
+  /* 서가 + (월 마지막 주라면) 다음 주 퀴즈 책이 나올 다음 달 예정 책 */
+  function quizShelfKeys(){
+    var m=shelfKeys(),nm=quizMonFor(weekKey(env.now(),1));
+    if(nm!==S(conf()["이달"])){var o={};Object.keys(m).forEach(function(k){o[k]=m[k];});periodBooks(nm).forEach(function(b){var k=norm(shownTitle(b.t));if(!o[k])o[k]=b;});return o;}
+    return m;
+  }
   function planNext(){
-    var c=conf(),nwk=weekKey(env.now(),1),mon=S(c["이달"]),had=planOf(nwk,mon);
+    var c=conf(),nwk=weekKey(env.now(),1),mon=quizMonFor(nwk),had=planOf(nwk,mon);
     if(had.length)return {week:nwk,books:had};
     if(!mon)return null;
     try{buildBank(mon);}catch(e){}
-    var books=chooseBooks(nwk,db.rows("퀴즈"),[],c,mon,Number(c["퀴즈책수"])||2,Number(c["퀴즈품질기준"])||6,null).books;
+    var books=chooseBooks(nwk,db.rows("퀴즈"),[],c,mon,Number(c["퀴즈책수"])||2,Number(c["퀴즈품질기준"])||6,null,monKeys(mon)).books;
     if(!books.length)return null;
     setConf("다음주퀴즈책",nwk+"|"+mon+"|"+books.join(";"));
     return {week:nwk,books:books};
@@ -1672,11 +1688,11 @@ function make(db,env){
     return mine.length>0&&mine.every(function(r){return S(r["시각"])<m[1];});
   }
   /* 다음 주 퀴즈 책(미리 알림) */
-  function nextQuizBooks(){var nwk=weekKey(env.now(),1),b=planOf(nwk,conf()["이달"]);return b.length?{week:nwk,books:b}:null;}
+  function nextQuizBooks(){var nwk=weekKey(env.now(),1),mon=quizMonFor(nwk),b=planOf(nwk,mon);return b.length?{week:nwk,books:b,nextMonth:mon!==S(conf()["이달"])}:null;}
   /* 학생이 문제를 낼 수 있는 책(2026-10-12 회장님: 다음 주 퀴즈 책으로만 — 다른 길 없음).
      다음 주 책은 하루 세 번 도는 tick 이 정해 둔다. 아직 없으면 kind "none"(제출 막음) */
   function quizAllowed(){
-    var nx=nextQuizBooks();if(nx)return {kind:"next",week:nx.week,books:nx.books};
+    var nx=nextQuizBooks();if(nx)return {kind:"next",week:nx.week,books:nx.books,nextMonth:!!nx.nextMonth};
     return {kind:"none",books:[]};
   }
   /* ── 작가 이야기(2026-10-09 회장님 지시): 짧은 열전·생일·이주의 작가 ──
@@ -2007,8 +2023,9 @@ function make(db,env){
     if(S(conf()["퀴즈판"])!=="4")try{renewWeekAuto(true);}catch(e){}
     setConf("퀴즈판","4");
     /* 퀴즈는 청구기호를 받아 온 뒤에 채운다(첫 실행에서도 자동 문제가 나오게) */
-    var qz=ensureWeeklyQuiz(),nx=null;
-    try{nx=prePickNext();}catch(e){}
+    /* 다음 달 책을 먼저 미리 뽑고(7일 전), 그다음 퀴즈 — 월 마지막 주에 다음 주 퀴즈 책을 다음 달 예정에서 정할 수 있게(2026-10-12) */
+    var nx=null;try{nx=prePickNext();}catch(e){}
+    var qz=ensureWeeklyQuiz();
     return {rotate:r,lib:l,filled:filled,quiz:qz,next:nx};
   }
 
@@ -3275,7 +3292,7 @@ function make(db,env){
     var quiz=db.rows("퀴즈").filter(function(q){return S(q["상태"])==="출제"&&S(q["주"])===wk;}).map(function(q){
       return {id:S(q["id"]),book:S(q["품질근거"])==="자동:about"?"":S(q["책제목"]),page:S(q["쪽수"]),q:S(q["문제"]),
         o:[S(q["보기1"]),S(q["보기2"]),S(q["보기3"]),S(q["보기4"])]};});
-    var sk=shelfKeys();
+    var sk=quizShelfKeys();
     var myQuiz=db.rows("퀴즈").filter(function(q){return S(q["학번"])===a.id;}).map(function(q){
       return {q:S(q["문제"]),book:S(q["책제목"]),status:S(q["상태"]),score:S(q["품질"]),why:S(q["품질근거"]),onShelf:onShelf(q["책제목"],sk),where:bookWhere(q,sk,false),
         date:S(q["시각"]).slice(0,10),page:S(q["쪽수"]),o:[S(q["보기1"]),S(q["보기2"]),S(q["보기3"]),S(q["보기4"])],ans:Number(q["정답"])};});
@@ -3564,7 +3581,7 @@ function make(db,env){
     var winners={};all.forEach(function(r){if(S(r["수상"])==="Y")winners[S(r["학번"])]=true;});
     res.result={voting:rank(prevMonth(mon),votes,winners),closed:rank(prevMonth(prevMonth(mon)),votes,winners),voteOpen:voteOpen(now),
       mon:prevMonth(mon),prev:prevMonth(prevMonth(mon))};
-    var sk=shelfKeys();
+    var sk=quizShelfKeys();
     res.quiz=db.rows("퀴즈").filter(function(q){return S(q["상태"])!=="반려";}).map(function(q){
       return {id:S(q["id"]),status:S(q["상태"]),week:S(q["주"]),book:S(q["책제목"]),page:S(q["쪽수"]),q:S(q["문제"]),
         o:[S(q["보기1"]),S(q["보기2"]),S(q["보기3"]),S(q["보기4"])],ans:Number(q["정답"]),why:S(q["해설"]),cls:S(q["반"]),
