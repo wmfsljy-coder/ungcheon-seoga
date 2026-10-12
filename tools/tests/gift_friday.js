@@ -69,4 +69,5 @@ must(st("3101").giftNotice===null||!st("3101").giftNotice.mine.vouchers,"이미 
 NOW=new Date("2026-10-23T03:30:00Z");
 dk=as("3103","state").giftDesk;
 must(dk.open&&dk.rows.some(r=>r.hakbun==="3102"&&r.vouchers===2),"10/23(금) 배부 명단에 3102(2매)");
+C().syncRecvSheet();   /* 1분 작업 */
 must(T["수령대상"].some(r=>r["수령"]==="10월 16일 수령"&&r["학번"]==="3101"&&r["배부"]==="배부 완료"),"수령대상 시트에 '10월 16일 수령' 배부 기록");

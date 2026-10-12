@@ -56,11 +56,12 @@ must(!(as("3101","state").giftAck||[]).length,"배부 전에는 확인 창이 �
 must(!as("3103","clubMark",{ids:["3101"],on:true}).ERR,"도서부가 3101 배부");
 const ack=as("3101","state").giftAck||[];
 must(ack.length===1&&ack[0].n===2&&/도서부/.test(ack[0].who),"배부되면 학생 화면에 확인 창(2매 · 누가 배부)");
+C().syncRecvSheet();   /* 수령대상 시트는 1분마다 맞춘다(recvMinute) */
 let rs=T["수령대상"].find(r=>r["학번"]==="3101");
 must(rs&&rs["배부"]==="배부 완료"&&rs["수령확인"]==="확인 전","시트: 배부 완료 · 수령확인 '확인 전'");
 must(as("3101","giftAck",{from:"2026-10-05"}).n===1,"학생이 확인을 누른다");
 must(!(as("3101","state").giftAck||[]).length,"확인하면 창이 다시 뜨지 않는다");
-rs=T["수령대상"].find(r=>r["학번"]==="3101");
+C().syncRecvSheet();rs=T["수령대상"].find(r=>r["학번"]==="3101");
 must(rs["수령확인"]==="확인"&&rs["확인시각"].slice(0,10)==="2026-10-06","시트: 수령확인 '확인'과 확인 시각");
 must(T["지급"].find(r=>r["학번"]==="3101")["수령확인"]==="확인","지급 시트에도 수령 확인");
 dk=as("3103","state").giftDesk;

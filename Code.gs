@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261012-132128";
+var CODE_VERSION="20261012-134944";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -192,6 +192,24 @@ function doGet(e){
     if(!keyOk_(e.parameter.selftest))res={error:"열쇠가 맞지 않습니다."};
     else{try{var db0=makeDb_(),env0=makeEnv_(),s0=Date.now();Core.make(db0,env0).api;var core0=Core.make(db0,env0);var tl=Date.now();res=core0.selfTest(200000);res.timing.loadMs=tl-s0;}catch(x){res={error:String(x&&x.stack||x)};}}
     return ContentService.createTextOutput(JSON.stringify(res)).setMimeType(ContentService.MimeType.JSON);
+  }
+  /* 공지 점검(읽기만, 열쇠 필요): ?notices=<열쇠> — 공지 시트 제목·내용·숨김(학교 안내문, 개인정보 없음) */
+  if(e&&e.parameter&&e.parameter.notices){
+    var nt={};
+    if(!keyOk_(e.parameter.notices))nt={error:"열쇠가 맞지 않습니다."};
+    else{try{nt={rows:makeDb_().rows("공지").map(function(r){var o={};Object.keys(r).forEach(function(k){if(k!=="_row")o[k]=String(r[k]).slice(0,600);});return o;})};}catch(x){nt={error:String(x&&x.message||x)};}}
+    return ContentService.createTextOutput(JSON.stringify(nt)).setMimeType(ContentService.MimeType.JSON);
+  }
+  /* 속도 점검(읽기만, 열쇠 필요): ?perf=<열쇠>&at=2026-10-16T12:30 — 그 시각(한국 시간)으로 화면 계산 시간만 잰다. 쓰지 않음 */
+  if(e&&e.parameter&&e.parameter.perf){
+    var pf={};
+    if(!keyOk_(e.parameter.perf))pf={error:"열쇠가 맞지 않습니다."};
+    else{try{var t0=Date.now(),dbP=makeDb_(),envP=makeEnv_(),at=e.parameter.at?new Date(String(e.parameter.at)+":00+09:00"):null;
+      if(at&&!isNaN(at.getTime()))envP.now=function(){return at;};
+      ["명단","글","도장","퀴즈","지급","수령기간","도서","설정"].forEach(function(t){dbP.rows(t);});pf.loadMs=Date.now()-t0;
+      var tc=Date.now();pf=Object.assign(pf,Core.make(dbP,envP).perfCheck(Number(e.parameter.n)||30));pf.coreMs=Date.now()-tc;pf.at=at?String(e.parameter.at):"지금";}
+      catch(x){pf={error:String(x&&x.message||x)};}}
+    return ContentService.createTextOutput(JSON.stringify(pf)).setMimeType(ContentService.MimeType.JSON);
   }
   if(e&&e.parameter&&e.parameter.status){
     var st={};

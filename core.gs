@@ -115,10 +115,11 @@ var CONF_DESC={
   "추천20판":"(자동 기록) 손대지 마세요",
   "작가고침판":"(자동 기록) 손대지 마세요",
   "라벨문장2판":"(자동 기록) 손대지 마세요",
+  "공지1012판":"(자동 기록) 손대지 마세요",
   "추천방식":"권장 = 권장도서 시트(인터넷 서점·권장 목록의 청소년 도서 중 우리 학교에 있는 책)에서 뽑음 / 장르 = 예전처럼 장서 대분류에서 무작위",
   "권장도서판":"(자동 기록) 손대지 마세요",
   "추천묶음":"여러 달을 한 번의 추천으로 묶기. 예: 2026-09~2026-10 (9월 추천을 10월 말까지). 여러 개는 쉼표로",
-  "퀴즈문항수":"매주 월요일에 채우는 이번 주 북퀴즈 문제 수",
+  "퀴즈문항수":"이번 주 북퀴즈 최소 문제 수. 품질 기준을 넘은 학생 문제(퀴즈 책, 한 학생 한 문제)는 이보다 많아도 모두 내고, 모자라면 문제 은행으로 이 수까지 채웁니다(2026-10-12)",
   "퀴즈품질기준":"학생 문제가 도장을 받고 자동 출제 후보가 되는 품질 점수(10점 만점). 낮추면 도장을 더 쉽게 받습니다",
   "보유기간":"개인정보 동의 안내에 나오는 보유 기간",
   "개인정보담당":"개인정보 동의 안내에 나오는 담당자",
@@ -1281,6 +1282,9 @@ function make(db,env){
     if(S(conf()["라벨문장2판"])!=="1"){setConf("주간라벨문장글","2");
       try{var wt12=weekNoticeText(conf());db.rows("공지").forEach(function(r){if(S(r["제목"])==="한 주 도장은 다섯 칸")db.set("공지","id",S(r["id"]),{"내용":wt12});});}catch(e){}
       setConf("라벨문장2판","1");}
+    /* 2026-10-12 규정 정리를 '한 주 도장은 다섯 칸' 공지에 다시 쓴다(5칸 고정·퀴즈 책 독후감 2배·문제 내기 한 주 1개). 한 번만 */
+    if(S(conf()["공지1012판"])!=="1"){try{var wt13=weekNoticeText(conf());db.rows("공지").forEach(function(r){if(S(r["제목"])==="한 주 도장은 다섯 칸")db.set("공지","id",S(r["id"]),{"내용":wt13});});}catch(e){}
+      setConf("공지1012판","1");}
     /* 하루 합계 3편(2026-10-09 회장님 지시: 라벨 1 + 문장 1 + 독후감 1 을 하루에 낼 수 있게). 한 번만 — 나중에 시트에서 고치면 그대로 */
     if(S(conf()["하루합계판"])!=="1"){setConf("하루제출상한","3");setConf("하루합계판","1");}
     /* 라벨·문장·독후감 종류마다 하루 1편(2026-10-09 회장님 지시). 하루 합계가 2면 3으로(종류마다 하나씩 낼 수 있게) */
@@ -1632,14 +1636,14 @@ function make(db,env){
       live=live.filter(function(q){return kk[tkey(q["책제목"])];});
       if(db.rows("퀴즈응답").some(function(r){return S(r["주"])===wk;}))setConf("퀴즈재시험",wk+"|"+stamp(now));
     }
-    var need=target-live.length;if(need<=0)return {added:0,week:wk,books:weekBooksOf(wk)};
+    /* 문항 수: 최소 target(5). 좋은 학생 문제는 상한 없이 모두(2026-10-12 회장님), 모자라면 은행으로 target 까지 */
+    var need=target-live.length;
     if(mon){try{buildBank(mon);}catch(e){}rows=db.rows("퀴즈");}
     var CB=chooseBooks(wk,rows,live,c,mon,maxB,bar,planOf(wk,mon)),keys=CB.keys,wb=CB.wb,books=CB.books,cand=CB.cand,usedStu=CB.usedStu,bankBy=CB.bankBy;
     /* ① 학생 문제(한 학생 한 문제) */
     var per={},fromStu=0,fromBank=0,made=0,upd={};
     live.forEach(function(q){var k=tkey(q["책제목"]);per[k]=(per[k]||0)+1;});
     cand.forEach(function(q){
-      if(need<=0)return;
       var k=tkey(q["책제목"]),st=S(q["학번"]);
       if(!wb[k]||(st&&usedStu[st]))return;
       if(st)usedStu[st]=1;
@@ -2764,7 +2768,8 @@ function make(db,env){
     if(add.length){if(db.addMany)db.addMany("지급",add);else add.forEach(function(o){db.add("지급",o);});}
     if(log.length){try{if(db.addMany)db.addMany("배부기록",log);else log.forEach(function(o){db.add("배부기록",o);});}catch(e){}}
     PAIDW=null;USED=null;STARS=null;
-    try{syncRecvSheet();}catch(e){}
+    /* 수령대상 시트는 여기서 바로 쓰지 않는다(2026-10-12 점검: 금요일 배부 단추가 시트 전체를 다시 쓰느라 느렸다).
+       쓰기 요청이 '다시 써야 함' 표시를 남기고, 1분마다 도는 recvMinute 이 맞춘다(금요일 9~17시는 매분) */
   }
   /* 수령대상 시트: 지금·다가오는 수령 기간과 지난 두 번의 대상자를 관리자가 시트에서 보도록 통째로 다시 쓴다 */
   function syncRecvSheet(){
@@ -2924,9 +2929,11 @@ function make(db,env){
     var caps=stampCaps(c),wcap=Number(c["주간라벨문장글"])||0,sp=splitFrom(c),now=splitOn(weekKey(env.now(),0),c);
     var mmdd=sp?Number(S(c["라벨문장따로"]).slice(5,7))+"월 "+Number(S(c["라벨문장따로"]).slice(8,10))+"일":"";
     var w=now||sp?"라벨 "+caps.kind.write+"개·문장 "+caps.kind.write+"개(따로 도장)":"라벨·문장은 합쳐서 "+caps.kind.write+"개";
-    return (sp&&!now?mmdd+"부터 ":"")+w+", 독후감 "+caps.kind.review+"개, 퀴즈 "+caps.kind.quiz+"개까지, 모두 합쳐 한 주 "+caps.week+"칸. 선생님이 주시는 만능 도장은 제한이 없어요."+
+    return (sp&&!now?mmdd+"부터 ":"")+w+", 독후감 "+caps.kind.review+"개, 퀴즈 "+caps.kind.quiz+"개까지, 모두 합쳐 한 주 "+caps.week+"칸(도장 2배 이벤트 때도 그대로, 넘치면 책갈피). 선생님이 주시는 만능 도장은 종류 상관없이 어느 칸이든 채워요(그 주 칸이 차면 다음 주로)."+
       (wcap?" 라벨·문장은 한 주에 합쳐서 "+wcap+"편까지 낼 수 있고, "+(now||sp?"라벨 첫 편·문장 첫 편이 도장":"첫 편이 도장")+"·나머지는 책갈피예요.":"")+
-      (Number(c["하루종류상한"])>0?" 라벨·문장·독후감은 종류마다 하루 "+Number(c["하루종류상한"])+"편까지.":"");
+      (Number(c["하루종류상한"])>0?" 라벨·문장·독후감은 종류마다 하루 "+Number(c["하루종류상한"])+"편까지.":"")+
+      (S(c["퀴즈책독후감"])?" 이번 주·다음 주 북퀴즈 책으로 쓴 독후감은 도장 2개.":"")+
+      " 문제 내기는 다음 주 퀴즈 책으로 한 주 "+(Number(c["주간문제출제"])>=0?Number(c["주간문제출제"]):1)+"개(반려되면 도장 회수).";
   }
   function giftNoticeText(c){
     var R=giftRule(c);
@@ -3709,7 +3716,7 @@ function make(db,env){
         if(S(r["학번"])!==a.id||S(r["처리"])!=="지급"||S(r["수령확인"])==="확인")return;
         if(p.from&&S(r["월"])!==S(p.from))return;
         up[S(r["키"])]={"수령확인":"확인","확인시각":now};n++;});
-      if(n){db.setMany("지급","키",up);PAIDW=null;USED=null;try{syncRecvSheet();}catch(e){}}
+      if(n){db.setMany("지급","키",up);PAIDW=null;USED=null;}   /* 수령대상 시트는 1분 안에(recvMinute) */
       return {ok:true,n:n};},
     /* 학생: 문제 출제 도장 반려 안내에서 '확인' */
     quizRejectAck:function(a,p){
@@ -4140,7 +4147,7 @@ function make(db,env){
       if(o.some(function(x){return !x;})||!(a>=1&&a<=4)||new Set(o.map(norm)).size<4)bad.push(S(q["id"]));
       bk[tkey(q["책제목"])]=1;
     });
-    chk("이번 주 퀴즈 문항",live.length===(Number(c["퀴즈문항수"])||5),live.length+"문제");
+    chk("이번 주 퀴즈 문항",live.length>=(Number(c["퀴즈문항수"])||5),live.length+"문제(최소 "+(Number(c["퀴즈문항수"])||5)+")");
     try{var nq=nextQuizBooks();chk("다음 주 퀴즈 책 미리 알림",!!nq,nq?nq.week+" "+nq.books.join(", "):"아직 안 정함");}catch(e){chk("다음 주 퀴즈 책 미리 알림",false,e.message);}
     try{var pw=personOfWeek(),na=db.rows("작가").filter(function(r){return S(r["소개"]);}).length;chk("작가 이야기",true,na+"명"+(pw?" · 이주의 작가 "+pw.name+(pw.isBday?"(생일 주간)":""):""));}catch(e){chk("작가 이야기",false,e.message);}
     chk("이번 주 퀴즈 책 "+(Number(c["퀴즈책수"])||2)+"권 이하",Object.keys(bk).length<=(Number(c["퀴즈책수"])||2),Object.keys(bk).length+"권");
@@ -4233,9 +4240,24 @@ function make(db,env){
       .map(function(r){return {at:S(r["시각"]).slice(0,16),label:lab[S(r["수령일"])]||S(r["수령일"]),hakbun:S(r["학번"]),name:S(r["이름"]),cls:S(r["반"]),act:S(r["동작"]),n:Number(r["매수"])||0,by:S(r["처리자"])};})
       .sort(function(x,y){return x.at<y.at?1:-1;}).slice(0,n||100);
   }
+  /* 속도 점검(읽기만, 숫자만): 학생 n명·도서부·관리자 화면 계산 시간과 배부 명단 계산 시간 */
+  function perfCheck(n){
+    var out={},st=db.rows("명단"),c=conf(),t;
+    function acc(r){return {role:"student",id:S(r["학번"]),email:"",name:S(r["이름"]),cls:S(r["반"]),agreed:true,club:S(r["도서부"])==="Y"};}
+    var times=[],club=[];
+    st.slice(0,n||30).forEach(function(r){t=Date.now();studentState(acc(r));times.push(Date.now()-t);});
+    st.filter(function(r){return S(r["도서부"])==="Y";}).slice(0,3).forEach(function(r){t=Date.now();var v=studentState(acc(r));club.push(Date.now()-t);out.clubRows=v.giftDesk?(v.giftDesk.rows||[]).length:-1;out.clubHidden=!!(v.giftDesk&&v.giftDesk.hidden);out.clubOpen=!!(v.giftDesk&&v.giftDesk.open);});
+    out.studentAvgMs=Math.round(times.reduce(function(a,b){return a+b;},0)/Math.max(times.length,1));out.studentMaxMs=Math.max.apply(null,times.concat([0]));out.studentN=times.length;
+    out.clubMs=club;
+    t=Date.now();var dk=deskView(c,ALL_CLS);out.deskMs=Date.now()-t;out.deskRows=dk.rows?dk.rows.length:0;out.deskLive=!!dk.live;out.deskOpen=!!dk.open;
+    var adm=db.rows("교사").filter(function(r){return S(r["담당"])==="관리자";})[0];
+    if(adm){var aa=staffOf(adm);aa.id=aa.email=lower(adm["이메일"])||"perf";aa.name=S(adm["이름"]);aa.seen="";STAMPS=null;STARS=null;PAIDW=null;USED=null;
+      t=Date.now();try{teacherState(aa);}catch(e){out.adminErr=e.message;}out.adminMs=Date.now()-t;}
+    return out;
+  }
   /* 배부 화면 요약(점검용, 숫자만) */
   function deskSummary(){var c=conf(),v=deskView(c,ALL_CLS);return {none:!!v.none,label:v.label||"",state:v.state||"",open:!!v.open,live:!!v.live,asOf:v.asOf||"",rows:(v.rows||[]).length,paid:(v.rows||[]).filter(function(x){return x.paid;}).length};}
-  return {deskSummary:deskSummary,sweepCatalog:sweepCatalog,crawlCatalog:crawlCatalog,libAuthors:libAuthors,trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fillPhotos:fillPhotos,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
+  return {perfCheck:perfCheck,deskSummary:deskSummary,sweepCatalog:sweepCatalog,crawlCatalog:crawlCatalog,libAuthors:libAuthors,trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fillPhotos:fillPhotos,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
 }
 
 return {SHEET_DOC:SHEET_DOC,TEEN:TEEN,GENRES:GENRES,make:make,HEAD:HEAD,CONF0:CONF0,CONF_DESC:CONF_DESC,AREAS:AREAS,seedBooks:seedBooks,weekKey:weekKey,libMatch:libMatch,libSearchUrl:libSearchUrl,periodOf:periodOf,seedQuotes:seedQuotes,QUOTES:QUOTES,weekOfYmd:weekOfYmd,prevMonth:prevMonth,quizQuality:quizQuality,shownTitle:shownTitle,shownAuthor:shownAuthor,AREA_CATS:AREA_CATS};
