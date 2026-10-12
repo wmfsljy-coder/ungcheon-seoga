@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261012-134944";
+var CODE_VERSION="20261012-135816";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -710,8 +710,8 @@ function markRecvDirty_(){try{PropertiesService.getScriptProperties().setPropert
 function recvMinute(){
   var P=PropertiesService.getScriptProperties();
   if(!P.getProperty("recvDirty"))return 0;
-  /* 금요일 아침 9시~오후 5시는 1분마다, 나머지는 바뀐 것이 있어도 10분에 한 번(2026-10-09 회장님 지시) */
-  var hm=Utilities.formatDate(new Date(),"Asia/Seoul","u HH:mm"),busy=hm.charAt(0)==="5"&&hm.slice(2)>="09:00"&&hm.slice(2)<"17:00";
+  /* 금요일 점심 12시~2시는 1분마다, 나머지는 바뀐 것이 있어도 10분에 한 번(2026-10-12 회장님: 점심시간에 다 배부) */
+  var hm=Utilities.formatDate(new Date(),"Asia/Seoul","u HH:mm"),busy=hm.charAt(0)==="5"&&hm.slice(2)>="12:00"&&hm.slice(2)<"14:00";
   if(!busy&&Date.now()-(Number(P.getProperty("recvLast"))||0)<10*60*1000)return 0;
   var lk=LockService.getScriptLock();if(!lk.tryLock(15000))return 0;
   try{

@@ -2769,7 +2769,7 @@ function make(db,env){
     if(log.length){try{if(db.addMany)db.addMany("배부기록",log);else log.forEach(function(o){db.add("배부기록",o);});}catch(e){}}
     PAIDW=null;USED=null;STARS=null;
     /* 수령대상 시트는 여기서 바로 쓰지 않는다(2026-10-12 점검: 금요일 배부 단추가 시트 전체를 다시 쓰느라 느렸다).
-       쓰기 요청이 '다시 써야 함' 표시를 남기고, 1분마다 도는 recvMinute 이 맞춘다(금요일 9~17시는 매분) */
+       쓰기 요청이 '다시 써야 함' 표시를 남기고, 1분마다 도는 recvMinute 이 맞춘다(금요일 12~14시는 매분) */
   }
   /* 수령대상 시트: 지금·다가오는 수령 기간과 지난 두 번의 대상자를 관리자가 시트에서 보도록 통째로 다시 쓴다 */
   function syncRecvSheet(){
@@ -2812,14 +2812,14 @@ function make(db,env){
      구글 시트 '수령대상'은 늘 실시간. '' = 실시간 */
   function giftCutoff(){
     var t=today(env.now()),now=stamp(env.now()),hm=now.slice(11,16);
-    /* 수령 날(금요일)은 아침 9시~오후 5시만 실시간, 5시 뒤에는 오후 5시 기준(2026-10-09 회장님 지시) */
+    /* 수령 날(금요일)은 점심시간 12시~2시만 실시간(2026-10-12 회장님: 그 시간에 다 배부), 2시 뒤에는 오후 2시 기준, 오전은 9시 기준 */
     if(recvWindows().some(function(w){return t>=w.from&&t<=w.to;})){
-      if(hm>="09:00"&&hm<"17:00")return "";
-      if(hm>="17:00")return t+" 17:00:00";
+      if(hm>="12:00"&&hm<"14:00")return "";
+      if(hm>="14:00")return t+" 14:00:00";
     }
     return hm>="15:00"?t+" 15:00:00":hm>="09:00"?t+" 09:00:00":addDays(t,-1)+" 15:00:00";
   }
-  function cutLabel(cut){if(!cut)return "";var d=cut.slice(0,10),hh=cut.slice(11,13);return Number(d.slice(5,7))+"월 "+Number(d.slice(8,10))+"일 "+(hh==="09"?"오전 9시":hh==="17"?"오후 5시":"오후 3시");}
+  function cutLabel(cut){if(!cut)return "";var d=cut.slice(0,10),hh=cut.slice(11,13);return Number(d.slice(5,7))+"월 "+Number(d.slice(8,10))+"일 "+(hh==="09"?"오전 9시":hh==="14"?"오후 2시":hh==="17"?"오후 5시":"오후 3시");}
   /* 도서부 '배부 확인' 화면(2026-09-28 회장님 지시): 대상자 명단은 늘 보이고, 배부 단추는 수령 기간에만.
      기간 중이면 그 기간, 아니면 다음 기간(지금까지 모은 별 기준 예정), 다음이 없으면 지난 기간 */
   function deskView(c,who){
@@ -3702,8 +3702,10 @@ function make(db,env){
     clubMark:function(a,p){
       /* 도서부 학생과 관리자(2026-09-28)가 배부 확인 화면에서 배부를 누른다 */
       if(a.role==="admin")staff(a);else{student(a);if(!a.club)fail("도서부만 할 수 있습니다.");}
-      var dk=deskFor(conf(),ALL_CLS);
-      if(!dk.open)fail("지금은 상품권 배부 기간이 아닙니다.");
+      /* 관리자는 날짜 제한 없이(2026-10-12 회장님) — 지금·다음(예정)·지난 기간 화면 그대로. 도서부는 수령 날(금요일)만 */
+      var dk=a.role==="admin"?deskView(conf(),ALL_CLS):deskFor(conf(),ALL_CLS);
+      if(a.role!=="admin"&&!dk.open)fail("지금은 상품권 배부 기간이 아닙니다.");
+      if(dk.none)fail("정해진 수령 기간이 없습니다.");
       var ok={};dk.rows.forEach(function(x){ok[x.hakbun]=true;});
       var ids=(p.ids||[]).map(S).filter(function(h){return ok[h];});
       if(!ids.length)fail("이번 배부 대상이 아닌 학생입니다.");
