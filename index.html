@@ -1918,7 +1918,7 @@ function pDesk(){
   var tag=K.open?'<span class="pill gold">배부 중</span>':K.state==="soon"?'<span class="pill">예정</span>':'<span class="pill grey">지난 기간</span>';
   return '<h3 class="sec">'+esc(K.label)+' 상품권 배부 확인 '+tag+' '+liveStamp()+'</h3>'+
     (K.open?'<p class="sub">수령 기간 '+rangeLabel(K.from,K.to)+(K.place?' · '+esc(K.place):'')+'. 대상 학생이 <b>학번 순</b>으로 나옵니다. 학번·이름을 확인하고 매수만큼 문화상품권을 준 뒤 이름 옆 <b>배부</b>를 누르세요. 그 학생 화면에 ‘배부 완료’ 안내가 뜨고, 학생이 <b>확인</b>을 누르면 ‘수령 확인 ✓’가 붙습니다. 잘못 눌렀으면 다시 눌러 되돌립니다. 누가 눌렀는지 기록됩니다.</p>'
-      :K.state==="soon"?'<p class="sub">다음 수령 기간은 <b>'+rangeLabel(K.from,K.to)+'</b>'+(K.place?' · '+esc(K.place):'')+'입니다. 아래는 <b>지금까지 모은 별 기준</b> 예정 명단이라 기간 전까지 조금 바뀔 수 있어요. <b>배부 단추는 수령 기간에만</b> 생깁니다.</p>'
+      :K.state==="soon"?'<p class="sub">다음 수령 기간은 <b>'+rangeLabel(K.from,K.to)+'</b>'+(K.place?' · '+esc(K.place):'')+'입니다. 아래는 <b>지금까지 모은 별 기준</b> 예정 명단이라 기간 전까지 조금 바뀔 수 있어요. '+(ADM?'관리자는 지금도 배부·무르기를 할 수 있어요.':'<b>배부 단추는 수령 날(금요일)에만</b> 생깁니다.')+'</p>'
       :'<p class="sub">지난 수령 기간('+rangeLabel(K.from,K.to)+') 명단입니다. 배부 단추는 다음 수령 기간에 생깁니다.</p>')+(ADM&&!K.open?'<p class="hint">관리자는 날짜와 상관없이 배부·무르기를 할 수 있어요(도서부 학생은 금요일 수령 날만).</p>':'')+
     '<div class="desk-sum"><span>대상 <b>'+K.rows.length+'</b>명</span><span>필요한 상품권 <b>'+total+'</b>매</span><span>배부 <b>'+done.length+'</b>명 · '+given+'매</span><span>수령 확인 <b>'+acked.length+'</b>명</span></div>'+
     '<div class="row" style="align-items:flex-end;gap:8px;max-width:460px"><div class="field" style="flex:1;margin:0"><label for="desk-q">학번(4자리)이나 이름으로 조회</label><input type="search" id="desk-q" value="'+esc(ui.deskQ||"")+'" placeholder="학번 4자리(예: 3201) 또는 이름" maxlength="10" autocomplete="off"></div><button class="btn" id="desk-go">조회</button></div>'+
@@ -2756,7 +2756,7 @@ function themeAdmin(){
   var L=D.themes||[];if(!L.length)return "";
   var areas=(D.conf.areas||[]).map(function(a){return '<option>'+esc(a)+'</option>';}).join("");
   return '<h3 class="sec">이 주의 주제</h3>'+
-    '<p class="sub">한 주 동안 함께 읽어 볼 갈래를 정해 학생 <b>서가·글 쓰기</b> 맨 위에 띄웁니다. <b>한 주 상한은 그대로</b>이고 주제 책 독후감에는 <b>도장이 하나 더</b> 붙습니다(독후감 상한 안에서). 그 주 주제에 맞는 글에는 게시판에서 <b>주제</b> 표시가 붙습니다. 주제를 비우고 저장하면 그 주는 표시하지 않습니다.</p>'+
+    '<p class="sub">한 주 동안 함께 읽어 볼 갈래를 정해 학생 <b>서가·글 쓰기</b> 맨 위에 띄웁니다. <b>2026-10-12부터는 학생 화면에 주제를 띄우지 않고 덤 도장도 없습니다</b>(독후감 도장 2배는 이번 주·다음 주 퀴즈 책만). 적어 두는 것은 그대로 할 수 있어요.</p>'+
     L.map(function(t,i){
       return '<div class="form" style="max-width:640px;margin-bottom:10px"><div class="row" style="align-items:flex-end">'+
         '<div class="field" style="flex:0 0 118px;margin:0"><label>'+(i===0?'이번 주':i===1?'다음 주':'그다음 주')+'</label><div class="hint" style="padding-top:8px">'+esc(t.week.slice(5).replace("-","/"))+' 주</div></div>'+
