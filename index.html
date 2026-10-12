@@ -1227,7 +1227,7 @@ var TSUB=[["shelf","이달 추천도서","추천"],["search","도서 검색","�
 var TA=[["shelf","이달 추천도서","추천"],["search","도서 검색","검색"],["rec","권장도서","권장"],["author","작가 이야기","작가"],["wall","게시판"],["check","새 글"],["over","한눈에 보기","한눈"],["books","도서 관리","도서"],["quizadm","퀴즈 관리","퀴즈"],["print","시상"],["finish","상품권"],["desk","배부 확인","배부"],["readlog","독서 기록","독서"],["accounts","가입 현황·계정","가입"],["give","도장 주기","도장"],["tlabel","라벨·문장 쓰기","글쓰기"],["suggest","추천 도서","추천"],["idea","건의함","건의"],["guide","교사 안내","안내"]];
 function tabList(){
   if(D.me.role==="student")return (D.canWrite?TS:TJ)
-    .concat(D.me.club&&!D.preview?[["desk","배부 확인","배부"]]:[])
+    .concat(D.me.club||D.preview?[["desk","상품권 배부","상품권"]]:[])   /* 상품권은 도서부 학생이 나눠 준다(선생님 미리보기에도 보이게) */
     .concat(D.canWrite?[["idea","건의함","건의"]]:[]);
   return D.me.role==="admin"?TA:D.me.kind==="subject"?TSUB:TT;
 }
@@ -1890,6 +1890,7 @@ function feedItem(l,i,list){
 var LISTS={};
 /* ── 도서부: 상품권 배부 확인(2026-09-28) — 대상자 명단은 늘 보이고, 배부 단추는 수령 기간에만 ── */
 function pDesk(){
+  if(D.preview&&!D.me.club)return '<h3 class="sec">상품권 배부</h3>'+woong("read","이 탭은 <b>도서부 학생</b>에게만 보여요. 수령 날(금요일)에 대상 학생에게 문화상품권을 주고 이름 옆 <b>배부</b>를 누르면, 받은 학생 화면에 완료 안내가 뜨고 '내가 배부한 기록'에 남아요.");
   var K=D.giftDesk||{rows:[]},R=rule();
   if(K.none)return '<h3 class="sec">상품권 배부 확인</h3>'+woong("read","아직 정해진 수령 기간이 없어. 사서 선생님이 기간을 정하면 대상 학생 명단이 여기 나와.");
   var q=(ui.deskQ||"").trim(),rows=K.rows.filter(function(x){return !q||x.hakbun.indexOf(q)>=0||x.name.indexOf(q)>=0;});
@@ -1908,7 +1909,18 @@ function pDesk(){
       return '<div class="desk-row"><div class="nm"><div class="who1"><b>'+esc(x.hakbun)+' '+esc(x.name)+'</b>'+btn+
           (x.paid?(x.ack?'<span class="pill gold">수령 확인 ✓</span>':'<span class="hint">학생 확인 전</span>'):'')+'</div>'+
         '<small>'+esc(clsName(x.cls))+' · 별 '+x.stars+'개 → <b>'+x.vouchers+'매</b>'+(x.paid&&x.who?' · '+esc(x.who)+' 배부':'')+'</small></div></div>';}).join("")
-      :'<div class="empty">'+(q?'찾는 학생이 이번 대상 명단에 없어요(별 '+R.pair+'개부터 대상).':'이번 수령 대상 학생이 없어요.')+'</div>');
+      :'<div class="empty">'+(q?'찾는 학생이 이번 대상 명단에 없어요(별 '+R.pair+'개부터 대상).':'이번 수령 대상 학생이 없어요.')+'</div>')+
+    myGiveHTML();
+}
+/* 도서부: 내가 배부한 기록 */
+function myGiveHTML(){
+  var L=D.myGiveLog;if(!L)return "";
+  var n=L.reduce(function(a,x){return a+x.n;},0);
+  return '<h3 class="sec gap">내가 배부한 기록</h3>'+
+    (L.length?'<p class="sub">지금까지 <b>'+L.length+'명</b>에게 <b>'+n+'매</b>를 나눠 줬어요. 배부를 취소하면 기록에서도 빠져요.</p>'+
+      L.map(function(x){return '<div class="desk-row"><div class="nm"><div class="who1"><b>'+esc(x.hakbun)+' '+esc(x.name)+'</b><span class="pill">'+x.n+'매</span>'+
+        (x.ack?'<span class="pill gold">수령 확인 ✓</span>':'<span class="hint">학생 확인 전</span>')+'</div><small>'+esc(x.label)+' · '+esc(x.at.slice(5).replace("-","/"))+'</small></div></div>';}).join("")
+      :'<div class="empty">아직 배부한 기록이 없어요. 수령 날(금요일)에 배부를 누르면 여기에 남아요.</div>');
 }
 /* 도서부 학번 조회 결과: 이번 달 도장·별, 지금 별, 이번 수령 대상 여부 */
 function lookHTML(K){

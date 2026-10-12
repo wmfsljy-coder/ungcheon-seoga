@@ -3321,7 +3321,7 @@ function make(db,env){
       voteL:vb("label"),voteQ:vb("quote"),voteR:vb("review"),
       quiz:{items:quiz,done:done&&!retake?Number(done["점수"]):null,retake:retake?{prev:Number(done["점수"])||0,total:Number(done["문항수"])||0}:null,next:nextQuizBooks(),allowed:quizAllowed(),myWeek:myQuizWeek(a.id),weekMax:(function(){var n=Number(conf()["주간문제출제"]);return n>=0?n:1;})(),books:weekBooksOf(wk),bookInfo:(function(){var bl={};bookList().forEach(function(b){bl[tkey(b.t)]=b;});
         return weekBooksOf(wk).map(function(t){var b=bl[tkey(t)]||{};return {t:t,total:b.total||0,avail:b.avail,call:b.call||""};});})()},myQuiz:myQuiz,
-      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftAck:ackWaiting(a.id),quizRejected:quizRejected(a.id),weekAuthor:(function(){try{return personOfWeek(true);}catch(e){return null;}})(),giftDesk:a.club?deskView(c,ALL_CLS):null};
+      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftAck:ackWaiting(a.id),quizRejected:quizRejected(a.id),weekAuthor:(function(){try{return personOfWeek(true);}catch(e){return null;}})(),giftDesk:a.club?deskView(c,ALL_CLS):null,myGiveLog:a.club?myGiveLog(a):null};
   }
 
   function bookList(){
@@ -3682,7 +3682,7 @@ function make(db,env){
       var ok={};dk.rows.forEach(function(x){ok[x.hakbun]=true;});
       var ids=(p.ids||[]).map(S).filter(function(h){return ok[h];});
       if(!ids.length)fail("이번 배부 대상이 아닌 학생입니다.");
-      markPaid(dk.from,ids,!!p.on,(a.role==="admin"?"관리자 ":"도서부 ")+a.name);
+      markPaid(dk.from,ids,!!p.on,(a.role==="admin"?"관리자 "+a.name:"도서부 "+a.name+" ("+a.id+")"));   /* 학번까지 남겨 같은 이름도 가린다 */
       return {ok:true};},
     /* 학생: 도서부가 배부를 누른 뒤 '확인'을 누른다. 수령대상 시트 '수령확인'에 남는다 */
     giftAck:function(a,p){
@@ -4198,7 +4198,17 @@ function make(db,env){
       posts:db.rows("글").length,copyDist:(function(){var h={};db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y"){var n=Number(b["권수"])||0;h[n]=(h[n]||0)+1;}});return h;})(),
       maxCopies:(function(){var m=0;db.rows("도서").forEach(function(b){if(S(b["월"])===mon&&S(b["숨김"])!=="Y")m=Math.max(m,Number(b["권수"])||0);});return m;})(),loginMode:S(c["로그인방식"]),students:db.rows("명단").length,teachers:db.rows("교사").length};
   }
-  return {sweepCatalog:sweepCatalog,crawlCatalog:crawlCatalog,libAuthors:libAuthors,trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fillPhotos:fillPhotos,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
+  /* 도서부: 내가 배부한 기록(지급 시트 처리자 = '도서부 이름 (학번)', 옛 기록은 '도서부 이름'). 최근 것부터 */
+  function myGiveLog(a){
+    var me1="도서부 "+a.name+" ("+a.id+")",me0="도서부 "+a.name,wins=recvWindows(),lab={};
+    wins.forEach(function(w){lab[w.from]=winLabel(w);});
+    return db.rows("지급").filter(function(r){var b=S(r["처리자"]);return S(r["처리"])==="지급"&&(b===me1||b===me0);})
+      .map(function(r){return {at:S(r["시각"]).slice(0,16),label:lab[S(r["월"])]||S(r["월"]),hakbun:S(r["학번"]),name:S(r["이름"]),n:Number(r["매수"])||0,ack:S(r["수령확인"])==="확인"};})
+      .sort(function(x,y){return x.at<y.at?1:-1;}).slice(0,200);
+  }
+  /* 배부 화면 요약(점검용, 숫자만) */
+  function deskSummary(){var c=conf(),v=deskView(c,ALL_CLS);return {none:!!v.none,label:v.label||"",state:v.state||"",open:!!v.open,live:!!v.live,asOf:v.asOf||"",rows:(v.rows||[]).length,paid:(v.rows||[]).filter(function(x){return x.paid;}).length};}
+  return {deskSummary:deskSummary,sweepCatalog:sweepCatalog,crawlCatalog:crawlCatalog,libAuthors:libAuthors,trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fillPhotos:fillPhotos,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
 }
 
 return {SHEET_DOC:SHEET_DOC,TEEN:TEEN,GENRES:GENRES,make:make,HEAD:HEAD,CONF0:CONF0,CONF_DESC:CONF_DESC,AREAS:AREAS,seedBooks:seedBooks,weekKey:weekKey,libMatch:libMatch,libSearchUrl:libSearchUrl,periodOf:periodOf,seedQuotes:seedQuotes,QUOTES:QUOTES,weekOfYmd:weekOfYmd,prevMonth:prevMonth,quizQuality:quizQuality,shownTitle:shownTitle,shownAuthor:shownAuthor,AREA_CATS:AREA_CATS};

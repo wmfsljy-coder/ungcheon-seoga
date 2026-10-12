@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261012-102555";
+var CODE_VERSION="20261012-103310";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -200,6 +200,9 @@ function doGet(e){
     var trg=ScriptApp.getProjectTriggers();
     st.firstRunPending=trg.some(function(t){return t.getHandlerFunction()==="firstRun";});
     st.triggers=trg.map(function(t){return t.getHandlerFunction();}).sort().join(",");
+    /* 도서부 표시(값 종류·인원)와 배부 화면 요약 — 개인정보 없이 숫자만 */
+    try{var vals={};makeDb_().rows("명단").forEach(function(r){var v=String(r["도서부"]).trim();if(v)vals[v]=(vals[v]||0)+1;});st.club=vals;
+      var dv=Core.make(makeDb_(),makeEnv_()).deskSummary();st.desk=dv;}catch(x){st.club=String(x&&x.message||x);}
     st.recvAt=PropertiesService.getScriptProperties().getProperty("recvAt")||"";st.recvDirty=!!PropertiesService.getScriptProperties().getProperty("recvDirty");
     try{st.sheets=SpreadsheetApp.getActive().getSheets().map(function(sh){return sh.getName()+":"+sh.getLastRow();});}catch(x){}
     return ContentService.createTextOutput(JSON.stringify(st)).setMimeType(ContentService.MimeType.JSON);

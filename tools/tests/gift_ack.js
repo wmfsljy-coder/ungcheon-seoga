@@ -70,6 +70,11 @@ as("3103","clubMark",{ids:["3101"],on:false});
 must(T["지급"].find(r=>r["학번"]==="3101")["수령확인"]==="","배부를 되돌리면 수령 확인도 지운다");
 as("3103","clubMark",{ids:["3101"],on:true});
 must((as("3101","state").giftAck||[]).length===1,"다시 배부하면 학생이 다시 확인");
+/* 도서부: 내가 배부한 기록(2026-10-12 회장님) */
+const myLog=as("3103","state").myGiveLog;
+must(myLog&&myLog.some(x=>x.hakbun==="3101"&&x.n>=1),"도서부 화면에 '내가 배부한 기록'");
+must(/\(3103\)/.test(T["지급"].find(r=>r["학번"]==="3101")["처리자"]),"지급 시트 처리자에 도서부 학번까지 남는다");
+must((as("3102","state").myGiveLog)==null,"도서부가 아니면 기록 칸 없음");
 
 /* ── 기간이 끝난 뒤: 명단은 남고 단추는 닫힌다 ── */
 NOW=new Date("2026-10-12T03:00:00Z");
