@@ -10,7 +10,7 @@ const db={replace:(t,l)=>{T[t]=[];l.forEach(o=>db.add(t,o));},rows:t=>T[t],add:(
   setConf:(k,v)=>{const h=T["설정"].find(r=>r["항목"]===k);if(h)h["값"]=v;else T["설정"].push({"항목":k,"값":v})}};
 const C=()=>Core.make(db,env);C().maintain();T["주제"].length=0;db.setConf("로그인방식","구글");
 db.setConf("주간투표","2");   /* 실제 기본은 5표(2026-09-28). 이 시험은 시상 계산을 작게 보려고 2표로 — 5표는 e2e_school·vote_group 에서 잰다 */
-db.setConf("투표묶음","");   /* 이 시험은 묶음 없는 평소 달(이레 창·달마다 시상). 묶음은 vote_group.js */
+db.setConf("투표묶음","");db.setConf("독후감시상만능","");   /* 이 시험은 예전 규칙(독후감 상 = 별). 새 규칙(만능 2주간)은 award_wild.js */   /* 이 시험은 묶음 없는 평소 달(이레 창·달마다 시상). 묶음은 vote_group.js */
 const must=(c,m)=>{if(!c){console.log("✗",m);process.exitCode=1;}else console.log("✓",m);};
 const err=f=>{try{f();return "";}catch(e){return e.message;}};
 T["교사"].push({"이름":"사서","담당":"관리자","이메일":"lib@x"});
