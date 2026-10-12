@@ -29,6 +29,9 @@ h1,h2,h3,h4,.btn,button,label,.pill,.tb,.who1 b{text-wrap:balance}
 a,code,.url{overflow-wrap:anywhere}
 .chip,.pill,.board-head .count,.qbooks .qbk,.st,.callno,.who button,.tabs button{white-space:nowrap}
 .guidebanner .btn,.giftbar .btn,.ackbar .btn,.row>.btn.sm{flex:none;white-space:nowrap}
+.btn.sm{white-space:nowrap}
+.nw{white-space:nowrap}
+.meta,div.meta,.desk-row small,.evbar .et,.rv,.q,.card .rv{text-wrap:pretty}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:none}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
@@ -703,7 +706,7 @@ function clsName(c){var m=/^(\d+)-(\d+)$/.exec(c||"");return m?m[1]+"학년 "+m[
 
 /* ── 이 기기 로그인 방법 ──
    자동 로그인을 고르면 이 기기에 로그인 표(토큰)를 남긴다. 끄면 창을 닫을 때 풀린다.
-   PIN 은 서버가 확인한다(이 기기에는 저장하지 않는다). */
+   PIN은 서버가 확인한다(이 기기에는 저장하지 않는다). */
 function loginMode(){try{return localStorage.getItem(TK)?"auto":"ask";}catch(e){return "ask";}}
 /* 주소에 담긴 로그인 열쇠(구글 샌드박스가 저장소를 비워도 들어올 수 있게) */
 function urlToken(cb){
@@ -781,7 +784,7 @@ function applyState(s){
 /* ── 들어오기: 학생은 학번+이름, 교사는 이름. 처음이면 PIN 여섯 자리를 정하고, 다음부터 PIN 이나 자동 로그인 ── */
 function renderGate(){
   var g=GATE||{kind:"loading"},h="",len=(g.len||6);
-  var keepBox='<label class="agree" style="margin-top:6px"><input type="checkbox" id="g-keep" checked> 이 기기에서 <b>자동 로그인</b> <span class="hint">(내 휴대폰·내 PC 면 켜 두세요. 공용 PC 면 끄세요)</span></label>';
+  var keepBox='<label class="agree" style="margin-top:6px"><input type="checkbox" id="g-keep" checked> 이 기기에서 <b>자동 로그인</b> <span class="hint">(내 휴대폰·내 PC면 켜 두세요. 공용 PC면 끄세요)</span></label>';
   if(g.kind==="loading")h='<p class="hint" style="text-align:center">불러오는 중…</p>';
   else if(g.kind==="login"&&g.step==="student")h='<h3 class="sec">학생</h3>'+
     '<p class="sub">학번과 이름을 넣으세요. 처음이면 바로 <b>PIN '+len+'자리</b>를 정하고 들어갑니다. 명단에 없으면 담임 선생님이나 도서관에 말해 주세요.</p>'+
@@ -803,13 +806,13 @@ function renderGate(){
     '<p class="sub">다음부터 이 번호로 들어옵니다. 같은 숫자나 이어지는 숫자(111111·123456)는 쓸 수 없어요. 잊으면 선생님이 새로 정하게 해 줍니다.</p>'+
     '<div class="field"><label for="g-pin1">PIN '+len+'자리</label><input type="password" id="g-pin1" inputmode="numeric" maxlength="'+len+'" autocomplete="new-password"></div>'+
     '<div class="field"><label for="g-pin2">한 번 더</label><input type="password" id="g-pin2" inputmode="numeric" maxlength="'+len+'" autocomplete="new-password"></div>'+
-    keepBox+'<button class="btn" id="g-setpin" style="width:100%;margin-top:10px">이 PIN 으로 시작하기</button>'+
+    keepBox+'<button class="btn" id="g-setpin" style="width:100%;margin-top:10px">이 PIN으로 시작하기</button>'+
     '<div class="row" style="margin-top:10px"><button class="btn ghost sm" id="g-back">처음으로</button></div>';
   else if(g.kind==="login"&&g.step==="consent")h='<h3 class="sec">'+esc(g.name||"")+' 학생, 처음 한 번만 확인해 주세요</h3>'+
     consentHTML(g.conf)+'<button class="btn" id="g-agree2" style="width:100%" disabled>동의하고 PIN 정하기</button>'+
     '<div class="row" style="margin-top:10px"><button class="btn ghost sm" id="g-back">처음으로</button></div>';
   else if(g.kind==="login"&&g.step==="approval")h='<h3 class="sec">등록을 요청했어요</h3>'+
-    '<p class="sub"><b>'+esc(g.name||"")+'</b> 선생님 — 교사 명단에 아직 없는 이름이라 관리자(사서) 선생님께 등록 요청을 보냈습니다. 승인되면 이름으로 들어와 PIN 을 정하시면 됩니다.</p>'+
+    '<p class="sub"><b>'+esc(g.name||"")+'</b> 선생님 — 교사 명단에 아직 없는 이름이라 관리자(사서) 선생님께 등록 요청을 보냈습니다. 승인되면 이름으로 들어와 PIN을 정하시면 됩니다.</p>'+
     '<button class="btn ghost" id="g-back">처음으로</button>';
   else if(g.kind==="login")h='<h3 class="sec">누구신가요?</h3>'+
     '<p class="sub">학생은 <b>학번·이름</b>, 선생님은 <b>이름</b>으로 들어옵니다. 처음 한 번 PIN 여섯 자리를 정하면, 다음부터는 PIN 이나 자동 로그인으로 들어옵니다.</p>'+
@@ -849,12 +852,12 @@ function loginStep(extra){
     if(r.need==="pin"){GATE=Object.assign({},base,{kind:"pin",name:r.name,len:r.len});renderGate();
       setTimeout(function(){var x=$("g-pin");if(x)x.focus();},60);return;}
     if(r.token){setTok(r.token,r.remember!==false);GATE={kind:"loading"};renderGate();
-      toast(r.newPin?"PIN 을 정했습니다. 다음부터 이 번호로 들어오세요.":"로그인했습니다.");refresh();return;}
+      toast(r.newPin?"PIN을 정했습니다. 다음부터 이 번호로 들어오세요.":"로그인했습니다.");refresh();return;}
   }).catch(function(e){if(!(e&&e.__toasted))toast(e&&e.message);});
 }
 function setPinGo(){
   var a=val("g-pin1"),b=val("g-pin2");
-  if(a!==b){toast("두 번 적은 PIN 이 다릅니다.");return;}
+  if(a!==b){toast("두 번 적은 PIN이 다릅니다.");return;}
   loginStep({newPin:a,agree:true});
 }
 function setPreview(v){
@@ -1231,7 +1234,7 @@ function renderBoard(){
       (W.bonus?'이번 주 책갈피 <b>'+W.bonus+'</b> / '+(c.leafWeek||5)+'장 · ':'')+'모은 책갈피 <b>'+((ST.leaf&&ST.leaf.have)||0)+'</b>장 · '+
       '상한을 넘겨 한 활동이에요. <b>'+((ST.leaf&&ST.leaf.per)||5)+'장이 모이면 만능 도장 1개</b>가 돼요.'+
       (W.over?' 이번 주에 더 낸 '+W.over+'편은 기록만 남아요.':'')+'</span></div>':'')+
-    '<div class="mbar"><div class="lab"><span><b>'+Number(String(ST.mon||"").slice(5))+'월 도장판</b> 도장 <b>'+(ST.mStamps||0)+'</b>개 · 이번 달 별 <b>'+(ST.mStars||0)+'</b>개</span><span class="hint">다음 별까지 도장 '+ST.toNext+'개</span></div>'+
+    '<div class="mbar"><div class="lab"><span><b>'+Number(String(ST.mon||"").slice(5))+'월 도장판</b> <span class="nw">도장 <b>'+(ST.mStamps||0)+'</b>개</span> · <span class="nw">이번 달 별 <b>'+(ST.mStars||0)+'</b>개</span></span><span class="hint">다음 별까지 도장 '+ST.toNext+'개</span></div>'+
       '<div class="track" style="--cap:'+R.per+'">'+track+'</div>'+leafHTML()+
       '<div class="reset">🔄 도장과 별은 <b>계속 쌓여요.</b> 달이 바뀌어도 사라지지 않고, 별은 <b>문화상품권으로 바꿀 때만</b> 줄어들어요.</div></div>'+
     talk;
@@ -1287,7 +1290,7 @@ function renderTabs(){
   if(!PREFETCHED&&D&&D.me){PREFETCHED=true;setTimeout(function(){findHome(true);},2500);}   /* 첫 화면을 다 그린 뒤 */
   var L=tabList();
   if(!L.some(function(t){return t[0]===ui.tab;}))ui.tab=L[0][0];
-  var nav=$("tabs"),dock=L.length<=10&&D.me.role==="student"&&!isTablet(),two=dock&&L.length>6;   /* 폰 아래 막대: 6개 넘으면 두 줄. 태블릿은 PC 와 같은 위쪽 탭(2026-10-12) */
+  var nav=$("tabs"),dock=L.length<=10&&D.me.role==="student"&&!isTablet(),two=dock&&L.length>6;   /* 폰 아래 막대: 6개 넘으면 두 줄. 태블릿은 PC와 같은 위쪽 탭(2026-10-12) */
   document.body.setAttribute("data-tab",ui.tab);
   nav.classList.toggle("dock",dock);nav.classList.toggle("dock-2",two);nav.style.setProperty("--n",two?Math.ceil(L.length/2):L.length);
   document.body.classList.toggle("docked",dock);document.body.classList.toggle("dock2",two);
@@ -1847,7 +1850,7 @@ function guideHTML(){
   var key='<div class="redbox"><h4>도장 · 별 · 문화상품권 한눈에</h4><ul>'+
     '<li class="red">한 주 도장은 모두 <b>'+c.weekCap+'칸</b> — <u>讀 '+(c.writeSplit?'라벨 '+(kcap("write")/2)+'개 · 句 문장 '+(kcap("write")/2)+'개':'라벨·문장 '+kcap("write")+'개')+' · 感 독후감 '+kcap("review")+'개 · 問 퀴즈 '+kcap("quiz")+'개</u>까지, <b>萬 만능 도장</b>은 종류 상관없이 어느 칸이든 채워요</li>'+
     '<li class="red">'+(c.writeSplit?'<u>라벨 1개·문장 1개는 따로 도장</u>이에요.':'<u>라벨과 문장은 둘을 합쳐 한 개</u>예요.'+(c.writeSplitFrom?' <b>'+md(c.writeSplitFrom)+'부터는 따로 한 칸씩</b>.':''))+' 상한을 넘겨 한 활동은 <b>책갈피 한 장</b>이 되고, 책갈피는 <b>한 주 '+(c.leafWeek||5)+'장</b>까지 쌓여요(그 뒤에 낸 글은 기록만)</li>'+
-    '<li class="red"><b>책갈피 '+((D.stars&&D.stars.leaf&&D.stars.leaf.per)||5)+'장 = 만능 도장 1개</b> · 만능 도장은 <b>선생님도 찍어 주세요</b> · 그 주 '+c.weekCap+'칸이 차 있으면 <u>다음 주로 넘어가요</u></li>'+
+    '<li class="red"><b>책갈피 '+((D.stars&&D.stars.leaf&&D.stars.leaf.per)||5)+'장 = 만능 도장 1개</b> · 만능 도장은 <b>선생님이 찍어 주시기도</b> 해요 · 그 주 '+c.weekCap+'칸이 차 있으면 <u>다음 주로 넘어가요</u></li>'+
     '<li class="red">도장 '+R.per+'개 = 별 1개 · <u>도장과 별은 달이 바뀌어도 그대로 쌓여요</u> · 달마다 받은 도장·별은 내 서재에서</li>'+
     (c.giftOn?'<li class="red">별 '+R.pair+'개 = 문화상품권 '+won(R.won)+' 1매 · '+(R.max<9999?'한 번에 최대 '+R.max+'매':'매수 제한 없음')+(R.pair>1?' · 별 1개는 대상 아님':'')+'</li>'+
       '<li class="red">'+(c.recvWeekly?'<b>매주 금요일</b> 점심시간에 도서관에서 받아요':'수령 기간(공지사항에 날짜)에 도서관에서 받아요')+'. <u>받은 만큼만 별이 줄고</u>, 못 받아도 별은 그대로 남아 다음 수령 때 쓸 수 있어요</li>'
@@ -1858,7 +1861,7 @@ function guideHTML(){
       '<li><b>讀 라벨·문장</b>: <b>라벨</b>('+L.label.join("~")+'자)은 이 책을 집어 들게 만드는 한 줄 소개예요. <b>문장</b>('+L.quote.join("~")+'자)은 책에서 마음에 남은 한 줄을 그대로 옮겨 적는 거예요. '+(c.writeSplit?'<u>한 주에 라벨 '+(kcap("write")/2)+'개·문장 '+(kcap("write")/2)+'개가 따로 도장</u>이고, 더 내면 책갈피 한 장이 돼요.':'<u>둘을 합쳐 한 주 '+kcap("write")+'개</u>, 더 내면 책갈피 한 장이 돼요.')+'</li>'+
       '<li><b>感 독후감</b>('+L.review.join("~")+'자): 읽고 남은 생각. 웹 게시판에 올라가요. <u>한 주 '+kcap("review")+'개</u>까지(퀴즈 책 덤 도장도 여기에 들어가요).</li>'+
       '<li><b>問 퀴즈</b>: 문제는 <b>다음 주 퀴즈 책</b>으로 <b>한 주 '+((D.quiz&&D.quiz.weekMax)||1)+'개</b> 낼 수 있고, 성의껏 내면(품질 '+(c.quizBar||6)+'점 이상) 그 자리에서 도장 1개(선생님이 <b>반려하면 도장은 회수</b>). 이번 주 북퀴즈를 <b>절반 이상</b> 맞히면 또 1개. <u>출제와 풀이를 합쳐 한 주 '+kcap("quiz")+'개</u>까지.</li>'+
-      '<li><b>萬 만능 도장</b>: 모은 <b>책갈피 '+((D.stars&&D.stars.leaf&&D.stars.leaf.per)||5)+'장</b>이 만능 도장 1개가 되고, <b>선생님이 직접 찍어 주시기도</b> 해요. <u>라벨·문장 / 독후감 / 퀴즈 어느 것이든 대신할 수 있고</u>, 개수 제한이 없어요. 그 주 칸이 차 있으면 <b>다음 주로 넘어가</b> 쌓입니다.</li>'+
+      '<li><b>萬 만능 도장</b>: 모은 <b>책갈피 '+((D.stars&&D.stars.leaf&&D.stars.leaf.per)||5)+'장</b>이 만능 도장 1개가 되고, <b>선생님이 직접 찍어 주시기도</b> 해요. <u>라벨·문장 / 독후감 / 퀴즈 어느 것이든 대신할 수 있어요</u>. 몇 개든 받을 수 있지만 한 주 칸 안에서 찍히고, 그 주 칸이 차 있으면 <b>다음 주로 넘어가요</b>.</li>'+
       '<li><b>퀴즈 책 독후감은 도장 2배</b>: <b>이번 주·다음 주 북퀴즈 책</b>을 읽고 독후감을 쓰면 도장 <b>2개</b>. 퀴즈 책은 퀴즈 탭과 서가에 초록(이번 주)·보라(다음 주)로 보여요.</li>'+
       '<li><b>이벤트</b>: 기간을 정해 열려요. <b>도장 2배</b>, <b>추첨권</b>(글 한 편이 표 한 장), <b>반 대항</b>(우리 반 참여율), <b>미션</b>(목표를 채우면 도장 더) 네 가지가 있어요. 도장 2배 때도 <u>한 주 '+c.weekCap+'칸은 그대로</u>라 넘치면 책갈피가 돼요. 서가 맨 위 띠에서 지금 열린 이벤트를 봐요.</li>'+
       '<li><b>별 1개 = 도장 '+R.per+'개.</b> 한 주 '+c.weekCap+'칸을 다 채우면 별 하나가 되는 셈이에요. 라벨만 이어 쓰면 도장은 한 개고 나머지는 책갈피로 모여요.</li></ul>')+
@@ -1877,11 +1880,11 @@ function guideHTML(){
       '<li><b>도서 검색</b>: 학교 도서관 책을 제목·지은이로 찾아요. 옆 번호(청구기호)대로 서가에서 찾으면 돼요.</li>'+
       '<li>북퀴즈는 매주 월요일, 추천 도서 가운데 <b>'+(c.quizBooks||2)+'권 이하</b>에서 나와요(서가에 ‘이번 주 퀴즈’ 초록 표시, 다음 주 책은 한 주 앞서 ‘다음 주 퀴즈’ 보라 표시). 한 주에 <b>최소 '+(c.quizTarget||5)+'문제</b>, 좋은 학생 문제가 많으면 더 나와요. 문제 내기는 <b>다음 주 퀴즈 책</b>으로만 해요.</li></ul>')+
     sec("5. 로그인",'<ul><li>학생은 <b>학번·이름</b>, 선생님은 <b>이름</b>으로 들어와요.</li>'+
-      '<li>처음 한 번 <b>PIN 여섯 자리</b>를 정하면, 다음부터는 <b>학번+PIN</b> 으로 들어옵니다.</li>'+
-      '<li><b>자동 로그인</b>을 켜 두면 그 기기에서는 바로 들어와요. 공용 PC 면 꼭 꺼 두세요.</li>'+
-      '<li>PIN 은 다섯 번 틀리면 10분 잠깁니다. 잊었으면 담임·도서관 선생님께 말하면 새로 정할 수 있어요.</li>'+
+      '<li>처음 한 번 <b>PIN 여섯 자리</b>를 정하면, 다음부터는 <b>학번+PIN</b>으로 들어와요.</li>'+
+      '<li><b>자동 로그인</b>을 켜 두면 그 기기에서는 바로 들어와요. 공용 PC면 꼭 꺼 두세요.</li>'+
+      '<li>PIN은 다섯 번 틀리면 10분 동안 잠겨요. 잊었으면 담임·도서관 선생님께 말하면 새로 정할 수 있어요.</li>'+
       '<li>바꾸려면 <b>내 서재 맨 아래 → 로그인 방법</b>.</li></ul>')+
-    sec("6. 내 기록",'<p><b>내 서재</b>에 지금까지 쓴 글·낸 문제·퀴즈 기록·달별 도장이 모두 모여요. 기록은 '+esc(D.keepMine||c.privacy.keep||"졸업식 날까지")+' 보관한 뒤 지우고, 지우고 싶으면 '+esc(c.privacy.owner||"담당 선생님")+'께 말하면 돼요.</p>')+'</div>';
+    sec("6. 내 기록",'<p><b>내 서재</b>에 지금까지 쓴 글·낸 문제·퀴즈 기록·달별 도장이 모두 모여요. 기록은 '+esc(D.keepMine||c.privacy.keep||"졸업식 날까지")+' 보관한 뒤 지우고, 지우고 싶으면 '+esc(c.privacy.owner||"담당 선생님")+'에게 말하면 돼요.</p>')+'</div>';
 }
 function openGuide(){
   $("reader").innerHTML='<div class="rbox" style="max-width:680px"><div class="rtop"><span class="pill gold">이용 안내</span><button class="x" type="button" data-rclose="1" aria-label="닫기">×</button></div>'+
@@ -2368,7 +2371,7 @@ function pJoin(){
   var tea="";
   if(J.teachers){
     var T0=J.teachers;
-    tea='<h3 class="sec gap">선생님 가입</h3><p class="libsum">'+T0.total+'분 중 <b>'+T0.pin+'분</b>이 PIN 을 정했습니다.</p>'+
+    tea='<h3 class="sec gap">선생님 가입</h3><p class="libsum">'+T0.total+'분 중 <b>'+T0.pin+'분</b>이 PIN을 정했습니다.</p>'+
       (T0.wait.length?'<div class="jwait"><b>아직 안 들어오신 분</b><div>'+T0.wait.map(function(x){
         return '<span class="pill grey">'+esc(x.name)+' · '+esc(x.job)+'</span>';}).join(" ")+'</div></div>':'');
   }
@@ -2389,7 +2392,7 @@ function pAccounts(){
       '<label for="acc-q">학번이나 이름</label><input type="search" id="acc-q" value="'+esc(ui.accQ||"")+'" placeholder="예) 1101 또는 김서준"></div>'+
       '<button class="btn" id="acc-go">찾기</button></div>'+
     '<h3 class="sec gap">학생 등록해 주기</h3>'+
-    '<p class="sub">학번(네 자리)과 이름을 적어 두면 그 학생이 로그인 화면에서 <b>학번·이름</b>으로 들어와 PIN 을 정합니다. 명단에 없는 학번이면 새 줄이 만들어지고, 구글 시트 <b>명단</b> 탭에 학번순으로 정리됩니다. 특이사항은 <b>비고</b>에 적어 두세요.</p>'+
+    '<p class="sub">학번(네 자리)과 이름을 적어 두면 그 학생이 로그인 화면에서 <b>학번·이름</b>으로 들어와 PIN을 정합니다. 명단에 없는 학번이면 새 줄이 만들어지고, 구글 시트 <b>명단</b> 탭에 학번순으로 정리됩니다. 특이사항은 <b>비고</b>에 적어 두세요.</p>'+
     '<div class="form" style="max-width:640px"><div class="row" style="align-items:flex-end">'+
       '<div class="field" style="flex:0 0 120px;margin:0"><label for="ra-h">학번</label><input type="text" id="ra-h" inputmode="numeric" maxlength="4" placeholder="1101"></div>'+
       '<div class="field" style="flex:0 0 130px;margin:0"><label for="ra-n">이름</label><input type="text" id="ra-n"></div>'+
@@ -2890,7 +2893,7 @@ function stampNote(){
 }
 function guideHomeroom(){
   return '<h4>학년 담당 선생님이 할 일 — 주 2분</h4>'+todo([
-    ["시작할 때","조회 시간에 앱 주소(QR)를 알려 주세요. 학생은 처음 한 번 <b>학번·이름 → 동의 → PIN 여섯 자리 정하기</b>로 들어오고, 그 뒤로는 학번과 PIN 입니다. <b>PIN 은 남에게 알려 주지 말라고 꼭 일러 주세요</b> — 학번과 이름은 친구들이 아는 정보라 먼저 등록한 사람이 계정을 갖게 됩니다. 문제가 생기면 계정 관리에서 <b>PIN 초기화</b>를 해 주세요. 공용 PC 는 자동 로그인을 끄게 하세요."],
+    ["시작할 때","조회 시간에 앱 주소(QR)를 알려 주세요. 학생은 처음 한 번 <b>학번·이름 → 동의 → PIN 여섯 자리 정하기</b>로 들어오고, 그 뒤로는 학번과 PIN 입니다. <b>PIN은 남에게 알려 주지 말라고 꼭 일러 주세요</b> — 학번과 이름은 친구들이 아는 정보라 먼저 등록한 사람이 계정을 갖게 됩니다. 문제가 생기면 계정 관리에서 <b>PIN 초기화</b>를 해 주세요. 공용 PC는 자동 로그인을 끄게 하세요."],
     ["로그인하면","맨 위 <b>새 소식</b>에 지난번 확인 이후 우리 반 새 글·새로 등록한 학생·상품권 기준을 넘은 학생·뽑힌 퀴즈 문제가(상품권 수령 날엔 그날 대상 학생도) 모여 있어요. 다 보셨으면 <b>확인했어요</b>."],
     ["학기 말","<b>독서 기록</b> 탭에서 학생별 읽은 책을 ‘제목(지은이)’ 형식으로 복사하거나 CSV로 받아 생활기록부 독서활동상황에 씁니다(1학기·2학기 버튼으로 기간 선택)."],
     ["아무 때나","<b>새 글</b> 탭을 훑어보고 문제가 있는 글만 <b>내리기</b>. 맞춤법·문장력은 보지 않습니다. 인터넷 서평·AI 글을 옮겼거나 누군가를 겨냥한 글만 내립니다."],
@@ -2910,23 +2913,23 @@ function guideLibrarian(){
   return '<h4>담당(사서) 선생님이 할 일</h4>'+todo([
     ["매일 · 자동","7시·15시·0시에 독서로에서 서가 책의 소장·대출 상태를 새로 받아 옵니다. 할 일 없음."],
     ["매달 1일 · 자동","0시에 <b>이번 달 추천 도서</b>를 청소년 권장도서 가운데 우리 학교에 있는 책에서 12개 영역으로 나눠 "+(D.conf.monthN||20)+"권 새로 뽑습니다(시트 <b>권장도서</b> 탭). 첫 주에 <b>도서 관리</b>에서 훑어보고 어울리지 않는 책은 <b>빼기</b>."],
-    ["월요일 · 자동","0시에 이번 주 퀴즈 책("+(D.conf.quizBooks||2)+"권 이하)을 정하고 북퀴즈 "+D.conf.quizTarget+"문제를 채웁니다(품질 좋은 학생 문제 먼저, 모자라면 문제 은행). 아침에 <b>퀴즈 관리</b>에서 출제된 학생 문제만 훑어보세요."],
+    ["월요일 · 자동","0시에 이번 주 퀴즈 책("+(D.conf.quizBooks||2)+"권 이하)을 정하고 북퀴즈를 채웁니다 — 품질 좋은 학생 문제는 모두, 그래도 "+D.conf.quizTarget+"문제가 안 되면 문제 은행으로 "+D.conf.quizTarget+"문제까지. 아침에 <b>퀴즈 관리</b>에서 출제된 학생 문제만 훑어보세요."],
     ["매달 말 · 자동","다음 달 추천 도서를 <b>7일 전에 미리</b> 뽑고 그 책들로 문제 은행을 만들어 둡니다. <b>도서 관리</b>의 ‘다음 달 추천 도서’에서 미리 보고 어울리지 않는 책은 빼기."],
     ["매달 8일쯤","<b>월간 집계</b>에서 지난달 글 수상 처리와 참여 추첨 → 조회 때 발표. 투표는 상시(글이 올라온 날부터 7일 · 학생·선생님 모두 주마다 부문별 5표)이고, <b>라벨·문장 "+((D.awardTops||{}).label||10)+"위까지 만능 도장 1개, 독후감 "+((D.awardTops||{}).review||10)+"위까지 만능 도장 2개(말일 다음 주부터 한 주에 1개씩)가 자동</b>으로 갑니다."],
     ["매달 첫 주","<b>시상</b> 탭에서 <b>이달의 한 줄</b> 시상과 포스터·상장 인쇄."],
     ["학생이 올 때","도장판 화면을 보여 주면 새로 찬 칸만큼 스티커."],
-    ["수령 날","구글 시트 <b>수령기간</b> 탭의 날짜(지금은 <b>매주 금요일</b>, 쉬는 날은 그 줄을 지우면 됨). 도서부가 ‘배부 확인’에서 <b>배부 완료</b>를 누르면 학생 화면에 ‘수령했어요’. ‘상품권’ 탭에서 확인·CSV(수령 대장)."],
+    ["수령 날","구글 시트 <b>수령기간</b> 탭의 날짜(지금은 <b>매주 금요일</b>, 쉬는 날은 그 줄을 지우면 됨). 도서부가 ‘상품권 배부’ 탭에서 <b>배부</b>를 누르면 학생 화면 맨 위에 ‘수령받았어요 확인’이 뜹니다. 점심 12시~2시에는 명단이 실시간으로 바뀌어요. 관리자는 ‘배부 확인’에서 날짜와 상관없이 배부·무르기를 할 수 있고, 모든 배부·무르기는 시트 ‘배부기록’에 남습니다. ‘상품권’ 탭에서 확인·CSV(수령 대장)."],
     ["보유 기간이 끝나면","시트를 ‘사본 만들기’로 보관한 뒤 원본의 명단·글에서 학생 정보를 지웁니다(개인정보 보유 기간)."]
   ])+
   '<h4>화면 사용법</h4>'+howto([
     ["월간 집계","지난달 글의 득표 순위와 글쓴이(이 화면에서만 보임). 이미 상을 받은 학생은 표시되니 건너뛰세요. ‘수상 처리’한 글은 게시판에 ‘이달의 글’로 뜹니다. <b>참여 추첨</b>은 지난달에 한 편이라도 낸 학생 중 상을 안 받은 학생을 무작위로 뽑습니다. 순위에 따른 만능 도장(라벨·문장 1개, 독후감 2개를 말일 다음 주부터 한 주에 1개씩)은 따로 자동으로 찍힙니다."],
-    ["상품권 공개","설정 <b>상품권공개</b>가 N 이면 학생 화면에 상품권 이야기가 나오지 않고 별만 쌓입니다. Y 로 바꾸면 별 "+rule().pair+"개 = 문화상품권 안내, 수령 알림·공지가 켜집니다."],
+    ["상품권 공개","설정 <b>상품권공개</b>가 N이면 학생 화면에 상품권 이야기가 나오지 않고 별만 쌓입니다. Y로 바꾸면 별 "+rule().pair+"개 = 문화상품권 안내, 수령 알림·공지가 켜집니다."],
     ["상품권","수령 기간을 골라 대상 학생의 별·매수·배부 여부를 봅니다. ‘배부 완료’/‘대상 모두 배부 완료’, CSV(수령 서명 칸). 기준은 설정 별당도장·상품권당별·월최대매수·상품권금액."],
     ["도서 관리","서가의 책마다 소장·대출 가능 권수·청구기호. <b>빼기</b>로 서가에서 내리고, <b>이번 달 추천 도서 다시 뽑기</b>로 이번 달 책을 새로 뽑습니다. 자동으로 못 찾은 책은 ‘검색해 보기’ 후 체크. 이번 달 추천 도서에 한 권 더하기(학교에 있는 책만)도 여기서."],
     ["퀴즈 관리","이번 주 북퀴즈는 추천 도서 가운데 "+(D.conf.quizBooks||2)+"권 이하에서 나옵니다. 아래쪽 <b>문제 은행</b>에서 달마다 미리 만든 문제를 보고 뺄 수 있습니다. 학생은 <b>다음 주 퀴즈 책으로만</b> 낼 수 있고(그래서 학생 문제는 ‘다음 주 출제’만 됩니다), 제출할 때 품질 점수(10점: 쪽수 3, 보기 3, 정답 안 튐 1, 해설 2, 문제 길이 1)가 매겨져 점수순으로 보입니다. 자동 출제를 기다리지 않고 직접 ‘다음 주 출제’로 골라 둬도 됩니다(출제된 주가 오면 뽑힌 학생은 퀴즈 칸이 찹니다). 검색으로 풀리는 문제는 반려. <b>도장을 받은 학생 문제를 반려(출제 취소)하면 그 문제 출제 도장은 회수되고, 학생 화면에 ‘반려되었다’는 안내가 떠서 학생이 확인을 누릅니다.</b> <b>‘확인만(출제 안 함)’</b>은 학생 문제를 보았다는 표시로, 도장은 그대로 두고 북퀴즈 자동 출제에서는 뺍니다(‘다시 대기로’로 되돌릴 수 있음). ‘이번 주 빈자리 지금 채우기’로 바로 채울 수도 있습니다."],
     ["시트","<b>설정</b> 탭에서 프로그램 이름(겨울엔 ‘웅천 겨울 서가’), 게시 방식(바로/확인), 주간·월간 도장 수, 상품권 기준, 이달의 권수, 개인정보 보유 기간을 바꿉니다. <b>교사</b> 탭에 담임을 이메일·이름·담당(3-2)으로, 담당 교사는 담당 ‘전체’로 넣습니다."]
   ])+
-  '<h4>도서부(학생 운영진)</h4>'+todo([["매주 금요일 점심","도서관에서 문화상품권 배부. 앱 <b>배부 확인</b>에 대상 학생이 학번 순으로 나오고(30초마다 새로), 준 뒤 이름 옆 <b>배부</b>를 누릅니다. 학생이 앱에서 확인을 누르면 ‘수령 확인 ✓’."],["매달 첫 주","이달의 한 줄 포스터와 이달의 글을 도서관 게시판에 붙입니다. 3~4명이 20분."]]);
+  '<h4>도서부(학생 운영진)</h4>'+todo([["매주 금요일 점심","도서관에서 문화상품권 배부. 앱 <b>상품권 배부</b> 탭에 대상 학생이 학번 순으로 나오고(12시~2시에는 30초마다 새로), 준 뒤 이름 옆 <b>배부</b>를 누릅니다. 잘못 눌렀으면 <b>무르기</b>. 학생이 앱에서 확인을 누르면 ‘수령 확인 ✓’."],["매달 첫 주","이달의 한 줄 포스터와 이달의 글을 도서관 게시판에 붙입니다. 3~4명이 20분."]]);
 }
 /* 담당: 학생 공지사항 쓰기·내리기 */
 function ideaAdmin(){
@@ -2955,11 +2958,11 @@ function noticeAdmin(){
   var L=D.allNotices||[],t=D.today||"";
   var list=L.length?'<div class="scrollx"><table><tr><th>공지</th><th>대상</th><th>기간</th><th></th></tr>'+L.map(function(n){
     var live=!n.hidden&&(!n.from||t>=n.from)&&(!n.to||t<=n.to);
-    return '<tr><td><b>'+esc(n.title)+'</b>'+(n.body?'<div class="hint">'+esc(n.body)+'</div>':'')+'</td><td>'+esc(n.who)+'</td><td>'+(rangeLabel(n.from,n.to)||'늘')+
+    return '<tr><td><b>'+esc(n.title)+'</b>'+(n.body?'<div class="hint">'+esc(n.body)+'</div>':'')+'</td><td>'+esc(n.who)+'</td><td>'+(rangeLabel(n.from,n.to)||(n.pinned?'':'기간 없음'))+
       (n.pinned?' <span class="pill gold">늘 맨 위</span>':'')+
       (n.hidden?' <span class="pill grey">내림</span>':live?' <span class="pill">보이는 중</span>':'')+'</td>'+
       '<td><button class="btn ghost sm" data-nhide="'+esc(n.id)+'" data-on="'+(n.hidden?0:1)+'">'+(n.hidden?'다시 올리기':'내리기')+'</button></td></tr>';}).join("")+'</table></div>':'';
-  return '<h3 class="sec">공지사항</h3><p class="sub">학생 화면 오른쪽(폰은 서가 맨 위) <b>공지사항</b>에 나갑니다. <b>구글 시트 ‘공지’ 탭</b>에서 줄을 더해도 똑같이 올라갑니다. <b>늘 맨 위</b>로 두면 기간과 상관없이 규칙 안내처럼 붙어 있습니다. 상품권 배부 안내는 설정의 <b>상품권배부</b> 날짜로 자동으로 뜨니 따로 쓰지 않아도 됩니다.</p>'+
+  return '<h3 class="sec">공지사항</h3><p class="sub">학생 화면 오른쪽(폰은 서가 맨 위) <b>공지사항</b>에 나갑니다. <b>구글 시트 ‘공지’ 탭</b>에서 줄을 더해도 똑같이 올라갑니다. <b>늘 맨 위</b>로 두면 기간과 상관없이 규칙 안내처럼 붙어 있습니다. 상품권 수령 안내는 시트 <b>수령기간</b> 탭의 날짜(매주 금요일)로 자동으로 뜨니 따로 쓰지 않아도 됩니다.</p>'+
     '<div class="form" style="max-width:560px"><div class="field"><label for="nt-t">제목</label><input type="text" id="nt-t" maxlength="60" placeholder="예) 이번 주 금요일 도서관 휴관"></div>'+
     '<div class="field"><label for="nt-b">내용</label><textarea id="nt-b" rows="3" maxlength="300"></textarea></div>'+
     '<div class="row"><div class="field"><label for="nt-f">보이기 시작</label><input type="date" id="nt-f" value="'+esc(t)+'"></div>'+
@@ -2982,7 +2985,7 @@ function guideRoles(){
     ["관리자","담당 <b>전체</b>. 모든 탭 + 구글 시트. 시트는 관리자(사서) 선생님만 공유해 두세요 — 다른 선생님과 학생은 앱으로만 씁니다."],
     ["학년 담당","담당 <b>3학년</b>(또는 3). 그 학년 전체의 새 글·상품권·독서 기록·계정 등록 풀기, 추천 도서 넣기, 선생님 라벨."],
     ["교사","담당 <b>교사</b>(그 밖 모두). 분야를 골라 추천 도서 넣기, 선생님 라벨, 도서 검색. 학생 이름이 나오는 기록은 보지 않습니다."],
-    ["도서부","명단 시트 <b>도서부</b> 칸에 Y. 학생 화면에 ‘배부 확인’ 탭이 생겨 상품권 배부 기간에 받은 학생을 체크합니다(누가 체크했는지 기록)."],
+    ["도서부","명단 시트 <b>도서부</b> 칸에 Y. 학생 화면에 ‘상품권 배부’ 탭이 생겨 수령 날(금요일)에 받은 학생을 체크합니다(명단은 목요일부터 보임, 누가 눌렀는지 기록, 잘못 누르면 ‘무르기’)."],
     ["학생","명단 시트에 있는 학생."]]);
 }
 function pGuide(){
@@ -3051,13 +3054,13 @@ document.addEventListener("click",function(e){
   if(id==="lg-copy"){var e0=$("lg-url");if(e0){e0.select();try{document.execCommand("copy");toast("주소를 복사했습니다. 즐겨찾기에 붙여 넣으세요.");}catch(x){toast("길게 눌러 복사해 주세요.");}}return;}
   if(id==="lg-auto"){var on=!$("lg-autobox").checked;return;}
   if(id==="lg-pin"){var o=val("lg-p0"),n1=val("lg-p1"),n2=val("lg-p2");
-    if(n1!==n2){toast("새 PIN 을 두 번 같게 적어 주세요.");return;}
-    act("pinChange",{pin:o,newPin:n1},"PIN 을 바꿨습니다.").then(function(){["lg-p0","lg-p1","lg-p2"].forEach(function(k){var e2=document.getElementById(k);if(e2)e2.value="";});}).catch(function(){});return;}
+    if(n1!==n2){toast("새 PIN을 두 번 같게 적어 주세요.");return;}
+    act("pinChange",{pin:o,newPin:n1},"PIN을 바꿨습니다.").then(function(){["lg-p0","lg-p1","lg-p2"].forEach(function(k){var e2=document.getElementById(k);if(e2)e2.value="";});}).catch(function(){});return;}
   if(id==="lg-out"){call("logout",{}).catch(function(){}).then(function(){setTok("");D=null;GATE={kind:"login",step:"choose"};renderAll();toast("로그아웃했습니다.");});return;}
   if(id==="g-stu"||id==="g-tch"){GATE=Object.assign({},GATE||{},{kind:"login",step:id==="g-stu"?"student":"teacher"});renderGate();setTimeout(function(){var x=$(id==="g-stu"?"g-h":"g-n");if(x)x.focus();},30);return;}
   if(id==="g-back"){var g0=GATE||{},nx=g0.step==="student"?"teacher":g0.step==="teacher"?"student":"choose";
     GATE={kind:"login",step:nx,email:g0.email,name:g0.name,conf:g0.conf};renderGate();return;}
-  if(id==="logout"){if(!window.confirm("로그아웃할까요? 다음에 들어올 때 PIN 을 다시 넣아야 해요."))return;
+  if(id==="logout"){if(!window.confirm("로그아웃할까요? 다음에 들어올 때 PIN을 다시 넣어야 해요."))return;
     call("logout",{}).catch(function(){}).then(function(){setTok("");D=null;GATE={kind:"login",step:"choose"};renderAll();refresh();});return;}
   if(id==="g-agree"){call("consent",{agree:true}).then(function(){toast("동의했습니다.");return refresh();}).catch(function(e){if(!(e&&e.__toasted))toast(e&&e.message);});return;}
   if(id==="s-go"){doSearch(val("s-q"));return;}
@@ -3169,14 +3172,14 @@ document.addEventListener("click",function(e){
       var e=document.getElementById("rb-t");if(e&&!r.badN)e.value="";
       if(ui.accQ)call("rosterFind",{q:ui.accQ}).then(function(x){ui.accOut=x;renderPanel();});
     }).catch(function(e){if(!(e&&e.__toasted))toast(e&&e.message);});return;}
-  if(id==="ra-go"){act("rosterAdd",{hakbun:val("ra-h"),name:val("ra-n"),memo:val("ra-b")},"명단에 넣었습니다. 그 학생이 학번·이름으로 들어와 PIN 을 정하면 됩니다.").then(function(){
+  if(id==="ra-go"){act("rosterAdd",{hakbun:val("ra-h"),name:val("ra-n"),memo:val("ra-b")},"명단에 넣었습니다. 그 학생이 학번·이름으로 들어와 PIN을 정하면 됩니다.").then(function(){
       ["ra-h","ra-n","ra-b"].forEach(function(k){var e=document.getElementById(k);if(e)e.value="";});
       if(ui.accQ)call("rosterFind",{q:ui.accQ}).then(function(r){ui.accOut=r;renderPanel();});}).catch(function(e){if(!(e&&e.__toasted))toast(e&&e.message);});return;}
   if(d.unlock){act("unlockAccount",{hakbun:d.unlock},"잠금을 풀었습니다.").then(function(){
       if(ui.accQ)call("rosterFind",{q:ui.accQ}).then(function(r){ui.accOut=r;renderPanel();});}).catch(function(e){if(!(e&&e.__toasted))toast(e&&e.message);});return;}
   if(id==="acc-go"){ui.accQ=val("acc-q");saveUI();call("rosterFind",{q:ui.accQ}).then(function(r){ui.accOut=r;renderPanel();}).catch(function(e){if(!(e&&e.__toasted))toast(e&&e.message);});return;}
   if(d.pinreset||d.accfull){var hb0=d.pinreset||d.accfull,full=!!d.accfull;
-    act(full?"resetAccount":"pinReset",{hakbun:hb0,full:full},hb0+" 학생은 다음에 들어올 때 PIN 을 새로 정합니다."+(full?" 개인정보 동의도 다시 받습니다.":"")).then(function(){
+    act(full?"resetAccount":"pinReset",{hakbun:hb0,full:full},hb0+" 학생은 다음에 들어올 때 PIN을 새로 정합니다."+(full?" 개인정보 동의도 다시 받습니다.":"")).then(function(){
       if(ui.accQ)call("rosterFind",{q:ui.accQ}).then(function(r){ui.accOut=r;renderPanel();});}).catch(function(e){if(!(e&&e.__toasted))toast(e&&e.message);});return;}
 
   if(id==="p-go"){doPrint();return;}

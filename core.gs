@@ -117,6 +117,7 @@ var CONF_DESC={
   "작가고침판":"(자동 기록) 손대지 마세요",
   "라벨문장2판":"(자동 기록) 손대지 마세요",
   "공지1012판":"(자동 기록) 손대지 마세요",
+  "공지1012b판":"(자동 기록) 손대지 마세요",
   "추천방식":"권장 = 권장도서 시트(인터넷 서점·권장 목록의 청소년 도서 중 우리 학교에 있는 책)에서 뽑음 / 장르 = 예전처럼 장서 대분류에서 무작위",
   "권장도서판":"(자동 기록) 손대지 마세요",
   "추천묶음":"여러 달을 한 번의 추천으로 묶기. 예: 2026-09~2026-10 (9월 추천을 10월 말까지). 여러 개는 쉼표로",
@@ -762,14 +763,14 @@ var SHEET_DOC={
        "도서부":["도서부면 Y. 상품권 배부 화면이 열립니다","Y"],
        "등록방법":["본인 / 선생님(계정 관리에서 넣은 경우)","본인"],"등록일":["명단에 들어온 날(자동)","2026-09-22 08:00:00"],
        "최근접속":["마지막으로 들어온 때(자동)","2026-09-22 12:30:00"],"비고":["특이사항을 자유롭게","전학생, 9월부터 참여"],
-       "핀":["로그인 PIN 을 섞어 둔 값(원문 아님). 손대지 마세요","(긴 글자)"],"핀설정":["PIN 을 정한 때(자동)","2026-09-22 08:05:00"],
-       "실패":["PIN 을 잘못 넣은 횟수(자동)","0"],"잠금":["이 시각까지 잠김(자동). 계정 관리에서 풀 수 있습니다",""],
+       "핀":["로그인 PIN을 섞어 둔 값(원문 아님). 손대지 마세요","(긴 글자)"],"핀설정":["PIN을 정한 때(자동)","2026-09-22 08:05:00"],
+       "실패":["PIN을 잘못 넣은 횟수(자동)","0"],"잠금":["이 시각까지 잠김(자동). 계정 관리에서 풀 수 있습니다",""],
        "이메일":["옛 방식에서 쓰던 칸. 지금은 쓰지 않습니다",""]}},
   "교사":{d:"선생님 명단과 등급. 이름으로 로그인합니다.",edit:"이름·담당을 고칩니다",
     c:{"이름":["로그인할 때 적는 이름(동명이인 금지)","박서가"],
        "담당":["관리자 / 1학년 / 2학년 / 3학년 / 교사 중 하나(드롭다운)","관리자"],
        "마지막확인":["새 소식을 확인한 때(자동)","2026-09-22 09:00:00"],
-       "핀":["PIN 을 섞어 둔 값. 손대지 마세요","(긴 글자)"],"핀설정":["PIN 을 정한 때(자동)",""],
+       "핀":["PIN을 섞어 둔 값. 손대지 마세요","(긴 글자)"],"핀설정":["PIN을 정한 때(자동)",""],
        "실패":["잘못 넣은 횟수(자동)","0"],"잠금":["이 시각까지 잠김(자동)",""],
        "이메일":["상품권 안내 메일을 받을 주소(없어도 됩니다)","teacher@school.kr"]}},
   "도서":{d:"이번 달·다음 달 추천 도서. 매달 1일에 앱이 새로 뽑습니다. 손으로 넣기보다 화면에서 넣으세요.",edit:"숨김에 Y 로 빼는 정도만",
@@ -1212,7 +1213,7 @@ function make(db,env){
       return sorted.map(function(r){var o={};HEAD["명단"].forEach(function(h){o[h]=S(r[h]);});return o;});
     }
     if(!order(db.rows("명단").slice()))return false;    /* 이미 학번순이면 잠그지도 않는다 */
-    /* 명단에는 PIN 이 들어 있다: 잠근 채 새로 읽어 정렬한다(묵은 사본으로 쓰면 방금 정한 PIN 이 지워진다) */
+    /* 명단에는 PIN이 들어 있다: 잠근 채 새로 읽어 정렬한다(묵은 사본으로 쓰면 방금 정한 PIN이 지워진다) */
     if(db.rewrite)return db.rewrite("명단",order);
     var out=order(db.rows("명단").slice());if(!out)return false;
     db.replace("명단",out);return true;
@@ -1283,6 +1284,9 @@ function make(db,env){
     if(S(conf()["라벨문장2판"])!=="1"){setConf("주간라벨문장글","2");
       try{var wt12=weekNoticeText(conf());db.rows("공지").forEach(function(r){if(S(r["제목"])==="한 주 도장은 다섯 칸")db.set("공지","id",S(r["id"]),{"내용":wt12});});}catch(e){}
       setConf("라벨문장2판","1");}
+    /* 공지 문장 다듬기(2026-10-12 점검: '첫 편이 도장·나머지는' → '첫 편은 도장, 나머지는'). 한 번만 */
+    if(S(conf()["공지1012b판"])!=="1"){try{var wt14=weekNoticeText(conf());db.rows("공지").forEach(function(r){if(S(r["제목"])==="한 주 도장은 다섯 칸")db.set("공지","id",S(r["id"]),{"내용":wt14});});}catch(e){}
+      setConf("공지1012b판","1");}
     /* 2026-10-12 규정 정리를 '한 주 도장은 다섯 칸' 공지에 다시 쓴다(5칸 고정·퀴즈 책 독후감 2배·문제 내기 한 주 1개). 한 번만 */
     if(S(conf()["공지1012판"])!=="1"){try{var wt13=weekNoticeText(conf());db.rows("공지").forEach(function(r){if(S(r["제목"])==="한 주 도장은 다섯 칸")db.set("공지","id",S(r["id"]),{"내용":wt13});});}catch(e){}
       setConf("공지1012판","1");}
@@ -2126,7 +2130,7 @@ function make(db,env){
     return {token:t,remember:!(p&&p.remember===false)};
   }
   /* 그 계정으로 로그인해 둔 기기를 모두 푼다. keepHash 를 주면 그 기기 하나만 남긴다
-     (PIN 을 바꾼 본인은 그대로 쓰고, 새어 나간 링크·다른 기기만 끊기게) */
+     (PIN을 바꾼 본인은 그대로 쓰고, 새어 나간 링크·다른 기기만 끊기게) */
   function revokeAcc(acc,keepHash){
     var up={};db.rows("기기").forEach(function(r){
       if(S(r["계정"])===S(acc)&&S(r["해제"])!=="Y"&&S(r["토큰"])!==S(keepHash||""))up[S(r["토큰"])]={"해제":"Y"};});
@@ -2190,7 +2194,7 @@ function make(db,env){
   function maskEmail(e){var m=/^([^@]{1,2})[^@]*(@.*)$/.exec(S(e));return m?m[1]+"***"+m[2]:S(e);}
   /* 학생: 학번·이름·메일(명단과 맞아야 함) / 교사: 이름·메일(교사 시트에 이름이 있으면 바로, 없으면 관리자 승인 요청) */
   /* ── 로그인: 학번(학생)·이름(교사) + PIN 여섯 자리 ──
-     PIN 은 시트에 해시로만 둡니다(원문은 어디에도 없습니다). 다섯 번 틀리면 10분, 열 번 틀리면 하루 잠깁니다.
+     PIN은 시트에 해시로만 둡니다(원문은 어디에도 없습니다). 다섯 번 틀리면 10분, 열 번 틀리면 하루 잠깁니다.
      자동 로그인을 고르면 이 기기에 로그인 표(토큰)를 남겨 다음부터 바로 들어옵니다. */
   function pinLen(){var n=Number(conf()["핀자릿수"])||6;return Math.min(8,Math.max(4,n));}
   function accKey(role,id){return (role==="teacher"?"t:":"s:")+S(id);}
@@ -2220,7 +2224,7 @@ function make(db,env){
     db.set(sheet,keyCol,keyVal,patch);
     if(n>=10)fail("열 번 틀려서 하루 동안 잠깁니다. 선생님께 말하면 바로 풀어 주실 수 있어요.");
     if(n>=5)fail("다섯 번 틀려서 10분 동안 잠깁니다. 잠시 뒤 다시 해 주세요.");
-    fail("PIN 이 맞지 않아요. ("+n+"/5)");
+    fail("PIN이 맞지 않아요. ("+n+"/5)");
   }
   function loginOk(sheet,keyCol,keyVal,role,id,p){
     db.set(sheet,keyCol,keyVal,{"실패":"0","잠금":"","최근접속":stamp(env.now())});
@@ -2276,7 +2280,7 @@ function make(db,env){
   }
   /* 내 PIN 바꾸기(로그인한 사람) */
   /* 본인이 PIN 바꾸기.
-     - 지금 PIN 을 틀리면 로그인과 같은 시도 횟수 제한이 걸린다(5회 10분, 10회 하루)
+     - 지금 PIN을 틀리면 로그인과 같은 시도 횟수 제한이 걸린다(5회 10분, 10회 하루)
      - 바꾸고 나면 이 기기만 남기고 나머지 기기 로그인은 모두 풀린다
        (로그인 링크가 새어 나갔을 때 PIN 변경만으로 되돌릴 수 있게) */
   function pinChange(a,p){
@@ -2284,14 +2288,14 @@ function make(db,env){
     var acc,left,now=env.now();
     if(a.role==="student"){
       var r=db.rows("명단").filter(function(x){return S(x["학번"])===a.id;})[0];if(!r)fail("명단에서 찾지 못했습니다.");
-      left=lockLeft(r);if(left)fail("PIN 이 잠겨 있습니다. "+left+"분 뒤에 다시 해 주세요.");
+      left=lockLeft(r);if(left)fail("PIN이 잠겨 있습니다. "+left+"분 뒤에 다시 해 주세요.");
       if(S(r["핀"])&&pinHash(accKey("student",a.id),S(p.pin))!==S(r["핀"]))pinFail("명단","학번",a.id,r);
       if(S(p.newPin)===S(a.id))fail("학번과 같은 번호는 쓸 수 없어요.");
       db.set("명단","학번",a.id,{"핀":pinHash(accKey("student",a.id),S(p.newPin)),"핀설정":stamp(now),"실패":"0","잠금":""});
       acc=accKey("student",a.id);
     }else{
       var t=db.rows("교사").filter(function(x){return S(x["이름"])===a.name;})[0];if(!t)fail("교사 명단에서 찾지 못했습니다.");
-      left=lockLeft(t);if(left)fail("PIN 이 잠겨 있습니다. "+left+"분 뒤에 다시 해 주세요.");
+      left=lockLeft(t);if(left)fail("PIN이 잠겨 있습니다. "+left+"분 뒤에 다시 해 주세요.");
       if(S(t["핀"])&&pinHash(accKey("teacher",a.name),S(p.pin))!==S(t["핀"]))pinFail("교사","이름",a.name,t);
       db.set("교사","이름",a.name,{"핀":pinHash(accKey("teacher",a.name),S(p.newPin)),"핀설정":stamp(now),"실패":"0","잠금":""});
       acc=accKey("teacher",a.name);
@@ -2471,7 +2475,7 @@ function make(db,env){
         });
       });
     }catch(e5){}
-    /* 학급 전원 가입: 마지막 한 사람이 PIN 을 정한 그때, 그 반 모두에게 만능 도장 하나 */
+    /* 학급 전원 가입: 마지막 한 사람이 PIN을 정한 그때, 그 반 모두에게 만능 도장 하나 */
     try{
       var cl={};
       db.rows("명단").forEach(function(r){
@@ -2872,7 +2876,7 @@ function make(db,env){
     });
     return Object.keys(per).sort().map(function(k){return per[k];});
   }
-  /* 가입 현황: 반마다 몇 명이 PIN 을 정해 들어왔는지, 아직 안 들어온 학생은 누구인지.
+  /* 가입 현황: 반마다 몇 명이 PIN을 정해 들어왔는지, 아직 안 들어온 학생은 누구인지.
      학년 담당은 그 학년만, 관리자는 전교(+선생님 가입까지) 본다 */
   function joinStats(a){
     var td0=today(env.now());
@@ -2938,7 +2942,7 @@ function make(db,env){
     var mmdd=sp?Number(S(c["라벨문장따로"]).slice(5,7))+"월 "+Number(S(c["라벨문장따로"]).slice(8,10))+"일":"";
     var w=now||sp?"라벨 "+caps.kind.write+"개·문장 "+caps.kind.write+"개(따로 도장)":"라벨·문장은 합쳐서 "+caps.kind.write+"개";
     return (sp&&!now?mmdd+"부터 ":"")+w+", 독후감 "+caps.kind.review+"개, 퀴즈 "+caps.kind.quiz+"개까지, 모두 합쳐 한 주 "+caps.week+"칸(도장 2배 이벤트 때도 그대로, 넘치면 책갈피). 선생님이 주시는 만능 도장은 종류 상관없이 어느 칸이든 채워요(그 주 칸이 차면 다음 주로)."+
-      (wcap?" 라벨·문장은 한 주에 합쳐서 "+wcap+"편까지 낼 수 있고, "+(now||sp?"라벨 첫 편·문장 첫 편이 도장":"첫 편이 도장")+"·나머지는 책갈피예요.":"")+
+      (wcap?" 라벨·문장은 한 주에 합쳐서 "+wcap+"편까지 낼 수 있고, "+(now||sp?"라벨 첫 편·문장 첫 편은 도장":"첫 편은 도장")+", 나머지는 책갈피예요.":"")+
       (Number(c["하루종류상한"])>0?" 라벨·문장·독후감은 종류마다 하루 "+Number(c["하루종류상한"])+"편까지.":"")+
       (S(c["퀴즈책독후감"])?" 이번 주·다음 주 북퀴즈 책으로 쓴 독후감은 도장 2개.":"")+
       " 문제 내기는 다음 주 퀴즈 책으로 한 주 "+(Number(c["주간문제출제"])>=0?Number(c["주간문제출제"]):1)+"개(반려되면 도장 회수).";
@@ -3751,7 +3755,7 @@ function make(db,env){
             agreed:!!S(x["동의"]),last:S(x["최근접속"]).slice(0,16),
             club:S(x["도서부"])==="Y",devices:dev[ak]||0,how:S(x["등록방법"]),memo:S(x["비고"]),
             posts:db.rows("글").filter(function(r2){return S(r2["학번"])===S(x["학번"])&&S(r2["상태"])!=="down";}).length};})};},
-    /* 선생님이 학생을 명단에 넣어 준다. 학생은 학번·이름으로 들어와 PIN 을 정한다 */
+    /* 선생님이 학생을 명단에 넣어 준다. 학생은 학번·이름으로 들어와 PIN을 정한다 */
     rosterAdd:function(a,p){staff(a);
       if(a.kind==="subject")fail("학년 담당 또는 관리자만 할 수 있습니다.");
       var hb=S(p.hakbun).replace(/\s/g,""),nm=S(p.name).trim(),memo=S(p.memo).slice(0,120);
@@ -3787,7 +3791,7 @@ function make(db,env){
       if(add.length)addRows("명단",add);
       if(add.length)sortRoster();
       return {ok:ok,made:made,bad:bad.slice(0,10),badN:bad.length};},
-    /* PIN 초기화: 다음 로그인 때 학생이 새 PIN 을 정합니다 */
+    /* PIN 초기화: 다음 로그인 때 학생이 새 PIN을 정합니다 */
     pinReset:function(a,p){staff(a);
       if(a.kind==="subject")fail("학년 담당 또는 관리자만 할 수 있습니다.");
       if(S(p.teacher)){
@@ -4193,8 +4197,8 @@ function make(db,env){
     var locked=st.filter(function(r){return lockLeft(r)>0;}).length;
     var need=st.length-reg;
     out.ready=[
-      {name:"학생 PIN 등록",v:reg+"/"+st.length+"명",note:need?"아직 "+need+"명이 첫 로그인 전(학번·이름으로 들어와 PIN 을 정합니다)":"모두 등록"},
-      {name:"교사 PIN 등록",v:tReg+"/"+tch.length+"명",note:tch.length-tReg?"나머지 선생님은 이름으로 들어와 PIN 을 정하면 됩니다":"모두 등록"},
+      {name:"학생 PIN 등록",v:reg+"/"+st.length+"명",note:need?"아직 "+need+"명이 첫 로그인 전(학번·이름으로 들어와 PIN을 정합니다)":"모두 등록"},
+      {name:"교사 PIN 등록",v:tReg+"/"+tch.length+"명",note:tch.length-tReg?"나머지 선생님은 이름으로 들어와 PIN을 정하면 됩니다":"모두 등록"},
       {name:"잠긴 계정",v:locked+"명",note:locked?"계정 관리에서 잠금 풀기 또는 PIN 새로 정하게 하기":"없음"},
       {name:"교사 승인 대기",v:(function(){var n=db.rows("교사신청").filter(function(r){return S(r["상태"])==="대기";});
         return n.length+"건"+(n.length?" · "+n.slice(0,5).map(function(r){return S(r["이름"]);}).join(", "):"");})(),
