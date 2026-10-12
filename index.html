@@ -22,6 +22,13 @@
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+/* 한글 줄바꿈(2026-10-12 점검): 낱말 중간에서 끊지 않고, 마지막 줄에 한두 글자만 남지 않게 */
+body{word-break:keep-all;overflow-wrap:break-word}
+p,li,small,td,th,dd,.sub,.hint,.bubble,.done,.empty,.guidebanner span,.giftbar span,.ackbar span,.qt,.src,.meta span,.lookcard div{text-wrap:pretty}
+h1,h2,h3,h4,.btn,button,label,.pill,.tb,.who1 b{text-wrap:balance}
+a,code,.url{overflow-wrap:anywhere}
+.chip,.pill,.board-head .count,.qbooks .qbk,.st,.callno,.who button,.tabs button{white-space:nowrap}
+.guidebanner .btn,.giftbar .btn,.ackbar .btn,.row>.btn.sm{flex:none;white-space:nowrap}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:none}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
@@ -2122,11 +2129,18 @@ function pWall(){
 function addDaysStr(d,n){var t=new Date(d+"T00:00:00");t.setDate(t.getDate()+n);return t.toISOString().slice(0,10);}
 /* 이벤트 띠: 배수·추첨·대항·미션 */
 function eventBar(){
-  var L=(D.events||[]);if(!L.length)return "";
+  /* 선생님 화면의 D.events 는 지난 것까지 담긴 관리용 목록이라(배수·내 순위 값이 없다) 지금 열린 것만, 선생님용 문장으로(2026-10-12: ×undefined 오류) */
+  var staff=D.me&&D.me.role!=="student";
+  var L=(D.events||[]).filter(function(E){return !staff||(E.live&&!E.done);});if(!L.length)return "";
   return L.map(function(E){
-    var tag=E.way==="배수"?'×'+E.mul:E.way==="추첨"?'뽑기':E.way==="대항"?'대항':'미션';
+    var mul=E.mul||Math.min(5,Math.max(2,Number(E.val)||2));
+    var tag=E.way==="배수"?'×'+mul:E.way==="추첨"?'뽑기':E.way==="대항"?'대항':'미션';
     var body="";
-    if(E.way==="배수")body=(E.kind?({label:"라벨",quote:"문장",review:"독후감",quiz:"퀴즈"}[E.kind.split(",")[0]]||E.kind)+'만 ':'')+'도장이 <b>'+E.mul+'배</b>로 찍혀요';
+    if(staff)body=E.way==="배수"?(E.kind?({label:"라벨",quote:"문장",review:"독후감",quiz:"퀴즈"}[String(E.kind).split(",")[0]]||E.kind)+'만 ':'')+'도장이 <b>'+mul+'배</b>로 찍혀요(한 주 칸 수는 그대로)'
+      :E.way==="추첨"?'글을 내면 추첨권 · <b>'+(Number(E.val)||0)+'명</b>에게 문화상품권 '+(E.prize||0)+'매'+(E.joined!=null?' · 지금 참여 '+E.joined+'명':'')
+      :E.way==="대항"?'우리 반 참여율로 겨뤄요 · 상위 <b>'+(Number(E.val)||1)+'개 반</b>'
+      :'목표 <b>'+(Number(E.val)||1)+'</b>개를 채우면 도장 <b>'+(E.prize||0)+'개</b>';
+    else if(E.way==="배수")body=(E.kind?({label:"라벨",quote:"문장",review:"독후감",quiz:"퀴즈"}[E.kind.split(",")[0]]||E.kind)+'만 ':'')+'도장이 <b>'+E.mul+'배</b>로 찍혀요';
     else if(E.way==="추첨")body='이 기간에 글을 내면 <b>추첨권</b>이 쌓여요. 지금 내 표 <b>'+(E.tickets||0)+'장</b> · '+E.val+'명에게 문화상품권 '+E.prize+'매';
     else if(E.way==="대항")body='우리 반 <b>'+(E.rank?E.rank+'등':'—')+'</b> / '+(E.of||0)+'반 · 참여율 '+(E.pct||0)+'% · '+E.val+'개 반까지 상 받아요';
     else body='<b>'+(E.done||0)+' / '+E.need+'</b> 채우면 도장 <b>'+E.prize+'개</b>'+(E.ok?' · <b>다 했어요!</b>':'');
