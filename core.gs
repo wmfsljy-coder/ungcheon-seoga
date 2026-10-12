@@ -2818,6 +2818,14 @@ function make(db,env){
     return {from:w.from,to:w.to,label:winLabel(w),open:st==="open",state:st,place:S(c["상품권배부장소"]),live:!cut,asOf:cutLabel(cut),
       rows:giftRows(who,w.from,cut).filter(function(x){return x.vouchers>0||x.paid;})};
   }
+  /* 도서부 학생 화면의 배부 명단은 수령 날 하루 전(목요일)부터(2026-10-12 회장님). 그 전에는 명단·합계를 비우고 언제부터인지만 */
+  function clubDesk(v){
+    if(!v||v.none||v.open)return v;
+    var t=today(env.now()),showFrom=addDays(v.from,-1);
+    if(v.state==="soon"&&t>=showFrom)return v;
+    var o={};Object.keys(v).forEach(function(k){o[k]=v[k];});
+    o.rows=[];o.hidden=true;o.showFrom=v.state==="soon"?showFrom:"";return o;
+  }
   /* 학생: 도서부가 배부를 눌렀는데 아직 '확인'을 누르지 않은 수령(최근 40일) */
   function ackWaiting(hb){
     var since=addDays(today(env.now()),-40),wins=recvWindows(),out=[];
@@ -3321,7 +3329,7 @@ function make(db,env){
       voteL:vb("label"),voteQ:vb("quote"),voteR:vb("review"),
       quiz:{items:quiz,done:done&&!retake?Number(done["점수"]):null,retake:retake?{prev:Number(done["점수"])||0,total:Number(done["문항수"])||0}:null,next:nextQuizBooks(),allowed:quizAllowed(),myWeek:myQuizWeek(a.id),weekMax:(function(){var n=Number(conf()["주간문제출제"]);return n>=0?n:1;})(),books:weekBooksOf(wk),bookInfo:(function(){var bl={};bookList().forEach(function(b){bl[tkey(b.t)]=b;});
         return weekBooksOf(wk).map(function(t){var b=bl[tkey(t)]||{};return {t:t,total:b.total||0,avail:b.avail,call:b.call||""};});})()},myQuiz:myQuiz,
-      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftAck:ackWaiting(a.id),quizRejected:quizRejected(a.id),weekAuthor:(function(){try{return personOfWeek(true);}catch(e){return null;}})(),giftDesk:a.club?deskView(c,ALL_CLS):null,myGiveLog:a.club?myGiveLog(a):null};
+      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftAck:ackWaiting(a.id),quizRejected:quizRejected(a.id),weekAuthor:(function(){try{return personOfWeek(true);}catch(e){return null;}})(),giftDesk:a.club?clubDesk(deskView(c,ALL_CLS)):null,myGiveLog:a.club?myGiveLog(a):null};
   }
 
   function bookList(){

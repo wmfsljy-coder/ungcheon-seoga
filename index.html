@@ -531,6 +531,8 @@ body.role-staff .news{background:#FFFBF0}
 /* 화면 어디서든 보이게 잠깐 떠오르는 웅이 */
 .qbooks .qbk{border:1px solid #B9A6D9;background:#fff;color:#4B2E83;border-radius:999px;padding:4px 12px;font:inherit;font-weight:600;cursor:pointer}
 .qbooks .qbk.on,.qbooks .qbk:hover{background:#EFE8FA}
+.ackbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#FFF4D6;border:2px solid #E0B44A;border-radius:14px;padding:12px 14px;margin:0 0 14px}
+.ackbar svg{width:28px;height:28px;flex:none}.ackbar span{flex:1;min-width:200px}
 .ackpop{position:fixed;inset:0;z-index:90;background:rgba(30,24,20,.45);display:flex;align-items:center;justify-content:center;padding:16px}
 .ackbox{background:#FFFDF8;border-radius:16px;max-width:380px;width:100%;padding:22px 20px 18px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.25)}
 .ackbox .wface{display:block;width:64px;height:64px;margin:0 auto 6px}
@@ -651,6 +653,7 @@ body.role-staff .news{background:#FFFBF0}
   <div id="login" hidden></div>
   <div id="app" hidden>
     <div class="pvbar" id="pvbar" hidden></div>
+    <div id="ackslot"></div>
     <section class="quote" id="quote" aria-label="오늘의 문장"></section>
     <section class="board" id="board"></section>
     <nav class="tabs" id="tabs" role="tablist"></nav>
@@ -1034,6 +1037,7 @@ function fridayWhen(GN){
 /* 상품권 배부 완료 확인 창(도서부가 '배부'를 누른 뒤 학생이 '확인'을 누를 때까지) */
 function ackPop(){
   var old=document.querySelector(".ackpop");if(old)old.remove();
+  rejPop();return;   /* 2026-10-12: 상품권 수령 확인은 화면 맨 위 막대(ackBarHTML)로 */
   var L=(D&&D.me&&D.me.role==="student"&&!D.preview&&D.giftAck)||[];if(!L.length){rejPop();return;}
   var x=L[0],n=L.reduce(function(s,y){return s+(y.n||0);},0);
   var el=document.createElement("div");el.className="ackpop";el.setAttribute("role","dialog");el.setAttribute("aria-modal","true");
@@ -1043,6 +1047,13 @@ function ackPop(){
     '<p class="hint">받은 만큼 별이 줄었어요. 상품권을 잘 받았으면 아래 <b>확인</b>을 눌러 주세요.</p>'+
     '<button class="btn" data-giftack="'+esc(L.length>1?"":x.from)+'">확인</button></div>';
   document.body.appendChild(el);
+}
+/* 상품권을 받은 학생: 어느 탭에 있든 맨 위에 '수령받았어요 확인'(누를 때까지) */
+function ackBarHTML(){
+  var L=(D&&D.me&&D.me.role==="student"&&!D.preview&&D.giftAck)||[];if(!L.length)return "";
+  var x=L[0],n=L.reduce(function(s,y){return s+(y.n||0);},0);
+  return '<div class="ackbar">'+starSVG()+'<span><b>문화상품권 '+n+'매를 받았어요?</b> '+esc(x.label)+(x.who?' · '+esc(x.who.replace(/\s*\(\d+\)$/,""))+' 배부':'')+
+    '. 받았으면 오른쪽 단추를 눌러 주세요. 받은 만큼 별이 줄었어요.</span><button class="btn" data-giftack="'+esc(L.length>1?"":x.from)+'">수령받았어요 확인</button></div>';
 }
 /* 문제 출제 도장 반려 안내(선생님이 반려하면 그 문제로 받은 도장은 빠진다. 학생이 '확인'을 누를 때까지) */
 function rejPop(){
@@ -1173,7 +1184,7 @@ function renderBoard(){
   /* 수령 알림(2026-09-28): 수령 기간 7일 전부터 대상 학생이 들어올 때마다 '그 기간 점심시간에 도서관에서'.
      '알겠어요'는 이번에만 닫는다(다음에 들어오면 다시 뜬다). 받은 뒤에는 '수령했어요' */
   var gb="",GN=D.giftNotice;
-  if(GO&&GN&&GN.mine&&(GN.mine.vouchers>0||GN.mine.paid)&&ui.giftHide!==GN.from&&!(GN.mine.paid&&get("ungcheon-seoga-gift2|"+D.me.id+"|"+GN.from)==="1")){
+  if(GO&&GN&&GN.mine&&(GN.mine.vouchers>0||GN.mine.paid)&&ui.giftHide!==GN.from&&!(GN.mine.paid&&(D.giftAck||[]).length)&&!(GN.mine.paid&&get("ungcheon-seoga-gift2|"+D.me.id+"|"+GN.from)==="1")){
     var me=GN.mine,where='<b>'+rangeLabel(GN.from,GN.to)+' '+placeTalk(GN.place)+'</b>';
     gb='<div class="giftbar">'+starSVG()+'<span>'+(me.paid?'<b>'+esc(GN.label)+' — 수령했어요 ✓</b> 문화상품권 '+(me.paidN||me.vouchers)+'매. 받은 별은 사라졌어요.'
         :GN.open?'<b>문화상품권 수령 대상이에요! 오늘('+md(GN.from)+') 점심시간에 도서관으로 오세요.</b> 별 '+me.stars+'개 → 문화상품권 '+me.vouchers+'매. <b>'+(D.conf.recvWeekly?'오늘 못 받으면 다음 주 금요일에 받을 수 있어요.':'이 기간에만 받을 수 있어요.')+'</b>'
@@ -1284,6 +1295,7 @@ function toPanel(){
 function renderPanel(){
   var f={shelf:pShelfAll,write:pWrite,wall:pWallAll,vote:pVote,quiz:pQuiz,check:pCheck,print:pPrintAll,result:pResult,
     finish:pGift,books:pBooks,desk:pDesk,idea:pIdea,accounts:pAccounts,give:pGive,over:pOverview,suggest:pSuggest,quizadm:pQuizAdm,guide:pGuide,tlabel:pTLabelAll,search:pSearch,rec:pRecTab,author:pAuthorTab,mine:pMine,readlog:pReadlog}[ui.tab];
+  var as0=$("ackslot");if(as0)as0.innerHTML=ackBarHTML();   /* 상품권 수령 확인: 화면 맨 위(명언 카드 위) */
   $("panels").innerHTML=f?f():"";
   if(ui.tab==="write")wireWrite();
   if(ui.tab==="print")wirePrint();
@@ -1892,6 +1904,10 @@ var LISTS={};
 function pDesk(){
   if(D.preview&&!D.me.club)return '<h3 class="sec">상품권 배부</h3>'+woong("read","이 탭은 <b>도서부 학생</b>에게만 보여요. 수령 날(금요일)에 대상 학생에게 문화상품권을 주고 이름 옆 <b>배부</b>를 누르면, 받은 학생 화면에 완료 안내가 뜨고 '내가 배부한 기록'에 남아요.");
   var K=D.giftDesk||{rows:[]},R=rule();
+  if(K.hidden)return '<h3 class="sec">'+esc(K.label||"")+' 상품권 배부</h3>'+
+    woong("read","<b>명단은 목요일부터 볼 수 있어요.</b>"+(K.showFrom?" ("+md(K.showFrom)+" 목요일부터)":"")+" 수령 날(금요일) 점심시간에 대상 학생에게 문화상품권을 주고 이름 옆 <b>배부</b>를 눌러 줘.")+
+    '<div class="row" style="align-items:flex-end;gap:8px;max-width:460px"><div class="field" style="flex:1;margin:0"><label for="desk-q">학번(4자리)이나 이름으로 조회</label><input type="search" id="desk-q" value="'+esc(ui.deskQ||"")+'" placeholder="예) 3201"></div><button class="btn" id="desk-go">조회</button></div>'+
+    lookHTML(K)+myGiveHTML();
   if(K.none)return '<h3 class="sec">상품권 배부 확인</h3>'+woong("read","아직 정해진 수령 기간이 없어. 사서 선생님이 기간을 정하면 대상 학생 명단이 여기 나와.");
   var q=(ui.deskQ||"").trim(),rows=K.rows.filter(function(x){return !q||x.hakbun.indexOf(q)>=0||x.name.indexOf(q)>=0;});
   var done=K.rows.filter(function(x){return x.paid;}),acked=done.filter(function(x){return x.ack;}),total=K.rows.reduce(function(a,x){return a+x.vouchers;},0),given=done.reduce(function(a,x){return a+(x.paidN||x.vouchers);},0);

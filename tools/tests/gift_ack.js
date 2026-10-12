@@ -32,7 +32,11 @@ stamps("3101",20);stamps("3102",10);
 /* ── 기간 한참 전: 명단은 보이되 배부 단추는 없다 ── */
 let dk=as("3103","state").giftDesk;
 must(dk&&!dk.none&&dk.state==="soon"&&!dk.open,"기간 전에도 도서부 배부 확인에 다음 기간(예정)이 보인다");
-must(dk.rows.map(r=>r.hakbun).join()==="3101,3102","대상자 명단이 학번 순(별 2개 이상만): "+dk.rows.map(r=>r.hakbun).join());
+/* 2026-10-12 회장님: 도서부 화면 명단은 수령 날 하루 전(목요일)부터 */
+must(dk.hidden&&dk.rows.length===0&&dk.showFrom==="2026-10-04","하루 전보다 이르면 명단은 숨기고 언제부터인지만("+dk.showFrom+")");
+const keepNow=NOW;NOW=new Date("2026-10-04T03:00:00Z");dk=as("3103","state").giftDesk;
+must(!dk.hidden&&dk.rows.map(r=>r.hakbun).join()==="3101,3102","하루 전부터 대상자 명단이 학번 순(별 2개 이상만): "+dk.rows.map(r=>r.hakbun).join());
+NOW=keepNow;
 must(/배부 기간이 아닙니다/.test(as("3103","clubMark",{ids:["3101"],on:true}).ERR||""),"기간 밖에는 배부 표시를 못 한다");
 must(!as("3101","state").giftNotice,"수령 기간 7일 전보다 이르면 학생 안내는 아직 없다");
 
@@ -79,7 +83,8 @@ must((as("3102","state").myGiveLog)==null,"도서부가 아니면 기록 칸 없
 /* ── 기간이 끝난 뒤: 명단은 남고 단추는 닫힌다 ── */
 NOW=new Date("2026-10-12T03:00:00Z");
 dk=as("3103","state").giftDesk;
-must(dk&&!dk.open&&dk.rows.length>=1,"기간이 끝나도 명단은 보인다");
+must(dk&&!dk.open&&dk.hidden&&dk.rows.length===0,"기간이 끝나면 도서부 화면 명단은 다시 숨김(다음 목요일부터)");
+must((as("사서","state").giftDesk||{rows:[]}).rows.length>=1,"관리자 배부 확인에는 기간이 끝나도 명단이 보인다");
 must((as("3101","state").giftAck||[]).length===1,"기간이 끝나도 확인하지 않은 배부는 확인 창이 남는다");
 
 /* ── 선생님: 라벨·문장 둘 다 ── */

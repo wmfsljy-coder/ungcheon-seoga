@@ -116,6 +116,7 @@ must(stC.giftDesk.rows.every(r=>r.hakbun&&r.name)&&stC.giftDesk.open,"배부창:
 NOW=new Date("2026-10-16T03:00:00Z");   /* 기간이 지난 뒤 */
 const after=C().api("state",{});
 /* 2026-09-28: 대상자 명단은 기간 밖에도 늘 보이고(다음 기간 예정 · 없으면 지난 기간), 배부 단추만 기간에 */
-must(after.giftDesk&&!after.giftDesk.none&&!after.giftDesk.open&&after.giftDesk.rows.length>=1,"기간 밖에도 배부 명단은 보인다(단추 없음)");
+/* 2026-10-12: 도서부 화면은 수령 날 하루 전(목요일)부터만 명단 */
+must(after.giftDesk&&!after.giftDesk.none&&!after.giftDesk.open&&after.giftDesk.hidden&&after.giftDesk.rows.length===0,"기간 밖에는 탭은 보이되 명단은 숨김(목요일부터)");
 let e2="";try{C().api("clubMark",{ids:["3101"],on:false});}catch(x){e2=x.message;}
 must(/배부 기간이 아닙니다/.test(e2),"기간 밖에서는 배부 표시를 못 한다");
