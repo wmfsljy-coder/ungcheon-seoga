@@ -531,6 +531,8 @@ body.role-staff .news{background:#FFFBF0}
 /* 화면 어디서든 보이게 잠깐 떠오르는 웅이 */
 .qbooks .qbk{border:1px solid #B9A6D9;background:#fff;color:#4B2E83;border-radius:999px;padding:4px 12px;font:inherit;font-weight:600;cursor:pointer}
 .qbooks .qbk.on,.qbooks .qbk:hover{background:#EFE8FA}
+.desk-row.undo{background:#FDECEA;border-radius:10px}
+.pill.red{background:#F6D5D1;color:#9E2B1E}
 .ackbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#FFF4D6;border:2px solid #E0B44A;border-radius:14px;padding:12px 14px;margin:0 0 14px}
 .ackbar svg{width:28px;height:28px;flex:none}.ackbar span{flex:1;min-width:200px}
 .ackpop{position:fixed;inset:0;z-index:90;background:rgba(30,24,20,.45);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -1920,7 +1922,8 @@ function pDesk(){
     '<div class="row" style="align-items:flex-end;gap:8px;max-width:460px"><div class="field" style="flex:1;margin:0"><label for="desk-q">학번(4자리)이나 이름으로 조회</label><input type="search" id="desk-q" value="'+esc(ui.deskQ||"")+'" placeholder="학번 4자리(예: 3201) 또는 이름" maxlength="10" autocomplete="off"></div><button class="btn" id="desk-go">조회</button></div>'+
     lookHTML(K)+
     (rows.length?rows.map(function(x){
-      var btn=K.open?'<button class="btn '+(x.paid?'':'ghost ')+'sm" data-desk="'+esc(x.hakbun)+'" data-on="'+(x.paid?0:1)+'">'+(x.paid?'배부 ✓':'배부')+'</button>'
+      var btn=K.open?(x.paid?'<span class="pill gold">배부 ✓</span><button class="btn ghost sm" data-desk="'+esc(x.hakbun)+'" data-on="0" data-undo="1">무르기</button>'
+            :'<button class="btn ghost sm" data-desk="'+esc(x.hakbun)+'" data-on="1">배부</button>')
           :(x.paid?'<span class="pill">배부 완료</span>':'');
       return '<div class="desk-row"><div class="nm"><div class="who1"><b>'+esc(x.hakbun)+' '+esc(x.name)+'</b>'+btn+
           (x.paid?(x.ack?'<span class="pill gold">수령 확인 ✓</span>':'<span class="hint">학생 확인 전</span>'):'')+'</div>'+
@@ -1928,15 +1931,29 @@ function pDesk(){
       :'<div class="empty">'+(q?'찾는 학생이 이번 대상 명단에 없어요(별 '+R.pair+'개부터 대상).':'이번 수령 대상 학생이 없어요.')+'</div>')+
     myGiveHTML();
 }
+/* 관리자: 배부·무르기 기록(무르기는 눈에 띄게) */
+function giveLogHTML(){
+  var L=D.giveLog;if(!L)return "";
+  var un=L.filter(function(x){return x.act==="무르기";});
+  return '<h3 class="sec gap">배부·무르기 기록 '+(un.length?'<span class="pill red">무르기 '+un.length+'건</span>':'')+'</h3>'+
+    '<p class="sub">도서부·선생님이 배부나 무르기를 누를 때마다 남습니다(구글 시트 ‘배부기록’ 탭). 최근 100건.</p>'+
+    (L.length?L.map(function(x){return '<div class="desk-row'+(x.act==="무르기"?' undo':'')+'"><div class="nm"><div class="who1"><b>'+esc(x.hakbun)+' '+esc(x.name)+'</b>'+
+      (x.act==="무르기"?'<span class="pill red">무르기</span>':'<span class="pill gold">배부</span>')+'<span class="pill grey">'+x.n+'매</span></div>'+
+      '<small>'+esc(x.label)+' · '+esc(x.at.slice(5).replace("-","/"))+' · '+esc(x.by)+'</small></div></div>';}).join("")
+     :'<div class="empty">아직 기록이 없습니다.</div>');
+}
 /* 도서부: 내가 배부한 기록 */
 function myGiveHTML(){
+  if(D.giveLog)return giveLogHTML();
   var L=D.myGiveLog;if(!L)return "";
+  var U=D.myUndo||[],uh=U.length?'<h3 class="sec gap">내가 무른 기록</h3><p class="sub">잘못 눌러 무른 것도 남아요(사서 선생님도 봐요).</p>'+U.map(function(x){
+    return '<div class="desk-row undo"><div class="nm"><div class="who1"><b>'+esc(x.hakbun)+' '+esc(x.name)+'</b><span class="pill red">무르기</span><span class="pill grey">'+x.n+'매</span></div><small>'+esc(x.label)+' · '+esc(x.at.slice(5).replace("-","/"))+'</small></div></div>';}).join(""):"";
   var n=L.reduce(function(a,x){return a+x.n;},0);
   return '<h3 class="sec gap">내가 배부한 기록</h3>'+
     (L.length?'<p class="sub">지금까지 <b>'+L.length+'명</b>에게 <b>'+n+'매</b>를 나눠 줬어요. 배부를 취소하면 기록에서도 빠져요.</p>'+
       L.map(function(x){return '<div class="desk-row"><div class="nm"><div class="who1"><b>'+esc(x.hakbun)+' '+esc(x.name)+'</b><span class="pill">'+x.n+'매</span>'+
         (x.ack?'<span class="pill gold">수령 확인 ✓</span>':'<span class="hint">학생 확인 전</span>')+'</div><small>'+esc(x.label)+' · '+esc(x.at.slice(5).replace("-","/"))+'</small></div></div>';}).join("")
-      :'<div class="empty">아직 배부한 기록이 없어요. 수령 날(금요일)에 배부를 누르면 여기에 남아요.</div>');
+      :'<div class="empty">아직 배부한 기록이 없어요. 수령 날(금요일)에 배부를 누르면 여기에 남아요.</div>')+uh;
 }
 /* 도서부 학번 조회 결과: 이번 달 도장·별, 지금 별, 이번 수령 대상 여부 */
 function lookHTML(K){
@@ -1950,7 +1967,7 @@ function lookHTML(K){
     return '<div class="lookcard"><div class="big">'+esc(x.hakbun)+' '+esc(x.name)+' <small class="hint">'+esc(clsName(x.cls))+'</small></div>'+
       '<div>이번 달 도장 <b>'+x.mStamps+'</b>개 · 이번 달 별 <b>'+x.mStars+'</b>개 · 지금 가진 별 <b>'+x.stars+'</b>개 · 누적 도장 '+x.stamps+'개</div>'+
       '<div style="margin-top:6px">'+(cl?esc(cl.label)+': ':'')+st+'</div>'+
-      (cl&&cl.open&&cl.vouchers&&K.open?'<div style="margin-top:8px"><button class="btn '+(cl.paid?'':'ghost ')+'sm" data-desk="'+esc(x.hakbun)+'" data-on="'+(cl.paid?0:1)+'">'+(cl.paid?'배부 완료 ✓':'배부 완료')+'</button></div>':'')+'</div>';}).join("");
+      (cl&&cl.open&&cl.vouchers&&K.open?'<div style="margin-top:8px">'+(cl.paid?'<button class="btn ghost sm" data-desk="'+esc(x.hakbun)+'" data-on="0" data-undo="1">무르기</button>':'<button class="btn ghost sm" data-desk="'+esc(x.hakbun)+'" data-on="1">배부 완료</button>')+'</div>':'')+'</div>';}).join("");
 }
 function deskLook(){
   var q=val("desk-q").replace(/\s/g,"");if(!q){toast("학번이나 이름을 넣어 주세요.");return;}
@@ -3081,7 +3098,8 @@ document.addEventListener("click",function(e){
     ui.tab="write";saveUI();renderTabs();renderPanel();toPanel();}return;}
   if(d.sw!=null&&SR.items){var it=SR.items[Number(d.sw)];ui.pick="free";ui.freeT=it.t;ui.freeA=it.a;ui.tab="write";saveUI();renderTabs();renderPanel();toPanel();return;}
   if(d.find){ui.searchQ=d.find;ui.tab="search";saveUI();renderTabs();renderPanel();toPanel();doSearch(d.find);return;}
-  if(d.desk){act("clubMark",{ids:[d.desk],on:d.on==="1"},d.on==="1"?"배부 완료로 표시했습니다.":"되돌렸습니다.").then(function(){if(ui.deskLook&&!ui.deskLook.error)deskLook();}).catch(function(){});return;}
+  if(d.desk&&d.undo&&!window.confirm(d.desk+" 학생의 배부를 무를까요? 잘못 눌렀을 때만 쓰세요. 무른 기록은 남아서 사서 선생님이 볼 수 있어요."))return;
+  if(d.desk){act("clubMark",{ids:[d.desk],on:d.on==="1"},d.on==="1"?"배부 완료로 표시했습니다.":"배부를 물렀어요. 기록이 남았어요.").then(function(){if(ui.deskLook&&!ui.deskLook.error)deskLook();}).catch(function(){});return;}
   if(d.trok){act("teacherOk",{id:d.trok,dam:val("tr-"+d.trok)},"승인했습니다. 그 선생님께 메일로 알렸습니다.").catch(function(){});return;}
   if(d.trno){act("teacherNo",{id:d.trno},"거절했습니다.").catch(function(){});return;}
   if(d.sgmon){ui.sgMon=d.sgmon;saveUI();renderPanel();return;}

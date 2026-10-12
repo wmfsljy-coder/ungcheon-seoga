@@ -25,6 +25,7 @@ var HEAD={
   "교사신청":["id","시각","이름","이메일","상태"],
   "기기":["토큰","계정","만든날","마지막","만료","해제","기기","이메일"],
   "지급":["키","월","학번","이름","반","도장","처리","시각","처리자","매수","별","수령확인","확인시각"],
+  "배부기록":["시각","수령일","학번","이름","반","동작","매수","처리자"],
   "도장":["id","시각","주","학번","이름","반","사유","교사","취소"],
   "작가":["이름","생몰","생일","직업","소개","사진","출처","확인","숨김"]
 };
@@ -849,6 +850,9 @@ var SHEET_DOC={
     c:{"이름":["작가 이름(지은이에서 뽑음)","박경리"],"생몰":["태어난 해~돌아간 해","1926~2008"],"생일":["월-일(이주의 작가 생일 주간)","12-02"],
        "직업":["한 줄 설명","대한민국의 소설가"],"소개":["짧은 열전(학생 화면에 나옴)",""],"사진":["사진 주소",""],"출처":["위키백과 문서 주소",""],
        "확인":["받은 날. '없음'이면 위키백과에서 못 찾음(직접 써도 됨)","2026-10-09"],"숨김":["Y 면 안 보임",""]}},
+  "배부기록":{d:"상품권 배부·무르기를 누를 때마다 한 줄씩 쌓이는 기록(2026-10-12). 잘못 눌러 무른 것도 남아 관리자가 볼 수 있습니다.",edit:"보기만 하세요(앱이 씀)",
+    c:{"시각":["누른 때",""],"수령일":["수령 날(기간 첫날)","2026-10-16"],"학번":["받는 학생","1101"],"이름":["이름","김서준"],"반":["학급","1-1"],
+       "동작":["배부 / 무르기","배부"],"매수":["상품권 매수","1"],"처리자":["누른 사람","도서부 이도윤 (3202)"]}},
   "지급":{d:"상품권을 실제로 준 기록. 별은 여기 적힌 만큼만 줄어듭니다.",edit:"보기만 하세요(화면에서 체크)",
     c:{"키":["기간+학번","2026-10-05|1101"],"월":["기간 첫날","2026-10-05"],"학번":["학생","1101"],
        "이름":["이름","김서준"],"반":["학급","1-1"],"도장":["그때까지 도장 수","23"],
@@ -2746,14 +2750,19 @@ function make(db,env){
     var wins=recvWindows(),i=winIndex(wins,from),stu={},have={},now=stamp(env.now()),add=[];
     if(i<0)fail("수령 기간을 찾지 못했습니다.");
     db.rows("명단").forEach(function(r){stu[S(r["학번"])]=r;});
-    db.rows("지급").forEach(function(r){have[S(r["키"])]=true;});
+    var paidNow={},log=[];
+    db.rows("지급").forEach(function(r){have[S(r["키"])]=true;if(S(r["처리"])==="지급")paidNow[S(r["키"])]=Number(r["매수"])||0;});
     ids.forEach(function(hb){
-      hb=S(hb);var key=from+"|"+hb,cl=claimOf(hb,wins,i);
+      hb=S(hb);var key=from+"|"+hb,cl=claimOf(hb,wins,i),s1=stu[hb];
+      /* 배부·무르기 기록(상태가 실제로 바뀔 때만) */
+      if(on&&paidNow[key]==null)log.push({"시각":now,"수령일":from,"학번":hb,"이름":s1?S(s1["이름"]):"","반":s1?S(s1["반"]):"","동작":"배부","매수":cl.vouchers,"처리자":by});
+      if(!on&&paidNow[key]!=null)log.push({"시각":now,"수령일":from,"학번":hb,"이름":s1?S(s1["이름"]):"","반":s1?S(s1["반"]):"","동작":"무르기","매수":paidNow[key],"처리자":by});
       if(have[key])db.set("지급","키",key,{"처리":on?"지급":"","시각":now,"처리자":by,"매수":on?cl.vouchers:0,"별":on?cl.vouchers*giftRule().pair:0,"수령확인":"","확인시각":""});
       else if(on){var s0=stu[hb];have[key]=true;
         add.push({"키":key,"월":from,"학번":hb,"이름":s0?S(s0["이름"]):"","반":s0?S(s0["반"]):"","도장":(stampMap()[hb]||{stamps:[]}).stamps.length,"처리":"지급","시각":now,"처리자":by,"매수":cl.vouchers,"별":cl.vouchers*giftRule().pair});}
     });
     if(add.length){if(db.addMany)db.addMany("지급",add);else add.forEach(function(o){db.add("지급",o);});}
+    if(log.length){try{if(db.addMany)db.addMany("배부기록",log);else log.forEach(function(o){db.add("배부기록",o);});}catch(e){}}
     PAIDW=null;USED=null;STARS=null;
     try{syncRecvSheet();}catch(e){}
   }
@@ -3329,7 +3338,7 @@ function make(db,env){
       voteL:vb("label"),voteQ:vb("quote"),voteR:vb("review"),
       quiz:{items:quiz,done:done&&!retake?Number(done["점수"]):null,retake:retake?{prev:Number(done["점수"])||0,total:Number(done["문항수"])||0}:null,next:nextQuizBooks(),allowed:quizAllowed(),myWeek:myQuizWeek(a.id),weekMax:(function(){var n=Number(conf()["주간문제출제"]);return n>=0?n:1;})(),books:weekBooksOf(wk),bookInfo:(function(){var bl={};bookList().forEach(function(b){bl[tkey(b.t)]=b;});
         return weekBooksOf(wk).map(function(t){var b=bl[tkey(t)]||{};return {t:t,total:b.total||0,avail:b.avail,call:b.call||""};});})()},myQuiz:myQuiz,
-      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftAck:ackWaiting(a.id),quizRejected:quizRejected(a.id),weekAuthor:(function(){try{return personOfWeek(true);}catch(e){return null;}})(),giftDesk:a.club?clubDesk(deskView(c,ALL_CLS)):null,myGiveLog:a.club?myGiveLog(a):null};
+      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftAck:ackWaiting(a.id),quizRejected:quizRejected(a.id),weekAuthor:(function(){try{return personOfWeek(true);}catch(e){return null;}})(),giftDesk:a.club?clubDesk(deskView(c,ALL_CLS)):null,myGiveLog:a.club?myGiveLog(a):null,myUndo:a.club?giveLog(a,50).filter(function(x){return x.act==="무르기";}):null};
   }
 
   function bookList(){
@@ -3547,6 +3556,7 @@ function make(db,env){
     res.giftNow=deskFor(c,a);res.notices=noticesFor("staff");   /* 명단은 그 선생님이 볼 수 있는 학급만 */
     res.ideas=myIdeas(a);   /* 선생님도 건의함(2026-09-28) — 관리자는 아래에서 전체로 */
     if(a.role==="admin")res.giftDesk=deskView(c,ALL_CLS);   /* 관리자도 도서부와 같은 '배부 확인' 화면 */
+    if(a.role==="admin")res.giveLog=giveLog(null,100);   /* 배부·무르기 기록(관리자만) */
     if(a.role==="admin"){res.allNotices=noticesFor("staff",true);res.ideas=allIdeas();
       res.teacherReqs=db.rows("교사신청").filter(function(r){return S(r["상태"])==="대기";}).map(function(r){return {id:S(r["id"]),at:S(r["시각"]).slice(0,16),name:S(r["이름"]),email:S(r["이메일"])};});}
     res.readlog=a.kind==="subject"?[]:readLog(a);
@@ -4213,6 +4223,15 @@ function make(db,env){
     return db.rows("지급").filter(function(r){var b=S(r["처리자"]);return S(r["처리"])==="지급"&&(b===me1||b===me0);})
       .map(function(r){return {at:S(r["시각"]).slice(0,16),label:lab[S(r["월"])]||S(r["월"]),hakbun:S(r["학번"]),name:S(r["이름"]),n:Number(r["매수"])||0,ack:S(r["수령확인"])==="확인"};})
       .sort(function(x,y){return x.at<y.at?1:-1;}).slice(0,200);
+  }
+  /* 배부·무르기 기록(최근 것부터). who 를 주면 그 사람이 누른 것만 */
+  function giveLog(who,n){
+    var wins=recvWindows(),lab={};wins.forEach(function(w){lab[w.from]=winLabel(w);});
+    var me1=who?"도서부 "+who.name+" ("+who.id+")":"";
+    var L=[];try{L=db.rows("배부기록");}catch(e){}
+    return L.filter(function(r){return !who||S(r["처리자"])===me1;})
+      .map(function(r){return {at:S(r["시각"]).slice(0,16),label:lab[S(r["수령일"])]||S(r["수령일"]),hakbun:S(r["학번"]),name:S(r["이름"]),cls:S(r["반"]),act:S(r["동작"]),n:Number(r["매수"])||0,by:S(r["처리자"])};})
+      .sort(function(x,y){return x.at<y.at?1:-1;}).slice(0,n||100);
   }
   /* 배부 화면 요약(점검용, 숫자만) */
   function deskSummary(){var c=conf(),v=deskView(c,ALL_CLS);return {none:!!v.none,label:v.label||"",state:v.state||"",open:!!v.open,live:!!v.live,asOf:v.asOf||"",rows:(v.rows||[]).length,paid:(v.rows||[]).filter(function(x){return x.paid;}).length};}

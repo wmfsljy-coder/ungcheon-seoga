@@ -79,6 +79,16 @@ const myLog=as("3103","state").myGiveLog;
 must(myLog&&myLog.some(x=>x.hakbun==="3101"&&x.n>=1),"도서부 화면에 '내가 배부한 기록'");
 must(/\(3103\)/.test(T["지급"].find(r=>r["학번"]==="3101")["처리자"]),"지급 시트 처리자에 도서부 학번까지 남는다");
 must((as("3102","state").myGiveLog)==null,"도서부가 아니면 기록 칸 없음");
+/* 무르기 기록(2026-10-12 회장님): 배부·무르기를 누를 때마다 '배부기록' 시트에 한 줄, 관리자 화면에 보임 */
+const BL=T["배부기록"];
+must(BL.filter(r=>r["학번"]==="3101").map(r=>r["동작"]).join()==="배부,무르기,배부","배부기록 시트: 배부 → 무르기 → 배부 순서로 남음");
+must(BL.find(r=>r["동작"]==="무르기")["처리자"].includes("(3103)")&&BL.find(r=>r["동작"]==="무르기")["매수"]!=="0","무르기에도 누른 도서부와 매수가 남음");
+const gl=as("사서","state").giveLog;
+must(gl&&gl.some(x=>x.act==="무르기"&&x.hakbun==="3101"),"관리자 화면에 배부·무르기 기록");
+must((as("3103","state").myUndo||[]).length===1,"도서부 화면에 '내가 무른 기록'");
+must(as("3103","state").giveLog==null,"전체 기록은 관리자만");
+const nBL=BL.length;as("3103","clubMark",{ids:["3101"],on:true});
+must(BL.length===nBL,"이미 배부된 학생을 다시 배부로 눌러도 기록이 늘지 않음");
 
 /* ── 기간이 끝난 뒤: 명단은 남고 단추는 닫힌다 ── */
 NOW=new Date("2026-10-12T03:00:00Z");
