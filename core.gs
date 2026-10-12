@@ -11,7 +11,7 @@ var HEAD={
   "도서":["id","제목","지은이","영역","추천","추천사","소장","청구기호","권수","대출가능","반납예정","확인","수동","출처","월","숨김","표지","확인권수","ISBN","소개","핵심어","추천교사","만화"],
   "글":["id","시각","주","차수","종류","학번","이름","반","도서id","책제목","지은이","머리글","본문","계기","쪽수","상태","메모","인쇄","수상","확인","청구기호","표지","명예","만화"],
   "반응":["시각","갈래","부문","주","글id","누구"],
-  "퀴즈":["id","시각","차수","주","상태","책제목","쪽수","문제","보기1","보기2","보기3","보기4","정답","해설","학번","반","출처","품질","품질근거","월"],
+  "퀴즈":["id","시각","차수","주","상태","책제목","쪽수","문제","보기1","보기2","보기3","보기4","정답","해설","학번","반","출처","품질","품질근거","월","반려시각","반려확인"],
   "퀴즈응답":["주","학번","점수","시각","차수","문항수"],
   "문장":["문장","출처","종류","숨김"],
   "공지":["id","시작","끝","제목","내용","대상","고정","숨김","시각"],
@@ -815,7 +815,8 @@ var SHEET_DOC={
        "보기1":["보기 1","편도체가 작다"],"보기2":["보기 2",""],"보기3":["보기 3",""],"보기4":["보기 4",""],
        "정답":["정답 번호(1~4)","1"],"해설":["한 줄 해설",""],"학번":["낸 학생(자동 문제는 빈칸)","1101"],
        "반":["학급","1-1"],"출처":["학생 / 교사 / 자동","학생"],"품질":["문제 점수(10점)","7"],
-       "품질근거":["점수를 준 까닭",""],"월":["문제 은행의 달","2026-09"]}},
+       "품질근거":["점수를 준 까닭",""],"월":["문제 은행의 달","2026-09"],
+       "반려시각":["도장을 받았던 학생 문제를 반려한 때(이 칸이 차면 학생에게 반려 안내가 뜸)",""],"반려확인":["학생이 반려 안내에서 확인을 누른 때",""]}},
   "퀴즈응답":{d:"학생이 북퀴즈를 푼 기록. 절반 이상 맞히면 도장.",edit:"보기만 하세요",
     c:{"주":["그 주 월요일","2026-09-21"],"학번":["학생","1101"],"점수":["맞힌 개수","4"],
        "문항수":["전체 문항","5"],"시각":["푼 때",""],"차수":["운영 차수","1"]}},
@@ -2342,6 +2343,17 @@ function make(db,env){
       gift:Number(c["상품권기준"])||5,types:S(c["상품권세종류"])!=="N",leaf:Number(c["책갈피당도장"])||5,
       leafWeek:n("주간책갈피",Number(c["책갈피당도장"])||5),
       kind:{write:n("주간라벨문장",1),review:n("주간독후감",2),quiz:n("주간퀴즈",2)}};}
+  /* 이 학생 문제가 (반려 전에) 도장을 받았는가 — 아래 도장 계산 ①② 와 같은 규칙 */
+  function quizStamped(q){
+    if(!S(q["학번"])||S(q["출처"])==="자동"||S(q["상태"])==="반려"||S(q["상태"])==="중복")return false;
+    if((Number(q["품질"])||0)>=(Number(conf()["퀴즈품질기준"])||6))return true;
+    return S(q["상태"])==="출제"&&!!S(q["주"])&&S(q["주"])<=weekKey(env.now(),0);
+  }
+  /* 학생: 도장을 받았다가 반려된 문제 중 아직 '확인'을 안 누른 것 */
+  function quizRejected(hb){
+    return db.rows("퀴즈").filter(function(q){return S(q["학번"])===hb&&S(q["상태"])==="반려"&&S(q["반려시각"])&&!S(q["반려확인"]);})
+      .map(function(q){return {id:S(q["id"]),book:S(q["책제목"]),q:S(q["문제"]).slice(0,60),at:S(q["반려시각"]).slice(0,16)};});
+  }
   var STAMPS=null;
   /* 라벨·문장을 따로 세기 시작하는 주(설정 라벨문장따로). 비우면 '' */
   function splitFrom(c){var d=S((c||conf())["라벨문장따로"]);return /^\d{4}-\d{2}-\d{2}$/.test(d)?weekOfYmd(d):"";}
@@ -3265,7 +3277,7 @@ function make(db,env){
       voteL:vb("label"),voteQ:vb("quote"),voteR:vb("review"),
       quiz:{items:quiz,done:done&&!retake?Number(done["점수"]):null,retake:retake?{prev:Number(done["점수"])||0,total:Number(done["문항수"])||0}:null,next:nextQuizBooks(),books:weekBooksOf(wk),bookInfo:(function(){var bl={};bookList().forEach(function(b){bl[tkey(b.t)]=b;});
         return weekBooksOf(wk).map(function(t){var b=bl[tkey(t)]||{};return {t:t,total:b.total||0,avail:b.avail,call:b.call||""};});})()},myQuiz:myQuiz,
-      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftAck:ackWaiting(a.id),weekAuthor:(function(){try{return personOfWeek(true);}catch(e){return null;}})(),giftDesk:a.club?deskView(c,ALL_CLS):null};
+      hall:hallOfFame(likes),theme:themeOf(wk),events:evForStudent(a.id,a.cls),ideas:myIdeas(a),appUrl:env.appUrl?S(env.appUrl()):"",keepMine:keepFor(a.id,c),notices:noticesFor("student"),giftNotice:giftNoticeFor(a,c),giftAck:ackWaiting(a.id),quizRejected:quizRejected(a.id),weekAuthor:(function(){try{return personOfWeek(true);}catch(e){return null;}})(),giftDesk:a.club?deskView(c,ALL_CLS):null};
   }
 
   function bookList(){
@@ -3507,7 +3519,7 @@ function make(db,env){
     res.quiz=db.rows("퀴즈").filter(function(q){return S(q["상태"])!=="반려";}).map(function(q){
       return {id:S(q["id"]),status:S(q["상태"]),week:S(q["주"]),book:S(q["책제목"]),page:S(q["쪽수"]),q:S(q["문제"]),
         o:[S(q["보기1"]),S(q["보기2"]),S(q["보기3"]),S(q["보기4"])],ans:Number(q["정답"]),why:S(q["해설"]),cls:S(q["반"]),
-        src:S(q["출처"])||(S(q["학번"])?"학생":"교사"),score:S(q["품질"]),reason:S(q["품질근거"]),onShelf:onShelf(q["책제목"],sk),month:S(q["월"])};});
+        src:S(q["출처"])||(S(q["학번"])?"학생":"교사"),score:S(q["품질"]),reason:S(q["품질근거"]),onShelf:onShelf(q["책제목"],sk),month:S(q["월"]),stamped:quizStamped(q)};});
     res.thisWeek=weekKey(now,0);res.weekBooks=weekBooksOf(res.thisWeek);res.nextQuiz=nextQuizBooks();
     var nk=nextPeriodKey();
     res.next=nk?{month:nk,books:db.rows("도서").filter(function(b){return S(b["월"])===nk&&S(b["숨김"])!=="Y";}).map(function(b){return {id:S(b["id"]),t:S(b["제목"]),a:S(b["지은이"]),s:S(b["영역"])};})}:null;
@@ -3606,6 +3618,14 @@ function make(db,env){
         if(p.from&&S(r["월"])!==S(p.from))return;
         up[S(r["키"])]={"수령확인":"확인","확인시각":now};n++;});
       if(n){db.setMany("지급","키",up);PAIDW=null;USED=null;try{syncRecvSheet();}catch(e){}}
+      return {ok:true,n:n};},
+    /* 학생: 문제 출제 도장 반려 안내에서 '확인' */
+    quizRejectAck:function(a,p){
+      student(a);var now=stamp(env.now()),n=0;
+      db.rows("퀴즈").forEach(function(q){
+        if(S(q["학번"])!==a.id||S(q["상태"])!=="반려"||!S(q["반려시각"])||S(q["반려확인"]))return;
+        if(p.id&&S(q["id"])!==S(p.id))return;
+        db.set("퀴즈","id",S(q["id"]),{"반려확인":now});n++;});
       return {ok:true,n:n};},
     newsSeen:function(a){staff(a);if(S(a.name))db.set("교사","이름",S(a.name),{"마지막확인":stamp(env.now())});},
     /* 계정 관리(관리자·학년 담당): 조회 → 등록 풀기(다시 등록하게) */
@@ -3885,7 +3905,13 @@ function make(db,env){
       return {ok:true};},
     noticeHide:function(a,p){admin(a);db.set("공지","id",S(p.id),{"숨김":p.on?"Y":""});},
     quizPick:function(a,p){admin(a);db.set("퀴즈","id",S(p.id),{"상태":"출제","주":weekKey(env.now(),p.next?1:0)});},
-    quizDrop:function(a,p){admin(a);db.set("퀴즈","id",S(p.id),{"상태":"반려","주":""});},
+    /* 반려(출제 취소 포함): 학생 문제로 받은 도장은 그 문제가 '반려'가 되는 순간 도장 계산에서 빠진다(회수).
+       도장을 받았던 문제면 반려시각을 남겨 학생 화면에 '문제 출제 도장이 반려되었다'는 안내를 띄운다(2026-10-12) */
+    quizDrop:function(a,p){admin(a);
+      var q=db.rows("퀴즈").filter(function(x){return S(x["id"])===S(p.id);})[0],had=q?quizStamped(q):false,up={"상태":"반려","주":""};
+      if(had){up["반려시각"]=stamp(env.now());up["반려확인"]="";}
+      db.set("퀴즈","id",S(p.id),up);STAMPS=null;STARS=null;USED=null;
+      return {ok:true,stampTaken:had};},
     quizAdd:function(a,p){admin(a);
       var o=[S(p.o1),S(p.o2),S(p.o3),S(p.o4)],ans=Number(p.ans);
       if(!S(p.book)||S(p.q).length<5||o.some(function(x){return !x;})||!(ans>=1&&ans<=4))fail("책, 문제, 보기 네 개, 정답 번호를 적어 주세요.");

@@ -1032,7 +1032,7 @@ function fridayWhen(GN){
 /* 상품권 배부 완료 확인 창(도서부가 '배부'를 누른 뒤 학생이 '확인'을 누를 때까지) */
 function ackPop(){
   var old=document.querySelector(".ackpop");if(old)old.remove();
-  var L=(D&&D.me&&D.me.role==="student"&&!D.preview&&D.giftAck)||[];if(!L.length)return;
+  var L=(D&&D.me&&D.me.role==="student"&&!D.preview&&D.giftAck)||[];if(!L.length){rejPop();return;}
   var x=L[0],n=L.reduce(function(s,y){return s+(y.n||0);},0);
   var el=document.createElement("div");el.className="ackpop";el.setAttribute("role","dialog");el.setAttribute("aria-modal","true");
   el.innerHTML='<div class="ackbox"><span class="wface">'+bearSVG("yay")+'</span>'+
@@ -1040,6 +1040,18 @@ function ackPop(){
     '<p><b>'+esc(x.label)+'</b> 문화상품권 <b>'+n+'매</b>를 받았어요.'+(x.at?'<br><small>'+esc(x.at.slice(5).replace("-","/"))+(x.who?' · '+esc(x.who):'')+'</small>':'')+'</p>'+
     '<p class="hint">받은 만큼 별이 줄었어요. 상품권을 잘 받았으면 아래 <b>확인</b>을 눌러 주세요.</p>'+
     '<button class="btn" data-giftack="'+esc(L.length>1?"":x.from)+'">확인</button></div>';
+  document.body.appendChild(el);
+}
+/* 문제 출제 도장 반려 안내(선생님이 반려하면 그 문제로 받은 도장은 빠진다. 학생이 '확인'을 누를 때까지) */
+function rejPop(){
+  var R=(D&&D.me&&D.me.role==="student"&&!D.preview&&D.quizRejected)||[];if(!R.length)return;
+  var el=document.createElement("div");el.className="ackpop";el.setAttribute("role","dialog");el.setAttribute("aria-modal","true");
+  el.innerHTML='<div class="ackbox"><span class="wface">'+bearSVG("read")+'</span>'+
+    '<h3>문제 출제 도장이 반려되었어요</h3>'+
+    R.map(function(x){return '<p><b>『'+esc(x.book)+'』</b>에 낸 문제'+(x.q?'<br><small>“'+esc(x.q)+(x.q.length>=60?'…':'')+'”</small>':'')+'</p>';}).join("")+
+    '<p class="hint">선생님 확인에서 반려되어, 이 문제로 받은 <b>문제 출제 도장'+(R.length>1?' '+R.length+'개</b>는':'</b>은')+' 빠졌어요. '+
+    '책을 읽어야 풀 수 있게(쪽수·장면을 넣어) 다시 내 보세요.</p>'+
+    '<button class="btn" data-qrejack="1">확인</button></div>';
   document.body.appendChild(el);
 }
 function placeTalk(p){p=String(p||"");if(/도서관/.test(p)&&/점심/.test(p))return "점심시간에 도서관에서";return p?p.replace(/\s*·\s*/g," ")+"에서":"도서관에서";}
@@ -2751,7 +2763,8 @@ function pQuizAdm(){
       (q.why?'<p class="hint" style="margin:0 0 8px">'+esc(q.why)+'</p>':'')+
       '<div class="row">'+(q.status==="대기"?'<button class="btn sm" data-qpick="'+q.id+'">이번 주 출제</button>'+
         '<button class="btn ghost sm" data-qpick="'+q.id+'" data-next="1">다음 주 출제</button>':'')+
-      '<button class="btn ghost sm" data-qdrop="'+q.id+'">'+(q.status==="대기"?"반려":"출제 취소")+'</button></div></div>';
+      '<button class="btn ghost sm" data-qdrop="'+q.id+'"'+(q.stamped?' data-stamped="1"':'')+'>'+(q.status==="대기"?"반려":"출제 취소")+'</button>'+
+      (q.stamped?'<span class="hint">도장 받은 문제 · 반려하면 도장 회수</span>':'')+'</div></div>';
   }
   var wait=D.quiz.filter(function(q){return q.status==="대기";}).sort(function(a,b){return (Number(b.score)||0)-(Number(a.score)||0);}),
       live=D.quiz.filter(function(q){return q.status==="출제"&&q.week>=D.thisWeek;}),
@@ -2832,7 +2845,7 @@ function guideLibrarian(){
     ["상품권 공개","설정 <b>상품권공개</b>가 N 이면 학생 화면에 상품권 이야기가 나오지 않고 별만 쌓입니다. Y 로 바꾸면 별 "+rule().pair+"개 = 문화상품권 안내, 수령 알림·공지가 켜집니다."],
     ["상품권","수령 기간을 골라 대상 학생의 별·매수·배부 여부를 봅니다. ‘배부 완료’/‘대상 모두 배부 완료’, CSV(수령 서명 칸). 기준은 설정 별당도장·상품권당별·월최대매수·상품권금액."],
     ["도서 관리","서가의 책마다 소장·대출 가능 권수·청구기호. <b>빼기</b>로 서가에서 내리고, <b>이번 달 추천 도서 다시 뽑기</b>로 이번 달 책을 새로 뽑습니다. 자동으로 못 찾은 책은 ‘검색해 보기’ 후 체크. 이번 달 추천 도서에 한 권 더하기(학교에 있는 책만)도 여기서."],
-    ["퀴즈 관리","이번 주 북퀴즈는 추천 도서 가운데 "+(D.conf.quizBooks||2)+"권 이하에서 나옵니다. 아래쪽 <b>문제 은행</b>에서 달마다 미리 만든 문제를 보고 뺄 수 있습니다. 학생은 어떤 책이든 제한 없이 낼 수 있고, 제출할 때 품질 점수(10점: 쪽수 3, 서가 책 2, 보기 2, 정답 안 튐 1, 해설 1, 길이 1)가 매겨져 점수순으로 보입니다. 자동 출제를 기다리지 않고 직접 ‘이번 주 출제’해도 됩니다(뽑힌 학생은 퀴즈 칸이 찹니다). 검색으로 풀리는 문제는 반려. ‘이번 주 빈자리 지금 채우기’로 바로 채울 수도 있습니다."],
+    ["퀴즈 관리","이번 주 북퀴즈는 추천 도서 가운데 "+(D.conf.quizBooks||2)+"권 이하에서 나옵니다. 아래쪽 <b>문제 은행</b>에서 달마다 미리 만든 문제를 보고 뺄 수 있습니다. 학생은 어떤 책이든 제한 없이 낼 수 있고, 제출할 때 품질 점수(10점: 쪽수 3, 서가 책 2, 보기 2, 정답 안 튐 1, 해설 1, 길이 1)가 매겨져 점수순으로 보입니다. 자동 출제를 기다리지 않고 직접 ‘이번 주 출제’해도 됩니다(뽑힌 학생은 퀴즈 칸이 찹니다). 검색으로 풀리는 문제는 반려. <b>도장을 받은 학생 문제를 반려(출제 취소)하면 그 문제 출제 도장은 회수되고, 학생 화면에 ‘반려되었다’는 안내가 떠서 학생이 확인을 누릅니다.</b> ‘이번 주 빈자리 지금 채우기’로 바로 채울 수도 있습니다."],
     ["시트","<b>설정</b> 탭에서 프로그램 이름(겨울엔 ‘웅천 겨울 서가’), 게시 방식(바로/확인), 주간·월간 도장 수, 상품권 기준, 이달의 권수, 개인정보 보유 기간을 바꿉니다. <b>교사</b> 탭에 담임을 이메일·이름·담당(3-2)으로, 담당 교사는 담당 ‘전체’로 넣습니다."]
   ])+
   '<h4>도서부(학생 운영진)</h4>'+todo([["매주 금요일 점심","도서관에서 문화상품권 배부. 앱 <b>배부 확인</b>에 대상 학생이 학번 순으로 나오고(30초마다 새로), 준 뒤 이름 옆 <b>배부</b>를 누릅니다. 학생이 앱에서 확인을 누르면 ‘수령 확인 ✓’."],["매달 첫 주","이달의 한 줄 포스터와 이달의 글을 도서관 게시판에 붙입니다. 3~4명이 20분."]]);
@@ -2977,6 +2990,7 @@ document.addEventListener("click",function(e){
   if(id==="af-go"){authorGo(val("af-q"));return;}
   if(d.giftok){if(d.paid==="1")put("ungcheon-seoga-gift2|"+D.me.id+"|"+d.giftok,"1");else ui.giftHide=d.giftok;renderBoard();return;}
   if(d.tkind){ui.tKind=d.tkind;renderPanel();return;}
+  if(d.qrejack){act("quizRejectAck",{},"확인했어요.").then(function(){var o=document.querySelector(".ackpop");if(o)o.remove();}).catch(function(){});return;}
   if(d.giftack){act("giftAck",{from:d.giftack},"확인했어요. 즐겁게 읽어!").then(function(){var o=document.querySelector(".ackpop");if(o)o.remove();}).catch(function(){});return;}
   if(d.hellook){put("ungcheon-seoga-hello|"+D.me.id,"1");renderBoard();return;}
   if(d.fullok){put("ungcheon-seoga-full|"+D.me.id+"|"+d.fullok,"1");renderBoard();return;}
@@ -3128,7 +3142,8 @@ document.addEventListener("click",function(e){
       toast("서가에 올렸습니다. "+(r.failed?"독서로 확인은 실패했습니다.":r.found?"학교 도서관에 있습니다"+(b.total?" (대출 가능 "+b.avail+"/"+b.total+"권)":"")+".":"학교 도서관에서는 찾지 못했습니다."));
     }).catch(function(){});return;}
   if(d.qpick){act("quizPick",{id:d.qpick,next:!!d.next},"출제했습니다.").catch(function(){});return;}
-  if(d.qdrop){act("quizDrop",{id:d.qdrop}).catch(function(){});return;}
+  if(d.qdrop){if(d.stamped&&!window.confirm("이 학생은 이 문제로 도장을 받았어요. 반려하면 문제 출제 도장이 회수되고, 학생 화면에 '반려되었다'는 안내가 떠요. 반려할까요?"))return;
+    act("quizDrop",{id:d.qdrop},d.stamped?"반려했어요. 도장을 회수하고 학생에게 알렸어요.":"").catch(function(){});return;}
   if(id==="qz-auto"){act("quizAuto",{}).then(function(r){toast(r.added?"이번 주 "+r.added+"문제를 채웠습니다(학생 "+r.student+", 자동 "+r.auto+").":"이번 주 문제는 이미 다 찼습니다.");}).catch(function(){});return;}
   if(d.qadd){var p=quizPayload("qa-");p.next=d.qadd==="1";act("quizAdd",p,"문제를 넣었습니다.").catch(function(){});return;}
 });
