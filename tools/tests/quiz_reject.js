@@ -78,3 +78,15 @@ const yes=as("s3101@x","quizSubmit",{book:"(청소년을 위한) 침묵의 봄",
 must(!yes.ERR&&T["퀴즈"].some(q=>q["문제"].startsWith("침묵의 봄에서")&&q["책제목"]==="침묵의 봄"),"다음 주 책은 낼 수 있다(서명은 퀴즈 책 이름으로 맞춤)");
 /* 새 점수표: 쪽수 3 · 보기 3 · 정답 안 튐 1 · 해설 2 · 문제 길이 1 (추천 도서 점수 없음) */
 must(yes.score===7&&!/추천/.test(yes.why.join()),"쪽수 없이 보기3+정답1+해설2+길이1 = 7점 ("+yes.score+")");
+/* 확인만(출제 안 함, 2026-10-12): 도장은 그대로, 북퀴즈 자동 출제에서 빠짐, 되돌리기 가능 */
+const ck=T["퀴즈"].find(q=>q["문제"].startsWith("침묵의 봄에서"));
+const before=qs("3101");
+must(/관리자/.test((as("t31@x","quizCheck",{id:ck["id"]}).ERR)||""),"확인만은 관리자만");
+as("lib@x","quizCheck",{id:ck["id"]});
+must(ck["상태"]==="확인"&&qs("3101")===before,"확인만: 상태 '확인', 도장은 그대로");
+must(as("s3101@x","state").quizRejected.every(x=>x.id!==ck["id"]),"확인만은 반려 안내를 띄우지 않는다");
+must(as("lib@x","state").quiz.some(q=>q.id===ck["id"]&&q.status==="확인"),"선생님 목록에 '확인' 문제로 남는다");
+NOW=new Date("2026-11-02T03:00:00Z");try{C().ensureWeeklyQuiz();}catch(e){}
+must(ck["상태"]==="확인","월요일 자동 출제에서도 확인만 한 문제는 뽑히지 않는다");
+as("lib@x","quizCheck",{id:ck["id"],undo:1});
+must(ck["상태"]==="대기","다시 대기로 되돌릴 수 있다");
