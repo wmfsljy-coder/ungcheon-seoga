@@ -6,8 +6,8 @@
 <title>웅천 서가</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Gowun+Batang:wght@700&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Gowun+Batang:wght@700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
   --bark:#3A2A1E;--bark-2:#271B12;--paper:#FAF7F0;--paper-2:#F0E9D9;
@@ -727,8 +727,25 @@ function busy(d){
 }
 /* 메일 로그인: 이 PC에 기억한 토큰(유지 끄면 이 창에서만) */
 var TK="ungcheon-seoga-token";
+/* 마지막으로 받은 내 화면(2026-10-13 회장님 '반응속도 최대한'): 다음에 열 때 서버를 기다리지 않고 먼저 보여 주고, 새 화면이 오면 바꾼다.
+   로그인 표와 같은 곳에 둔다(자동 로그인을 끄면 창을 닫을 때 같이 지워짐). 로그아웃·다른 계정이면 지운다 */
+var SNAP="ungcheon-seoga-snap",SNAPPED=false;
+function saveSnap(s){try{var tk=tok();if(!tk||PV||!s||!s.me||s.preview)return;var st=localStorage.getItem(TK)?localStorage:sessionStorage;
+  st.setItem(SNAP,JSON.stringify({t:tk,at:Date.now(),s:s}));}catch(e){try{localStorage.removeItem(SNAP);sessionStorage.removeItem(SNAP);}catch(x){}}}
+function loadSnap(){try{var tk=tok();if(!tk)return null;var raw=localStorage.getItem(SNAP)||sessionStorage.getItem(SNAP);if(!raw)return null;
+  var o=JSON.parse(raw);if(o.t!==tk||!o.s||!o.s.me||Date.now()-o.at>12*3600*1000)return null;return o.s;}catch(e){return null;}}
+/* 먼저 보여 준 화면에서 쓰기 시작한 칸은 새 화면으로 바꿔도 그대로 둔다 */
+function keepFields(fn){
+  var vals={},ae=document.activeElement,fid=ae&&ae.id,sel=null;
+  document.querySelectorAll("input[id],textarea[id],select[id]").forEach(function(e){if(e.type==="checkbox"||e.type==="radio")vals[e.id]=[1,e.checked];else vals[e.id]=[0,e.value];});
+  try{if(fid&&ae.selectionStart!=null)sel=[ae.selectionStart,ae.selectionEnd];}catch(e){}
+  fn();
+  Object.keys(vals).forEach(function(id){var e=document.getElementById(id);if(!e)return;var v=vals[id];
+    if(v[0]){if(e.checked!==v[1])e.checked=v[1];}else if(e.value!==v[1]&&v[1]!==""){e.value=v[1];try{e.dispatchEvent(new Event("input",{bubbles:true}));}catch(x){}}});
+  if(fid){var f=document.getElementById(fid);if(f){try{f.focus({preventScroll:true});if(sel&&f.setSelectionRange)f.setSelectionRange(sel[0],sel[1]);}catch(x){}}}
+}
 function tok(){try{return localStorage.getItem(TK)||sessionStorage.getItem(TK)||"";}catch(e){return "";}}
-function setTok(t,keep){try{localStorage.removeItem(TK);sessionStorage.removeItem(TK);if(t)(keep?localStorage:sessionStorage).setItem(TK,t);}catch(e){}}
+function setTok(t,keep){try{localStorage.removeItem(TK);sessionStorage.removeItem(TK);localStorage.removeItem(SNAP);sessionStorage.removeItem(SNAP);if(t)(keep?localStorage:sessionStorage).setItem(TK,t);}catch(e){}}
 /* 방금 누른 단추: 서버 응답을 기다리는 동안 바로 '처리 중' 모양으로(2026-10-09 반응 속도) */
 var CLICKED=null;
 document.addEventListener("click",function(e){CLICKED=e.target&&e.target.closest?e.target.closest("button"):null;setTimeout(function(){CLICKED=null;},0);},true);
@@ -775,9 +792,10 @@ function applyState(s){
       GATE=Object.assign({kind:"login",step:"choose"},GATE&&GATE.kind==="login"?GATE:{},{conf:s.conf});}
     else if(s.need==="register"){D=null;GATE={kind:"register",email:s.email,conf:s.conf};}
     else if(s.need==="consent"){D=null;GATE={kind:"consent",email:s.email,name:s.name,conf:s.conf};}
-    else{D=s;GATE=null;}
-    var y=window.scrollY;renderAll();
-    if(D&&D.me.role!=="student")window.scrollTo(0,y);
+    else{D=s;GATE=null;saveSnap(s);}
+    var y=window.scrollY;
+    if(SNAPPED&&D){SNAPPED=false;keepFields(renderAll);window.scrollTo(0,y);}
+    else{SNAPPED=false;renderAll();if(D&&D.me.role!=="student")window.scrollTo(0,y);}
   }
 }
 
@@ -3118,7 +3136,8 @@ document.addEventListener("click",function(e){
   if(d.sw!=null&&SR.items){var it=SR.items[Number(d.sw)];ui.pick="free";ui.freeT=it.t;ui.freeA=it.a;ui.tab="write";saveUI();renderTabs();renderPanel();toPanel();return;}
   if(d.find){ui.searchQ=d.find;ui.tab="search";saveUI();renderTabs();renderPanel();toPanel();doSearch(d.find);return;}
   if(d.desk&&d.undo&&!window.confirm(d.desk+" 학생의 배부를 무를까요? 잘못 눌렀을 때만 쓰세요. 무른 기록은 남아서 사서 선생님이 볼 수 있어요."))return;
-  if(d.desk){act("clubMark",{ids:[d.desk],on:d.on==="1"},d.on==="1"?"배부 완료로 표시했습니다.":"배부를 물렀어요. 기록이 남았어요.").then(function(){if(ui.deskLook&&!ui.deskLook.error)deskLook();}).catch(function(){});return;}
+  if(d.desk){var t0=t.textContent;if(!d.undo&&d.on==="1")t.textContent="배부 ✓";   /* 누르는 순간 바뀐 모양으로(저장은 뒤에서) */
+    act("clubMark",{ids:[d.desk],on:d.on==="1"},d.on==="1"?"배부 완료로 표시했습니다.":"배부를 물렀어요. 기록이 남았어요.").then(function(){if(ui.deskLook&&!ui.deskLook.error)deskLook();}).catch(function(){t.textContent=t0;});return;}
   if(d.trok){act("teacherOk",{id:d.trok,dam:val("tr-"+d.trok)},"승인했습니다. 그 선생님께 메일로 알렸습니다.").catch(function(){});return;}
   if(d.trno){act("teacherNo",{id:d.trno},"거절했습니다.").catch(function(){});return;}
   if(d.sgmon){ui.sgMon=d.sgmon;saveUI();renderPanel();return;}
@@ -3259,7 +3278,7 @@ function renderAll(){
   if(D.me.role==="student"&&!pv&&$("reader").hidden&&get("ungcheon-seoga-guide|"+D.me.id)!=="1")openGuide();
 }
 
-renderAll();
+(function(){var sn=loadSnap();if(sn){applyState(sn);SNAPPED=true;}else renderAll();})();
 refresh();
 })();
 </script>

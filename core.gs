@@ -4269,9 +4269,19 @@ function make(db,env){
       t=Date.now();try{teacherState(aa);}catch(e){out.adminErr=e.message;}out.adminMs=Date.now()-t;}
     return out;
   }
+  /* 한 사람 화면을 실제처럼 만든다(속도 점검용 · 개인정보는 돌려주지 않고 크기만) */
+  function speedOne(kind){
+    var st=db.rows("명단"),r,v;
+    if(kind==="admin"){var adm=db.rows("교사").filter(function(x){return S(x["담당"])==="관리자";})[0];if(!adm)return null;
+      var aa=staffOf(adm);aa.id=aa.email=lower(adm["이메일"])||"perf";aa.name=S(adm["이름"]);aa.seen="";v=teacherState(aa);}
+    else{r=kind==="club"?st.filter(function(x){return S(x["도서부"])==="Y";})[0]:st[0];if(!r)return null;
+      v=studentState({role:"student",id:S(r["학번"]),email:"",name:S(r["이름"]),cls:S(r["반"]),agreed:true,club:S(r["도서부"])==="Y"});}
+    var sz={};Object.keys(v||{}).forEach(function(k){sz[k]=JSON.stringify(v[k]||"").length;});
+    return sz;
+  }
   /* 배부 화면 요약(점검용, 숫자만) */
   function deskSummary(){var c=conf(),v=deskView(c,ALL_CLS);return {none:!!v.none,label:v.label||"",state:v.state||"",open:!!v.open,live:!!v.live,asOf:v.asOf||"",rows:(v.rows||[]).length,paid:(v.rows||[]).filter(function(x){return x.paid;}).length};}
-  return {perfCheck:perfCheck,deskSummary:deskSummary,sweepCatalog:sweepCatalog,crawlCatalog:crawlCatalog,libAuthors:libAuthors,trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fillPhotos:fillPhotos,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
+  return {speedOne:speedOne,perfCheck:perfCheck,deskSummary:deskSummary,sweepCatalog:sweepCatalog,crawlCatalog:crawlCatalog,libAuthors:libAuthors,trimShelf:trimShelf,giftSim:giftSim,fillAuthors:fillAuthors,fillPhotos:fillPhotos,fetchAuthors:fetchAuthors,authorKey:authorKey,overview:overview,pickBooks:pickBooks,syncRecvSheet:syncRecvSheet,api:api,status:status,selfTest:selfTest,libProbe:libProbe,giftMail:giftMail,giftMailKey:giftMailKey,refreshLibrary:refreshLibrary,rotateMonth:rotateMonth,maintain:maintain,tick:tick,ensureWeeklyQuiz:ensureWeeklyQuiz,dropPreMade:dropPreMade};
 }
 
 return {SHEET_DOC:SHEET_DOC,TEEN:TEEN,GENRES:GENRES,make:make,HEAD:HEAD,CONF0:CONF0,CONF_DESC:CONF_DESC,AREAS:AREAS,seedBooks:seedBooks,weekKey:weekKey,libMatch:libMatch,libSearchUrl:libSearchUrl,periodOf:periodOf,seedQuotes:seedQuotes,QUOTES:QUOTES,weekOfYmd:weekOfYmd,prevMonth:prevMonth,quizQuality:quizQuality,shownTitle:shownTitle,shownAuthor:shownAuthor,AREA_CATS:AREA_CATS};
