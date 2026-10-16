@@ -1945,7 +1945,7 @@ function pDesk(){
   var done=K.rows.filter(function(x){return x.paid;}),acked=done.filter(function(x){return x.ack;}),total=K.rows.reduce(function(a,x){return a+x.vouchers;},0),given=done.reduce(function(a,x){return a+(x.paidN||x.vouchers);},0);
   var tag=K.open?'<span class="pill gold">배부 중</span>':K.state==="soon"?'<span class="pill">예정</span>':'<span class="pill grey">지난 기간</span>';
   return '<h3 class="sec">'+esc(K.label)+' 상품권 배부 확인 '+tag+' '+liveStamp()+'</h3>'+
-    (K.open?'<p class="sub">수령 기간 '+rangeLabel(K.from,K.to)+(K.place?' · '+esc(K.place):'')+'. 대상 학생이 <b>학번 순</b>으로 나옵니다. 학번·이름을 확인하고 매수만큼 문화상품권을 준 뒤 이름 옆 <b>배부</b>를 누르세요. 그 학생 화면에 ‘배부 완료’ 안내가 뜨고, 학생이 <b>확인</b>을 누르면 ‘수령 확인 ✓’가 붙습니다. 잘못 눌렀으면 다시 눌러 되돌립니다. 누가 눌렀는지 기록됩니다.</p>'
+    (K.open?'<p class="sub">수령 기간 '+rangeLabel(K.from,K.to)+(K.place?' · '+esc(K.place):'')+'. 대상 학생이 <b>학번 순</b>으로 나옵니다. 학번·이름을 확인하고 매수만큼 문화상품권을 준 뒤 이름 옆 <b>배부</b>를 누르세요. 그 학생 화면에 ‘배부 완료’ 안내가 뜨고, 학생이 <b>확인</b>을 누르면 ‘수령 확인 ✓’가 붙습니다. 잘못 눌렀으면 그 줄의 <b>무르기</b>를 누르세요. 배부·무르기는 누가 눌렀는지 모두 기록됩니다.</p>'
       :K.state==="soon"?'<p class="sub">다음 수령 기간은 <b>'+rangeLabel(K.from,K.to)+'</b>'+(K.place?' · '+esc(K.place):'')+'입니다. 아래는 <b>지금까지 모은 별 기준</b> 예정 명단이라 기간 전까지 조금 바뀔 수 있어요. '+(ADM?'관리자는 지금도 배부·무르기를 할 수 있어요.':'<b>배부 단추는 수령 날(금요일)에만</b> 생깁니다.')+'</p>'
       :'<p class="sub">지난 수령 기간('+rangeLabel(K.from,K.to)+') 명단입니다. 배부 단추는 다음 수령 기간에 생깁니다.</p>')+(ADM&&!K.open?'<p class="hint">관리자는 날짜와 상관없이 배부·무르기를 할 수 있어요(도서부 학생은 금요일 수령 날만).</p>':'')+
     '<div class="desk-sum"><span>대상 <b>'+K.rows.length+'</b>명</span><span>필요한 상품권 <b>'+total+'</b>매</span><span>배부 <b>'+done.length+'</b>명 · '+given+'매</span><span>수령 확인 <b>'+acked.length+'</b>명</span></div>'+

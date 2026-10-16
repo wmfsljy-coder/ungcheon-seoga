@@ -4049,7 +4049,8 @@ function make(db,env){
       if(!r)fail("명단에 없는 학번입니다.");
       if(!seeCls(a,S(r["반"])))fail("우리 학년 학생만 볼 수 있습니다.");
     }
-    var who_=r?{role:"student",id:S(r["학번"]),name:S(r["이름"]),cls:S(r["반"])}
+    /* 도서부 학생을 미리 보면 실제처럼 '상품권 배부' 탭(명단)까지 보이게(2026-10-16: 예전엔 도서부 표시를 안 넘겨 안내 문구만 떴다) */
+    var who_=r?{role:"student",id:S(r["학번"]),name:S(r["이름"]),cls:S(r["반"]),club:S(r["도서부"])==="Y"}
               :{role:"student",id:"__preview__",name:"미리보기 학생",cls:"미리보기"};
     var st=studentState(who_);
     st.preview={teacher:a.name,as:r?S(r["학번"]):"",admin:a.role==="admin"};
@@ -4271,12 +4272,30 @@ function make(db,env){
     return out;
   }
   /* 한 사람 화면을 실제처럼 만든다(속도 점검용 · 개인정보는 돌려주지 않고 크기만) */
-  function speedOne(kind){
+  /* 화면 오류 점검용: 이름·학번·글 내용을 가린 화면 자료(개인정보 없이 화면 모양만 재현) */
+  function maskState(v){
+    var nm={},hb={},n=0,h=0;
+    function fake(map,s,make){s=String(s);if(!(s in map))map[s]=make();return map[s];}
+    function walk(o,k){
+      if(o==null)return o;
+      if(Array.isArray(o))return o.map(function(x){return walk(x,k);});
+      if(typeof o==="object"){var r={};Object.keys(o).forEach(function(kk){r[kk]=walk(o[kk],kk);});return r;}
+      if(typeof o!=="string")return o;
+      if(/^(name|who|by|writer|author_name|이름)$/.test(k)&&o)return fake(nm,o,function(){return "학생"+(++n);});
+      if(/^(hakbun|id|as|학번)$/.test(k)&&/^\d{4,5}$/.test(o))return fake(hb,o,function(){return String(9000+(++h));});
+      if(/^(email)$/.test(k))return "x@x";
+      if(/^(text|body|본문|q|why|quote|reason)$/.test(k)&&o.length>12)return "가린 글 "+o.length+"자";
+      return o;
+    }
+    return walk(v,"");
+  }
+  function speedOne(kind,dump){
     var st=db.rows("명단"),r,v;
     if(kind==="admin"){var adm=db.rows("교사").filter(function(x){return S(x["담당"])==="관리자";})[0];if(!adm)return null;
       var aa=staffOf(adm);aa.id=aa.email=lower(adm["이메일"])||"perf";aa.name=S(adm["이름"]);aa.seen="";v=teacherState(aa);}
     else{r=kind==="club"?st.filter(function(x){return S(x["도서부"])==="Y";})[0]:st[0];if(!r)return null;
       v=studentState({role:"student",id:S(r["학번"]),email:"",name:S(r["이름"]),cls:S(r["반"]),agreed:true,club:S(r["도서부"])==="Y"});}
+    if(dump)return maskState(v);
     var sz={};Object.keys(v||{}).forEach(function(k){sz[k]=JSON.stringify(v[k]||"").length;});
     return sz;
   }

@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261013-233900";
+var CODE_VERSION="20261016-172940";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -218,7 +218,7 @@ function doGet(e){
     if(!keyOk_(e.parameter.speed))sp={error:"열쇠가 맞지 않습니다."};
     else{try{var s0=Date.now(),dbS=makeDb_();if(e.parameter.pre!=="0")dbS.preload(PRELOAD_);sp.makeDb=Date.now()-s0;s0=Date.now();var envS=makeEnv_();sp.makeEnv=Date.now()-s0;
       var raw=dbS.rows,seen={},tl=[];dbS.rows=function(t){if(seen[t])return raw(t);var a=Date.now(),r=raw(t);seen[t]=1;tl.push(t+":"+(Date.now()-a));return r;};
-      s0=Date.now();var sz=Core.make(dbS,envS).speedOne(String(e.parameter.who||"student"));sp.total=Date.now()-s0;sp.tables=tl.join(" ");
+      s0=Date.now();var sz=Core.make(dbS,envS).speedOne(String(e.parameter.who||"student"),e.parameter.dump==="1");if(e.parameter.dump==="1")return ContentService.createTextOutput(JSON.stringify(sz)).setMimeType(ContentService.MimeType.JSON);sp.total=Date.now()-s0;sp.tables=tl.join(" ");
       sp.bytes=sz?Object.keys(sz).map(function(k){return k+":"+sz[k];}).filter(function(x){return Number(x.split(":")[1])>2000;}).join(" "):"";}
       catch(x){sp={error:String(x&&x.stack||x)};}}
     return ContentService.createTextOutput(JSON.stringify(sp)).setMimeType(ContentService.MimeType.JSON);
