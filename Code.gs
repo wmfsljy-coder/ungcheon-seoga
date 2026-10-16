@@ -35,7 +35,7 @@ function onOpen(){
 }
 
 /* 배포할 때마다 tools/deploy.py 가 바꾸는 판 표시. 새 판이 처음 열리면 뒷정리(firstRun)를 한 번 예약한다 */
-var CODE_VERSION="20261016-172940";
+var CODE_VERSION="20261016-175006";
 /* tools/.testkey 의 열쇠인지 (해시만 코드에 둔다) */
 function keyOk_(v){
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8)
@@ -218,7 +218,7 @@ function doGet(e){
     if(!keyOk_(e.parameter.speed))sp={error:"열쇠가 맞지 않습니다."};
     else{try{var s0=Date.now(),dbS=makeDb_();if(e.parameter.pre!=="0")dbS.preload(PRELOAD_);sp.makeDb=Date.now()-s0;s0=Date.now();var envS=makeEnv_();sp.makeEnv=Date.now()-s0;
       var raw=dbS.rows,seen={},tl=[];dbS.rows=function(t){if(seen[t])return raw(t);var a=Date.now(),r=raw(t);seen[t]=1;tl.push(t+":"+(Date.now()-a));return r;};
-      s0=Date.now();var sz=Core.make(dbS,envS).speedOne(String(e.parameter.who||"student"),e.parameter.dump==="1");if(e.parameter.dump==="1")return ContentService.createTextOutput(JSON.stringify(sz)).setMimeType(ContentService.MimeType.JSON);sp.total=Date.now()-s0;sp.tables=tl.join(" ");
+      s0=Date.now();var sz=Core.make(dbS,envS).speedOne(String(e.parameter.who||"student"),e.parameter.dump==="1",Number(e.parameter.i)||0);if(e.parameter.dump==="1")return ContentService.createTextOutput(JSON.stringify(sz)).setMimeType(ContentService.MimeType.JSON);sp.total=Date.now()-s0;sp.tables=tl.join(" ");
       sp.bytes=sz?Object.keys(sz).map(function(k){return k+":"+sz[k];}).filter(function(x){return Number(x.split(":")[1])>2000;}).join(" "):"";}
       catch(x){sp={error:String(x&&x.stack||x)};}}
     return ContentService.createTextOutput(JSON.stringify(sp)).setMimeType(ContentService.MimeType.JSON);
@@ -233,6 +233,7 @@ function doGet(e){
     /* 도서부 표시(값 종류·인원)와 배부 화면 요약 — 개인정보 없이 숫자만 */
     try{var vals={};makeDb_().rows("명단").forEach(function(r){var v=String(r["도서부"]).trim();if(v)vals[v]=(vals[v]||0)+1;});st.club=vals;
       var dv=Core.make(makeDb_(),makeEnv_()).deskSummary();st.desk=dv;}catch(x){st.club=String(x&&x.message||x);}
+    try{var ER=makeDb_().rows("화면오류");st.screenErr={n:ER.length,last:ER.length?String(ER[ER.length-1]["시각"])+" "+String(ER[ER.length-1]["탭"])+" "+String(ER[ER.length-1]["내용"]).slice(0,120):""};}catch(x){}
     st.recvAt=PropertiesService.getScriptProperties().getProperty("recvAt")||"";st.recvDirty=!!PropertiesService.getScriptProperties().getProperty("recvDirty");
     try{st.sheets=SpreadsheetApp.getActive().getSheets().map(function(sh){return sh.getName()+":"+sh.getLastRow();});}catch(x){}
     return ContentService.createTextOutput(JSON.stringify(st)).setMimeType(ContentService.MimeType.JSON);
@@ -764,7 +765,7 @@ var HOURS_=[7,15,0];
 function onSheetEdit(e){try{var nm=e.range.getSheet().getName();bumpSheet_(nm);if(nm!=="수령대상")markRecvDirty_();if(PRELOAD_.indexOf(nm)>=0)try{makeDb_().warm([nm]);}catch(x){}}catch(x){}}
 /* ── 구글 시트 '수령대상'을 실시간으로(2026-10-09 회장님 지시) ──
    쓰기 요청·시트 고침이 있으면 표시만 남기고, 1분마다 도는 시계가 표시가 있을 때만 다시 쓴다(없으면 바로 끝) */
-var RECV_QUIET_=["like","newsSeen","ideaAdd","ideaReply","login","pinChange","consent","recvSync","authorFind","findHome","libSearch","staffLabel","vote"];
+var RECV_QUIET_=["clientError","like","newsSeen","ideaAdd","ideaReply","login","pinChange","consent","recvSync","authorFind","findHome","libSearch","staffLabel","vote"];
 function markRecvDirty_(){try{PropertiesService.getScriptProperties().setProperty("recvDirty",String(Date.now()));}catch(e){}}
 function recvMinute(){
   var P=PropertiesService.getScriptProperties();
@@ -796,7 +797,7 @@ function installEditTriggers_(){
 /* 시트 모양 정리: 교사 '담당' 칸 드롭다운(관리자·1학년·2학년·3학년·교사), 명단 '도서부' 칸 드롭다운(Y).
    예전 값 '전체'는 '관리자'로, '3-2' 같은 반은 '3학년'으로 바꿔 둔다 */
 /* 시트 정리: 선생님이 볼 탭만 앞에 차례대로, 앱이 혼자 쓰는 탭은 숨김 */
-var SHEET_ORDER=["시작","안내","설정","명단","교사","도서","권장도서","주제","이벤트","글","도장","퀴즈","수령기간","수령대상","지급","배부기록","공지","건의","문장","장서목록","작가"];
+var SHEET_ORDER=["시작","안내","설정","명단","교사","도서","권장도서","주제","이벤트","글","도장","퀴즈","수령기간","수령대상","지급","배부기록","화면오류","공지","건의","문장","장서목록","작가"];
 /* 더 이상 쓰지 않는 탭(옛 메일 인증, 문장을 따로 두던 채집)은 숨겨만 둔다 — 지우지는 않는다 */
 var SHEET_HIDE=["기기","반응","퀴즈응답"];
 /* 판이 바뀌며 더 쓰지 않게 된 탭: 줄이 거의 없으면 지우고, 자료가 있으면 숨기기만 한다 */

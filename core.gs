@@ -26,6 +26,7 @@ var HEAD={
   "기기":["토큰","계정","만든날","마지막","만료","해제","기기","이메일"],
   "지급":["키","월","학번","이름","반","도장","처리","시각","처리자","매수","별","수령확인","확인시각"],
   "배부기록":["시각","수령일","학번","이름","반","동작","매수","처리자"],
+  "화면오류":["시각","누구","탭","내용","기기"],
   "도장":["id","시각","주","학번","이름","반","사유","교사","취소"],
   "작가":["이름","생몰","생일","직업","소개","사진","출처","확인","숨김"]
 };
@@ -853,6 +854,8 @@ var SHEET_DOC={
     c:{"이름":["작가 이름(지은이에서 뽑음)","박경리"],"생몰":["태어난 해~돌아간 해","1926~2008"],"생일":["월-일(이주의 작가 생일 주간)","12-02"],
        "직업":["한 줄 설명","대한민국의 소설가"],"소개":["짧은 열전(학생 화면에 나옴)",""],"사진":["사진 주소",""],"출처":["위키백과 문서 주소",""],
        "확인":["받은 날. '없음'이면 위키백과에서 못 찾음(직접 써도 됨)","2026-10-09"],"숨김":["Y 면 안 보임",""]}},
+  "화면오류":{d:"학생·선생님 화면을 그리다 오류가 나면 앱이 저절로 한 줄 남깁니다(2026-10-16). 화면에는 빈칸 대신 안내가 뜹니다. 문제를 찾는 데만 씁니다.",edit:"보기만 하세요(앱이 씀). 다 본 줄은 지워도 됩니다",
+    c:{"시각":["난 때",""],"누구":["학번 또는 역할","3202"],"탭":["어느 화면","desk"],"내용":["오류 내용",""],"기기":["브라우저·기기",""]}},
   "배부기록":{d:"상품권 배부·무르기를 누를 때마다 한 줄씩 쌓이는 기록(2026-10-12). 잘못 눌러 무른 것도 남아 관리자가 볼 수 있습니다.",edit:"보기만 하세요(앱이 씀)",
     c:{"시각":["누른 때",""],"수령일":["수령 날(기간 첫날)","2026-10-16"],"학번":["받는 학생","1101"],"이름":["이름","김서준"],"반":["학급","1-1"],
        "동작":["배부 / 무르기","배부"],"매수":["상품권 매수","1"],"처리자":["누른 사람","도서부 이도윤 (3202)"]}},
@@ -4061,6 +4064,13 @@ function make(db,env){
     p=p||{};
     if(name==="login")return login(p);
     if(name==="logout")return logout(p);
+    /* 화면 오류 알림(2026-10-16 '도서부 배부 칸에 아무것도 안 보인다'): 학생 기기에서 난 오류는 서버에 안 남아 찾을 수 없었다 */
+    if(name==="clientError"){
+      var ae=null;try{ae=who(p);}catch(e){}
+      var by=ae?(ae.role==="student"?S(ae.id):S(ae.role)):"";
+      db.add("화면오류",{"시각":stamp(env.now()),"누구":by,"탭":S(p.where).slice(0,40),"내용":S(p.msg).slice(0,300),"기기":S(p.ua).slice(0,120)});
+      return {ok:true};
+    }
     var a=who(p);
     if(a.role==="nologin"){
       if(name==="state")return {need:"login",conf:pubConf(conf())};
@@ -4289,11 +4299,24 @@ function make(db,env){
     }
     return walk(v,"");
   }
-  function speedOne(kind,dump){
+  function speedOne(kind,dump,idx){
+    /* 점검: 지급 시트 '처리자' 모양별 건수(이름은 ○, 숫자는 #) · 도서부 명단과 맞는지 */
+    if(kind==="payers"){
+      var club={};db.rows("명단").forEach(function(x){if(S(x["도서부"])==="Y"){club["도서부 "+S(x["이름"])+" ("+S(x["학번"])+")"]=1;club["도서부 "+S(x["이름"])]=1;}});
+      var out={};db.rows("지급").forEach(function(r){if(S(r["처리"])!=="지급")return;var b0=S(r["처리자"]);
+        var shape=b0.replace(/[가-힣]/g,"○").replace(/\d/g,"#")+(club[b0]?" [도서부 일치]":" [도서부 아님]")+" · "+S(r["시각"]).slice(0,10);out[shape]=(out[shape]||0)+1;});
+      var L=[];try{L=db.rows("배부기록");}catch(e){}
+      var lg={};L.forEach(function(r){var b0=S(r["처리자"]);var shape=S(r["동작"])+" · "+b0.replace(/[가-힣]/g,"○").replace(/\d/g,"#")+(club[b0]?" [도서부 일치]":"")+" · "+S(r["시각"]).slice(0,10);lg[shape]=(lg[shape]||0)+1;});
+      var per=[];db.rows("명단").filter(function(x){return S(x["도서부"])==="Y";}).forEach(function(x,i){
+        var a={role:"student",id:S(x["학번"]),name:S(x["이름"]),cls:S(x["반"]),club:true};
+        var me1="도서부 "+a.name+" ("+a.id+")",raw=0;db.rows("지급").forEach(function(r){if(S(r["처리"])==="지급"&&S(r["처리자"])===me1)raw++;});
+        per.push(i+": 이름 "+a.name.length+"자 · 지급 시트 일치 "+raw+" · 내가 배부한 기록 "+myGiveLog(a).length+" · 이름 원문 길이 "+String(x["이름"]).length);});
+      return {지급:out,배부기록:lg,도서부:per};
+    }
     var st=db.rows("명단"),r,v;
     if(kind==="admin"){var adm=db.rows("교사").filter(function(x){return S(x["담당"])==="관리자";})[0];if(!adm)return null;
       var aa=staffOf(adm);aa.id=aa.email=lower(adm["이메일"])||"perf";aa.name=S(adm["이름"]);aa.seen="";v=teacherState(aa);}
-    else{r=kind==="club"?st.filter(function(x){return S(x["도서부"])==="Y";})[0]:st[0];if(!r)return null;
+    else{r=kind==="club"?st.filter(function(x){return S(x["도서부"])==="Y";})[idx||0]:st[idx||0];if(!r)return null;
       v=studentState({role:"student",id:S(r["학번"]),email:"",name:S(r["이름"]),cls:S(r["반"]),agreed:true,club:S(r["도서부"])==="Y"});}
     if(dump)return maskState(v);
     var sz={};Object.keys(v||{}).forEach(function(k){sz[k]=JSON.stringify(v[k]||"").length;});

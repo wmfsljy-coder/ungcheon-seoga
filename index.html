@@ -691,6 +691,16 @@ var UK="ungcheon-seoga-ui";
 var D=null;                       /* 서버에서 받은 상태 */
 var GATE=null;                    /* 아직 못 들어온 까닭: {kind:"register"|"noemail"|"error",...} */
 var ui=Object.assign({tab:"",filter:"전체",libOnly:false,kind:"label",pick:"free",bkind:"label",sel:{},offX:0,offY:0},getJSON(UK));
+/* 도서부 배부 칸의 조회어·조회 결과는 다음에 열 때 지운다(2026-10-16: 지난번 조회어가 남아 명단이 걸러져 '아무것도 안 보인다'고 함) */
+delete ui.deskQ;delete ui.deskLook;
+/* 화면을 그리다 난 오류를 선생님이 볼 수 있게 시트 '화면오류'에 남긴다(같은 오류는 한 번만, 한 번 열 때 다섯 번까지) */
+var ERR_SENT={},ERR_N=0;
+function reportErr(e,where){
+  try{var msg=String(e&&e.message||e).slice(0,200),st=String(e&&e.stack||"").split("\n").slice(0,3).join(" | ").slice(0,250),k=where+"|"+msg;
+    if(ERR_SENT[k]||ERR_N>=5||DEMO)return;ERR_SENT[k]=1;ERR_N++;
+    call("clientError",{where:where,msg:msg+(st?" · "+st:""),ua:navigator.userAgent}).catch(function(){});}catch(x){}
+}
+window.addEventListener("error",function(ev){reportErr(ev.error||ev.message,"window:"+(ui&&ui.tab||""));});
 
 function get(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 function put(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);}catch(e){}}
@@ -1328,7 +1338,14 @@ function renderPanel(){
   var f={shelf:pShelfAll,write:pWrite,wall:pWallAll,vote:pVote,quiz:pQuiz,check:pCheck,print:pPrintAll,result:pResult,
     finish:pGift,books:pBooks,desk:pDesk,idea:pIdea,accounts:pAccounts,give:pGive,over:pOverview,suggest:pSuggest,quizadm:pQuizAdm,guide:pGuide,tlabel:pTLabelAll,search:pSearch,rec:pRecTab,author:pAuthorTab,mine:pMine,readlog:pReadlog}[ui.tab];
   var as0=$("ackslot");if(as0)as0.innerHTML=ackBarHTML();   /* 상품권 수령 확인: 화면 맨 위(명언 카드 위) */
-  $("panels").innerHTML=f?f():"";
+  var html="";
+  try{html=f?f():"";}
+  catch(e){
+    if(ui.tab==="desk"&&(ui.deskQ||ui.deskLook)){ui.deskQ="";ui.deskLook=null;try{html=f();}catch(e2){html="";}}
+    if(!html){reportErr(e,"panel:"+ui.tab);
+      html='<div class="empty">이 화면을 그리다 문제가 생겼어요. 새로고침하거나 다른 탭을 눌렀다 다시 와 보세요. 오류 내용은 선생님께 저절로 전해졌어요.</div>';}
+  }
+  $("panels").innerHTML=html;
   if(ui.tab==="write")wireWrite();
   if(ui.tab==="print")wirePrint();
   if(ui.tab==="tlabel")wireTLabel();
@@ -1951,6 +1968,7 @@ function pDesk(){
     '<div class="desk-sum"><span>대상 <b>'+K.rows.length+'</b>명</span><span>필요한 상품권 <b>'+total+'</b>매</span><span>배부 <b>'+done.length+'</b>명 · '+given+'매</span><span>수령 확인 <b>'+acked.length+'</b>명</span></div>'+
     '<div class="row" style="align-items:flex-end;gap:8px;max-width:460px"><div class="field" style="flex:1;margin:0"><label for="desk-q">학번(4자리)이나 이름으로 조회</label><input type="search" id="desk-q" value="'+esc(ui.deskQ||"")+'" placeholder="학번 4자리(예: 3201) 또는 이름" maxlength="10" autocomplete="off"></div><button class="btn" id="desk-go">조회</button></div>'+
     lookHTML(K)+
+    (q?'<p class="hint" style="margin:4px 0 10px">‘'+esc(q)+'’(으)로 걸러 <b>'+rows.length+'명</b>만 보여요. <button class="btn ghost sm" id="desk-clear" type="button">전체 명단 보기</button></p>':'')+
     (rows.length?rows.map(function(x){
       var btn=(K.open||ADM)?(x.paid?'<span class="pill gold">배부 ✓</span><button class="btn ghost sm" data-desk="'+esc(x.hakbun)+'" data-on="0" data-undo="1">무르기</button>'
             :'<button class="btn ghost sm" data-desk="'+esc(x.hakbun)+'" data-on="1">배부</button>')
@@ -3097,6 +3115,7 @@ document.addEventListener("click",function(e){
   if(d.fullok){put("ungcheon-seoga-full|"+D.me.id+"|"+d.fullok,"1");renderBoard();return;}
   if(id==="news-ok"){act("newsSeen",{},"확인했어요. 다음 소식부터 다시 모아 드릴게요.").catch(function(){});return;}
   if(id==="desk-go"){deskLook();return;}
+  if(id==="desk-clear"){ui.deskQ="";ui.deskLook=null;renderPanel();return;}
   if(id==="cat-run"){t.disabled=true;t.textContent="받는 중…(1분쯤)";call("catalogNow",{}).then(function(r){toast("장서목록 시트에 "+r.titles+"종 "+r.copies+"권을 정리했습니다.");t.disabled=false;t.textContent="장서목록 시트 새로 받기";})
     .catch(function(e){toast(e.message);t.disabled=false;t.textContent="장서목록 시트 새로 받기";});return;}
   if(id==="sg-send"){ui.sgSubj=val("sg-subj");saveUI();
